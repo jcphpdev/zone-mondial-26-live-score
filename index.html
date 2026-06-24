@@ -1,30 +1,39 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>Zone Mondial 26 Live Scores</title>
-  <link rel="stylesheet" href="style.css">
-</head>
+<div class="scoreboard-wrapper">
 
-<body>
-  <div class="live-container">
+    <header class="match-header">
+        <strong>COUPE DU MONDE 2026</strong>
+        <span>•</span>
+        <span>PHASE DE GROUPES</span>
+    </header>
 
-    <div class="header">
-      <img src="logo.png" class="logo">
-      <div>
-        <h1>LIVE SCORES</h1>
-        <p>ZONE MONDIAL 26</p>
-      </div>
-    </div>
+    <main class="match-main">
 
-    <div id="matches"></div>
+        <section class="team-card">
+            <img src="assets/maroc.png" alt="Drapeau Maroc">
+            <h1 class="team-name">Maroc</h1>
+        </section>
 
-    <div class="footer">
-      Scores mis à jour automatiquement
-    </div>
+        <section class="score-card">
+            <div class="score">
+                <span id="score-home">1</span>
+                <span class="score-separator">-</span>
+                <span id="score-away">0</span>
+            </div>
+        </section>
 
-  </div>
+        <section class="team-card">
+            <img src="assets/ecosse.png" alt="Drapeau Écosse">
+            <h1 class="team-name">Écosse</h1>
+        </section>
 
-  <script src="script.js"></script>
-</body>
-</html>
+    </main>
+
+    <footer class="match-footer">
+        <p class="match-info">
+            <strong>But :</strong> Ismael Saibari, 2e minute
+        </p>
+    </footer>
+
+</div>
+
+<img class="zone-logo" src="logo.png" alt="Zone Mondial 26">

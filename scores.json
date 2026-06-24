@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-24 17:17",
+  "updated_at": "2026-06-24 18:10",
   "matches": [
     {
       "competition": "Coupe du Monde 2026",
@@ -9,7 +9,7 @@
       "away": "Mexique",
       "away_code": "mx",
       "away_score": 0,
-      "minute": "0'",
+      "minute": "3'",
       "status": "À venir",
       "info": ""
     },
@@ -21,8 +21,8 @@
       "away": "Corée du Sud",
       "away_code": "kr",
       "away_score": 0,
-      "minute": "0'",
-      "status": "À venir",
+      "minute": "5'",
+      "status": "Reporté",
       "info": ""
     }
   ]

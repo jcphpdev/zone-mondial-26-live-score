@@ -1,13 +1,13 @@
 {
-  "updated_at": "2026-06-24 20:45",
+  "updated_at": "2026-06-24 16:39",
   "matches": [
     {
       "competition": "Coupe du Monde 2026",
       "home": "Maroc",
       "home_code": "ma",
+      "home_score": 2,
       "away": "Écosse",
       "away_code": "gb-sct",
-      "home_score": 1,
       "away_score": 0,
       "minute": "72'",
       "status": "En direct",
@@ -17,11 +17,12 @@
       "competition": "Coupe du Monde 2026",
       "home": "Mexique",
       "home_code": "mx",
+      "home_score": 2,
       "away": "Corée du Sud",
       "away_code": "kr",
-      "home_score": 2,
       "away_score": 1,
       "minute": "FT",
+      "status": "",
       "info": "Score final"
     }
   ]

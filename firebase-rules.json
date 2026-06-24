@@ -2,7 +2,7 @@
   "rules": {
     "liveScores": {
       ".read": true,
-      ".write": "auth != null && auth.uid === 'REMPLACEZ_PAR_UID_ADMIN'",
+      ".write": "auth != null",
       ".validate": "newData.hasChildren(['updated_at', 'matches'])"
     },
     "$other": {

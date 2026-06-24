@@ -1,0 +1,68 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: transparent;
+}
+
+.live-container {
+  width: 900px;
+  background: #2A398D;
+  color: #FFFFFF;
+  border: 6px solid #E61D25;
+  padding: 25px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  border-bottom: 3px solid #3CAC3B;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.logo {
+  width: 90px;
+  margin-right: 20px;
+}
+
+h1 {
+  margin: 0;
+  color: #FFFFFF;
+  font-size: 42px;
+}
+
+.header p {
+  margin: 5px 0 0;
+  color: #3CAC3B;
+  font-weight: bold;
+}
+
+.match-card {
+  background: #FFFFFF;
+  color: #2A398D;
+  margin-bottom: 12px;
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 28px;
+  font-weight: bold;
+  border-left: 10px solid #E61D25;
+}
+
+.score {
+  color: #E61D25;
+  font-size: 34px;
+}
+
+.minute {
+  color: #3CAC3B;
+  font-size: 22px;
+}
+
+.footer {
+  text-align: center;
+  font-size: 16px;
+  color: #FFFFFF;
+  margin-top: 15px;
+}

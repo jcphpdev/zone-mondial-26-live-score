@@ -1,1 +1,1 @@
-"# zone-mondial-26-live-score" 
+# zone-mondial-26-live-score

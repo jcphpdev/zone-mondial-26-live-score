@@ -35,8 +35,8 @@
         <p class="eyebrow">TABLEAU DE CONTRÔLE</p>
         <h1>Mettre à jour les matchs</h1>
         <p>
-          Modifiez les données ci-dessous, puis téléchargez le nouveau fichier
-          <code>scores.json</code>.
+          Modifiez les données puis publiez directement le fichier
+          <code>scores.json</code> sur GitHub.
         </p>
       </div>
 
@@ -60,20 +60,67 @@
 
     <section id="matchesEditor" class="matches-editor"></section>
 
+    <section class="github-panel">
+      <div class="github-heading">
+        <div>
+          <p class="eyebrow">PUBLICATION À DISTANCE</p>
+          <h2>Connexion GitHub</h2>
+          <p>
+            Utilisez un token limité au dépôt avec la permission
+            <strong>Contents: Read and write</strong>. Il reste uniquement dans
+            cet onglet et disparaît lorsque vous le fermez.
+          </p>
+        </div>
+        <span id="githubState" class="github-state offline">Non connecté</span>
+      </div>
+
+      <div class="token-row">
+        <div class="field token-field">
+          <label for="githubToken">Token GitHub</label>
+          <div class="password-input">
+            <input
+              id="githubToken"
+              type="password"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="github_pat_..."
+            >
+            <button id="toggleTokenButton" type="button">Afficher</button>
+          </div>
+        </div>
+        <button id="verifyTokenButton" class="button secondary" type="button">
+          Vérifier la connexion
+        </button>
+        <button id="forgetTokenButton" class="button ghost" type="button">
+          Oublier le token
+        </button>
+      </div>
+
+      <p class="security-note">
+        Ne saisissez pas votre mot de passe GitHub. Créez un
+        <a
+          href="https://github.com/settings/personal-access-tokens/new"
+          target="_blank"
+          rel="noopener noreferrer"
+        >token fine-grained</a>
+        réservé au dépôt <code>jcphpdev/zone-mondial-26-live-score</code>.
+      </p>
+    </section>
+
     <section class="export-panel">
       <div>
         <h2>Publier les modifications</h2>
         <p>
-          Remplacez le fichier du dépôt par celui qui sera téléchargé, puis
-          envoyez la modification sur GitHub.
+          Un commit sera créé automatiquement sur GitHub. L’overlay recevra
+          ensuite la nouvelle version dès que GitHub Pages l’aura publiée.
         </p>
       </div>
       <div class="export-actions">
         <button id="copyButton" class="button secondary" type="button">
           Copier le JSON
         </button>
-        <button id="downloadBottomButton" class="button primary" type="button">
-          Télécharger scores.json
+        <button id="publishButton" class="button publish" type="button">
+          Publier sur GitHub
         </button>
       </div>
     </section>

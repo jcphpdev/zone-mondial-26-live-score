@@ -1,10 +1,18 @@
 const DRAFT_KEY = "zone-mondial-26-scores-draft";
+const TOKEN_KEY = "zone-mondial-26-github-token";
+const GITHUB_OWNER = "jcphpdev";
+const GITHUB_REPO = "zone-mondial-26-live-score";
+const GITHUB_FILE = "scores.json";
+const GITHUB_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
 
 const editor = document.getElementById("matchesEditor");
 const template = document.getElementById("matchTemplate");
 const updatedAtInput = document.getElementById("updatedAt");
 const notice = document.getElementById("notice");
 const matchCount = document.getElementById("matchCount");
+const githubTokenInput = document.getElementById("githubToken");
+const githubState = document.getElementById("githubState");
+const publishButton = document.getElementById("publishButton");
 
 let matches = [];
 let draftTimer;
@@ -101,7 +109,12 @@ function fillCard(card, match, index) {
 
   card.querySelectorAll("[data-field]").forEach(input => {
     const key = input.dataset.field;
-    const fallback = key.endsWith("_score") ? 0 : "";
+    let fallback = key.endsWith("_score") ? 0 : "";
+    if (key === "status") {
+      fallback = ["FT", "FIN"].includes(text(match.minute).trim().toUpperCase())
+        ? "Terminé"
+        : "À venir";
+    }
     input.value = text(match[key], fallback);
   });
 
@@ -192,6 +205,152 @@ function buildJson() {
   return `${JSON.stringify(buildData(), null, 2)}\n`;
 }
 
+function encodeBase64Utf8(value) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  bytes.forEach(byte => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+function getToken() {
+  return githubTokenInput.value.trim();
+}
+
+function setGithubState(connected, label = "") {
+  githubState.classList.toggle("online", connected);
+  githubState.classList.toggle("offline", !connected);
+  githubState.textContent = label || (connected ? "Connecté" : "Non connecté");
+}
+
+function githubHeaders(token) {
+  return {
+    Accept: "application/vnd.github+json",
+    Authorization: `Bearer ${token}`,
+    "X-GitHub-Api-Version": "2022-11-28"
+  };
+}
+
+async function githubRequest(path, options = {}) {
+  const token = getToken();
+  if (!token) {
+    throw new Error("Saisissez d’abord votre token GitHub.");
+  }
+
+  const response = await fetch(`${GITHUB_API}${path}`, {
+    ...options,
+    headers: {
+      ...githubHeaders(token),
+      ...(options.headers || {})
+    }
+  });
+
+  let data = {};
+  try {
+    data = await response.json();
+  } catch {
+    // Certaines réponses GitHub peuvent ne pas contenir de JSON.
+  }
+
+  if (!response.ok) {
+    const message = data.message || `Erreur GitHub ${response.status}`;
+    if (response.status === 401) {
+      throw new Error("Token invalide ou expiré.");
+    }
+    if (response.status === 403) {
+      throw new Error(
+        "Accès refusé. Vérifiez la permission « Contents: Read and write » du token."
+      );
+    }
+    if (response.status === 409) {
+      throw new Error(
+        "Le fichier a changé sur GitHub. Rechargez les données puis réessayez."
+      );
+    }
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+async function verifyGithubToken() {
+  const button = document.getElementById("verifyTokenButton");
+  const originalLabel = button.textContent;
+  button.disabled = true;
+  button.textContent = "Vérification…";
+
+  try {
+    const repository = await githubRequest("");
+    sessionStorage.setItem(TOKEN_KEY, getToken());
+    setGithubState(true, `Connecté : ${repository.full_name}`);
+    showNotice("Connexion GitHub vérifiée. Vous pouvez publier les scores.");
+    return true;
+  } catch (error) {
+    console.error(error);
+    sessionStorage.removeItem(TOKEN_KEY);
+    setGithubState(false);
+    showNotice(error.message, true);
+    return false;
+  } finally {
+    button.disabled = false;
+    button.textContent = originalLabel;
+  }
+}
+
+async function publishToGithub() {
+  if (!getToken()) {
+    showNotice("Saisissez et vérifiez d’abord votre token GitHub.", true);
+    githubTokenInput.focus();
+    return;
+  }
+
+  const originalLabel = publishButton.textContent;
+  publishButton.disabled = true;
+  publishButton.textContent = "Publication…";
+
+  try {
+    updatedAtInput.value = formatCasablancaDate();
+    saveDraft();
+
+    const currentFile = await githubRequest(
+      `/contents/${encodeURIComponent(GITHUB_FILE)}?ref=main`
+    );
+    const result = await githubRequest(
+      `/contents/${encodeURIComponent(GITHUB_FILE)}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: `Mise à jour des scores — ${updatedAtInput.value}`,
+          content: encodeBase64Utf8(buildJson()),
+          sha: currentFile.sha,
+          branch: "main"
+        })
+      }
+    );
+
+    sessionStorage.setItem(TOKEN_KEY, getToken());
+    localStorage.removeItem(DRAFT_KEY);
+    setGithubState(true);
+
+    const commitUrl = result.commit?.html_url;
+    notice.innerHTML = commitUrl
+      ? `Scores publiés avec succès. <a href="${commitUrl}" target="_blank" rel="noopener noreferrer">Voir le commit GitHub</a>.`
+      : "Scores publiés avec succès sur GitHub.";
+    notice.classList.remove("error");
+    notice.hidden = false;
+  } catch (error) {
+    console.error(error);
+    showNotice(error.message, true);
+  } finally {
+    publishButton.disabled = false;
+    publishButton.textContent = originalLabel;
+  }
+}
+
 function downloadJson() {
   updatedAtInput.value = formatCasablancaDate();
   saveDraft();
@@ -264,8 +423,35 @@ document.getElementById("reloadButton").addEventListener("click", () => {
 });
 
 document.getElementById("downloadButton").addEventListener("click", downloadJson);
-document.getElementById("downloadBottomButton").addEventListener("click", downloadJson);
 document.getElementById("copyButton").addEventListener("click", copyJson);
+document.getElementById("verifyTokenButton").addEventListener("click", verifyGithubToken);
+publishButton.addEventListener("click", publishToGithub);
+
+document.getElementById("toggleTokenButton").addEventListener("click", event => {
+  const visible = githubTokenInput.type === "text";
+  githubTokenInput.type = visible ? "password" : "text";
+  event.currentTarget.textContent = visible ? "Afficher" : "Masquer";
+});
+
+document.getElementById("forgetTokenButton").addEventListener("click", () => {
+  sessionStorage.removeItem(TOKEN_KEY);
+  githubTokenInput.value = "";
+  githubTokenInput.type = "password";
+  document.getElementById("toggleTokenButton").textContent = "Afficher";
+  setGithubState(false);
+  showNotice("Le token a été supprimé de cet onglet.");
+});
+
+githubTokenInput.addEventListener("input", () => {
+  sessionStorage.setItem(TOKEN_KEY, getToken());
+  setGithubState(false, getToken() ? "À vérifier" : "Non connecté");
+});
+
 updatedAtInput.addEventListener("input", scheduleDraftSave);
+
+githubTokenInput.value = sessionStorage.getItem(TOKEN_KEY) || "";
+if (githubTokenInput.value) {
+  setGithubState(false, "Token mémorisé dans cet onglet");
+}
 
 loadScores();

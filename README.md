@@ -4,12 +4,15 @@
 - `admin.html` : interface de mise à jour manuelle des matchs.
 - `scores.json` : données affichées par l’overlay.
 
-## Mise à jour manuelle
+## Publication directe depuis l’administration
 
 1. Ouvrir `admin.html` depuis le site publié.
-2. Modifier les équipes, les scores, la minute et le statut.
-3. Cliquer sur **Télécharger scores.json**.
-4. Remplacer `scores.json` dans le dépôt GitHub par le fichier téléchargé.
-5. Valider la modification sur GitHub.
+2. Créer un token GitHub fine-grained limité à ce dépôt, avec la permission
+   `Contents: Read and write`.
+3. Saisir le token et cliquer sur **Vérifier la connexion**.
+4. Modifier les équipes, les scores, la minute et le statut.
+5. Cliquer sur **Publier sur GitHub**.
 
-L’overlay vérifie automatiquement le fichier toutes les 30 secondes.
+Le token est stocké uniquement dans `sessionStorage` et disparaît à la
+fermeture de l’onglet. L’overlay vérifie automatiquement le fichier toutes les
+30 secondes après sa publication par GitHub Pages.

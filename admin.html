@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administration des scores — Zone Mondial 26</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header class="admin-header">
+    <a class="brand" href="index.html" target="_blank" rel="noopener">
+      <img src="logo.png" alt="">
+      <span>
+        <strong>Zone Mondial 26</strong>
+        <small>Administration des scores</small>
+      </span>
+    </a>
+
+    <div class="header-actions">
+      <button id="reloadButton" class="button secondary" type="button">
+        Recharger le fichier
+      </button>
+      <a class="button secondary" href="index.html" target="_blank" rel="noopener">
+        Voir l’overlay
+      </a>
+      <button id="downloadButton" class="button primary" type="button">
+        Télécharger scores.json
+      </button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <section class="intro">
+      <div>
+        <p class="eyebrow">TABLEAU DE CONTRÔLE</p>
+        <h1>Mettre à jour les matchs</h1>
+        <p>
+          Modifiez les données ci-dessous, puis téléchargez le nouveau fichier
+          <code>scores.json</code>.
+        </p>
+      </div>
+
+      <div class="update-box">
+        <label for="updatedAt">Dernière mise à jour</label>
+        <input id="updatedAt" type="text" placeholder="2026-06-24 20:45">
+        <button id="setNowButton" class="text-button" type="button">
+          Utiliser l’heure actuelle
+        </button>
+      </div>
+    </section>
+
+    <div id="notice" class="notice" role="status" hidden></div>
+
+    <section class="toolbar">
+      <h2>Matchs <span id="matchCount">0</span></h2>
+      <button id="addMatchButton" class="button add" type="button">
+        + Ajouter un match
+      </button>
+    </section>
+
+    <section id="matchesEditor" class="matches-editor"></section>
+
+    <section class="export-panel">
+      <div>
+        <h2>Publier les modifications</h2>
+        <p>
+          Remplacez le fichier du dépôt par celui qui sera téléchargé, puis
+          envoyez la modification sur GitHub.
+        </p>
+      </div>
+      <div class="export-actions">
+        <button id="copyButton" class="button secondary" type="button">
+          Copier le JSON
+        </button>
+        <button id="downloadBottomButton" class="button primary" type="button">
+          Télécharger scores.json
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <template id="matchTemplate">
+    <article class="match-editor">
+      <div class="match-editor-header">
+        <span class="match-number"></span>
+        <div class="card-actions">
+          <button class="icon-button duplicate-match" type="button" title="Dupliquer">
+            Dupliquer
+          </button>
+          <button class="icon-button danger remove-match" type="button" title="Supprimer">
+            Supprimer
+          </button>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label>Compétition</label>
+        <input data-field="competition" type="text" placeholder="Coupe du Monde 2026">
+      </div>
+
+      <div class="teams-grid">
+        <section class="team-form">
+          <h3>Équipe 1</h3>
+          <div class="flag-preview">
+            <img data-preview="home" alt="">
+          </div>
+          <div class="field">
+            <label>Nom</label>
+            <input data-field="home" type="text" placeholder="Maroc">
+          </div>
+          <div class="field">
+            <label>Code du drapeau</label>
+            <input data-field="home_code" type="text" maxlength="6" placeholder="ma">
+            <small>Exemples : ma, fr, br, gb-sct</small>
+          </div>
+          <div class="score-control">
+            <button data-score-action="home:-1" type="button" aria-label="Retirer un but">−</button>
+            <input data-field="home_score" type="number" min="0" value="0">
+            <button data-score-action="home:1" type="button" aria-label="Ajouter un but">+</button>
+          </div>
+        </section>
+
+        <div class="versus">VS</div>
+
+        <section class="team-form">
+          <h3>Équipe 2</h3>
+          <div class="flag-preview">
+            <img data-preview="away" alt="">
+          </div>
+          <div class="field">
+            <label>Nom</label>
+            <input data-field="away" type="text" placeholder="Écosse">
+          </div>
+          <div class="field">
+            <label>Code du drapeau</label>
+            <input data-field="away_code" type="text" maxlength="6" placeholder="gb-sct">
+            <small>Exemples : mx, kr, us, gb-eng</small>
+          </div>
+          <div class="score-control">
+            <button data-score-action="away:-1" type="button" aria-label="Retirer un but">−</button>
+            <input data-field="away_score" type="number" min="0" value="0">
+            <button data-score-action="away:1" type="button" aria-label="Ajouter un but">+</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="details-grid">
+        <div class="field">
+          <label>Minute</label>
+          <input data-field="minute" type="text" placeholder="72' ou FT">
+        </div>
+        <div class="field">
+          <label>Statut</label>
+          <select data-field="status">
+            <option value="À venir">À venir</option>
+            <option value="En direct">En direct</option>
+            <option value="Mi-temps">Mi-temps</option>
+            <option value="Terminé">Terminé</option>
+            <option value="Reporté">Reporté</option>
+          </select>
+        </div>
+        <div class="field info-field">
+          <label>Information affichée en bas</label>
+          <input data-field="info" type="text" placeholder="Buteurs, stade ou message">
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <script src="admin.js"></script>
+</body>
+</html>

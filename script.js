@@ -24,10 +24,10 @@ function escapeText(value, fallback = "") {
   return value === undefined || value === null ? fallback : String(value);
 }
 
-function isFinished(minute) {
-  return ["FT", "FIN", "TERMINÉ", "TERMINE"].includes(
-    escapeText(minute).trim().toUpperCase()
-  );
+function isFinished(match) {
+  const finishedValues = ["FT", "FIN", "TERMINÉ", "TERMINE"];
+  return finishedValues.includes(escapeText(match.minute).trim().toUpperCase())
+    || finishedValues.includes(escapeText(match.status).trim().toUpperCase());
 }
 
 function flagUrl(match, side) {
@@ -62,7 +62,7 @@ function renderMatch() {
   }
 
   const match = matches[activeMatch];
-  const finished = isFinished(match.minute);
+  const finished = isFinished(match);
 
   elements.competition.textContent = escapeText(
     match.competition,

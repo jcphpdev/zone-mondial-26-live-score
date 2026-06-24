@@ -1,28 +1,29 @@
 {
-  "updated_at": "2026-06-24 20:45",
+  "updated_at": "2026-06-24 17:17",
   "matches": [
     {
       "competition": "Coupe du Monde 2026",
-      "home": "Maroc",
-      "home_code": "ma",
-      "away": "Écosse",
-      "away_code": "gb-sct",
-      "home_score": 1,
+      "home": "République tchèque",
+      "home_code": "cz",
+      "home_score": 0,
+      "away": "Mexique",
+      "away_code": "mx",
       "away_score": 0,
-      "minute": "72'",
-      "status": "En direct",
-      "info": "Maroc domine • Scores mis à jour automatiquement"
+      "minute": "0'",
+      "status": "À venir",
+      "info": ""
     },
     {
       "competition": "Coupe du Monde 2026",
-      "home": "Mexique",
-      "home_code": "mx",
+      "home": "Afrique du Sud",
+      "home_code": "za",
+      "home_score": 0,
       "away": "Corée du Sud",
       "away_code": "kr",
-      "home_score": 2,
-      "away_score": 1,
-      "minute": "FT",
-      "info": "Score final"
+      "away_score": 0,
+      "minute": "0'",
+      "status": "À venir",
+      "info": ""
     }
   ]
 }

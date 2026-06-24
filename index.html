@@ -1,39 +1,49 @@
-<div class="scoreboard-wrapper">
-
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zone Mondial 26 — Live Scores</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="scoreboard" aria-live="polite">
     <header class="match-header">
-        <strong>COUPE DU MONDE 2026</strong>
-        <span>•</span>
-        <span>PHASE DE GROUPES</span>
+      <span id="competition">COUPE DU MONDE 2026</span>
+      <span class="live-badge"><i></i><span id="status">EN DIRECT</span></span>
     </header>
 
-    <main class="match-main">
+    <section class="team-panel team-home">
+      <img id="homeFlag" class="flag" alt="">
+      <h1 id="homeName">Maroc</h1>
+    </section>
 
-        <section class="team-card">
-            <img src="assets/maroc.png" alt="Drapeau Maroc">
-            <h1 class="team-name">Maroc</h1>
-        </section>
+    <section class="score-panel">
+      <div id="score" class="score">
+        <span id="homeScore">0</span>
+        <span class="score-separator">–</span>
+        <span id="awayScore">0</span>
+      </div>
+      <div id="minute" class="minute">EN DIRECT</div>
+    </section>
 
-        <section class="score-card">
-            <div class="score">
-                <span id="score-home">1</span>
-                <span class="score-separator">-</span>
-                <span id="score-away">0</span>
-            </div>
-        </section>
-
-        <section class="team-card">
-            <img src="assets/ecosse.png" alt="Drapeau Écosse">
-            <h1 class="team-name">Écosse</h1>
-        </section>
-
-    </main>
+    <section class="team-panel team-away">
+      <img id="awayFlag" class="flag" alt="">
+      <h1 id="awayName">Écosse</h1>
+    </section>
 
     <footer class="match-footer">
-        <p class="match-info">
-            <strong>But :</strong> Ismael Saibari, 2e minute
-        </p>
+      <p id="matchInfo">Chargement des informations du match…</p>
+      <div id="pagination" class="pagination" aria-hidden="true"></div>
     </footer>
 
-</div>
+    <img class="official-logo" src="logo.png" alt="Zone Mondial 26">
+  </main>
 
-<img class="zone-logo" src="logo.png" alt="Zone Mondial 26">
+  <div id="connectionState" class="connection-state" hidden>
+    Mise à jour des scores…
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

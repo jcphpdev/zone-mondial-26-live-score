@@ -4,15 +4,14 @@
 - `admin.html` : interface de mise à jour manuelle des matchs.
 - `scores.json` : données affichées par l’overlay.
 
-## Publication directe depuis l’administration
+## Publication instantanée avec Firebase
 
-1. Ouvrir `admin.html` depuis le site publié.
-2. Créer un token GitHub fine-grained limité à ce dépôt, avec la permission
-   `Contents: Read and write`.
-3. Saisir le token et cliquer sur **Vérifier la connexion**.
-4. Modifier les équipes, les scores, la minute et le statut.
-5. Cliquer sur **Publier sur GitHub**.
+1. Créer un projet Firebase et une Realtime Database.
+2. Activer Firebase Authentication avec le fournisseur E-mail/Mot de passe.
+3. Créer le compte administrateur.
+4. Copier la configuration Web dans `firebase-config.js`.
+5. Publier le projet sur GitHub Pages.
+6. Se connecter dans `admin.html`, puis cliquer sur **Publier en direct**.
 
-Le token est stocké uniquement dans `sessionStorage` et disparaît à la
-fermeture de l’onglet. L’overlay vérifie automatiquement le fichier toutes les
-30 secondes après sa publication par GitHub Pages.
+L’overlay écoute `/liveScores` en temps réel. `scores.json` reste disponible
+comme secours si Firebase n’est pas configuré ou temporairement indisponible.

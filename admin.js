@@ -1,21 +1,47 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import {
+  get,
+  getDatabase,
+  ref,
+  set
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+import {
+  firebaseConfig,
+  firebaseConfigured
+} from "./firebase-config.js";
+
 const DRAFT_KEY = "zone-mondial-26-scores-draft";
-const TOKEN_KEY = "zone-mondial-26-github-token";
-const GITHUB_OWNER = "jcphpdev";
-const GITHUB_REPO = "zone-mondial-26-live-score";
-const GITHUB_FILE = "scores.json";
-const GITHUB_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
+const AUTO_PUBLISH_DELAY = 650;
 
 const editor = document.getElementById("matchesEditor");
 const template = document.getElementById("matchTemplate");
 const updatedAtInput = document.getElementById("updatedAt");
 const notice = document.getElementById("notice");
 const matchCount = document.getElementById("matchCount");
-const githubTokenInput = document.getElementById("githubToken");
-const githubState = document.getElementById("githubState");
+const firebaseEmailInput = document.getElementById("firebaseEmail");
+const firebasePasswordInput = document.getElementById("firebasePassword");
+const firebaseState = document.getElementById("firebaseState");
+const autoPublishToggle = document.getElementById("autoPublishToggle");
 const publishButton = document.getElementById("publishButton");
 
 let matches = [];
 let draftTimer;
+let autoPublishTimer;
+let firebaseAuth;
+let firebaseDatabase;
+let currentUser = null;
+
+if (firebaseConfigured) {
+  const app = initializeApp(firebaseConfig);
+  firebaseAuth = getAuth(app);
+  firebaseDatabase = getDatabase(app);
+}
 
 function text(value, fallback = "") {
   return value === undefined || value === null ? fallback : String(value);
@@ -56,6 +82,12 @@ function showNotice(message, isError = false) {
   }, 4500);
 }
 
+function setFirebaseState(connected, label = "") {
+  firebaseState.classList.toggle("online", connected);
+  firebaseState.classList.toggle("offline", !connected);
+  firebaseState.textContent = label || (connected ? "Connecté" : "Non connecté");
+}
+
 function emptyMatch() {
   return {
     competition: "Coupe du Monde 2026",
@@ -93,15 +125,21 @@ function saveDraft() {
   }));
 }
 
+function scheduleAutoPublish() {
+  if (!autoPublishToggle.checked || !currentUser) return;
+  window.clearTimeout(autoPublishTimer);
+  autoPublishTimer = window.setTimeout(() => publishToFirebase(true), AUTO_PUBLISH_DELAY);
+}
+
 function scheduleDraftSave() {
   window.clearTimeout(draftTimer);
   draftTimer = window.setTimeout(saveDraft, 250);
+  scheduleAutoPublish();
 }
 
 function updateFlagPreview(card, side) {
   const code = card.querySelector(`[data-field="${side}_code"]`).value;
-  const preview = card.querySelector(`[data-preview="${side}"]`);
-  preview.src = flagUrl(code);
+  card.querySelector(`[data-preview="${side}"]`).src = flagUrl(code);
 }
 
 function fillCard(card, match, index) {
@@ -124,14 +162,12 @@ function fillCard(card, match, index) {
 
 function bindCard(card) {
   card.addEventListener("input", event => {
-    if (event.target.matches('[data-field="home_code"]')) {
-      updateFlagPreview(card, "home");
-    }
-    if (event.target.matches('[data-field="away_code"]')) {
-      updateFlagPreview(card, "away");
-    }
+    if (event.target.matches('[data-field="home_code"]')) updateFlagPreview(card, "home");
+    if (event.target.matches('[data-field="away_code"]')) updateFlagPreview(card, "away");
     scheduleDraftSave();
   });
+
+  card.addEventListener("change", scheduleDraftSave);
 
   card.querySelectorAll("[data-score-action]").forEach(button => {
     button.addEventListener("click", () => {
@@ -150,6 +186,7 @@ function bindCard(card) {
     card.remove();
     refreshCardNumbers();
     saveDraft();
+    scheduleAutoPublish();
   });
 
   card.querySelector(".duplicate-match").addEventListener("click", () => {
@@ -205,156 +242,89 @@ function buildJson() {
   return `${JSON.stringify(buildData(), null, 2)}\n`;
 }
 
-function encodeBase64Utf8(value) {
-  const bytes = new TextEncoder().encode(value);
-  let binary = "";
-  bytes.forEach(byte => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
-
-function getToken() {
-  return githubTokenInput.value.trim();
-}
-
-function setGithubState(connected, label = "") {
-  githubState.classList.toggle("online", connected);
-  githubState.classList.toggle("offline", !connected);
-  githubState.textContent = label || (connected ? "Connecté" : "Non connecté");
-}
-
-function githubHeaders(token) {
-  return {
-    Accept: "application/vnd.github+json",
-    Authorization: `Bearer ${token}`,
-    "X-GitHub-Api-Version": "2022-11-28"
+function firebaseErrorMessage(error) {
+  const messages = {
+    "auth/invalid-credential": "E-mail ou mot de passe incorrect.",
+    "auth/invalid-email": "Adresse e-mail invalide.",
+    "auth/too-many-requests": "Trop de tentatives. Réessayez plus tard.",
+    "auth/network-request-failed": "Connexion réseau impossible.",
+    "PERMISSION_DENIED": "Écriture refusée par les règles Firebase."
   };
+  return messages[error.code] || messages[error.message] || error.message;
 }
 
-async function githubRequest(path, options = {}) {
-  const token = getToken();
-  if (!token) {
-    throw new Error("Saisissez d’abord votre token GitHub.");
+async function loginToFirebase() {
+  if (!firebaseConfigured) {
+    showNotice("Firebase n’est pas encore configuré dans firebase-config.js.", true);
+    return;
   }
 
-  const response = await fetch(`${GITHUB_API}${path}`, {
-    ...options,
-    headers: {
-      ...githubHeaders(token),
-      ...(options.headers || {})
-    }
-  });
-
-  let data = {};
-  try {
-    data = await response.json();
-  } catch {
-    // Certaines réponses GitHub peuvent ne pas contenir de JSON.
+  const email = firebaseEmailInput.value.trim();
+  const password = firebasePasswordInput.value;
+  if (!email || !password) {
+    showNotice("Saisissez l’e-mail et le mot de passe administrateur.", true);
+    return;
   }
 
-  if (!response.ok) {
-    const message = data.message || `Erreur GitHub ${response.status}`;
-    if (response.status === 401) {
-      throw new Error("Token invalide ou expiré.");
-    }
-    if (response.status === 403) {
-      throw new Error(
-        "Accès refusé. Vérifiez la permission « Contents: Read and write » du token."
-      );
-    }
-    if (response.status === 409) {
-      throw new Error(
-        "Le fichier a changé sur GitHub. Rechargez les données puis réessayez."
-      );
-    }
-    throw new Error(message);
-  }
-
-  return data;
-}
-
-async function verifyGithubToken() {
-  const button = document.getElementById("verifyTokenButton");
-  const originalLabel = button.textContent;
+  const button = document.getElementById("firebaseLoginButton");
   button.disabled = true;
-  button.textContent = "Vérification…";
-
+  button.textContent = "Connexion…";
   try {
-    const repository = await githubRequest("");
-    sessionStorage.setItem(TOKEN_KEY, getToken());
-    setGithubState(true, `Connecté : ${repository.full_name}`);
-    showNotice("Connexion GitHub vérifiée. Vous pouvez publier les scores.");
-    return true;
+    await signInWithEmailAndPassword(firebaseAuth, email, password);
+    firebasePasswordInput.value = "";
+    showNotice("Connexion Firebase réussie.");
   } catch (error) {
     console.error(error);
-    sessionStorage.removeItem(TOKEN_KEY);
-    setGithubState(false);
-    showNotice(error.message, true);
-    return false;
+    showNotice(firebaseErrorMessage(error), true);
   } finally {
     button.disabled = false;
-    button.textContent = originalLabel;
+    button.textContent = "Se connecter";
   }
 }
 
-async function publishToGithub() {
-  if (!getToken()) {
-    showNotice("Saisissez et vérifiez d’abord votre token GitHub.", true);
-    githubTokenInput.focus();
+async function logoutFromFirebase() {
+  if (!firebaseAuth) return;
+  await signOut(firebaseAuth);
+  autoPublishToggle.checked = false;
+  showNotice("Vous êtes déconnecté de Firebase.");
+}
+
+async function publishToFirebase(silent = false) {
+  if (!firebaseConfigured) {
+    showNotice("Configurez d’abord firebase-config.js.", true);
+    return;
+  }
+  if (!currentUser) {
+    showNotice("Connectez-vous à Firebase avant de publier.", true);
     return;
   }
 
   const originalLabel = publishButton.textContent;
-  publishButton.disabled = true;
-  publishButton.textContent = "Publication…";
+  if (!silent) {
+    publishButton.disabled = true;
+    publishButton.textContent = "Publication…";
+  }
 
   try {
     updatedAtInput.value = formatCasablancaDate();
-    saveDraft();
-
-    const currentFile = await githubRequest(
-      `/contents/${encodeURIComponent(GITHUB_FILE)}?ref=main`
-    );
-    const result = await githubRequest(
-      `/contents/${encodeURIComponent(GITHUB_FILE)}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message: `Mise à jour des scores — ${updatedAtInput.value}`,
-          content: encodeBase64Utf8(buildJson()),
-          sha: currentFile.sha,
-          branch: "main"
-        })
-      }
-    );
-
-    sessionStorage.setItem(TOKEN_KEY, getToken());
+    const data = buildData();
+    await set(ref(firebaseDatabase, "liveScores"), data);
     localStorage.removeItem(DRAFT_KEY);
-    setGithubState(true);
-
-    const commitUrl = result.commit?.html_url;
-    notice.innerHTML = commitUrl
-      ? `Scores publiés avec succès. <a href="${commitUrl}" target="_blank" rel="noopener noreferrer">Voir le commit GitHub</a>.`
-      : "Scores publiés avec succès sur GitHub.";
-    notice.classList.remove("error");
-    notice.hidden = false;
+    if (!silent) showNotice("Scores publiés instantanément dans Firebase.");
   } catch (error) {
     console.error(error);
-    showNotice(error.message, true);
+    showNotice(firebaseErrorMessage(error), true);
   } finally {
-    publishButton.disabled = false;
-    publishButton.textContent = originalLabel;
+    if (!silent) {
+      publishButton.disabled = false;
+      publishButton.textContent = originalLabel;
+    }
   }
 }
 
 function downloadJson() {
   updatedAtInput.value = formatCasablancaDate();
   saveDraft();
-
   const blob = new Blob([buildJson()], { type: "application/json;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -364,7 +334,7 @@ function downloadJson() {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
-  showNotice("Le nouveau fichier scores.json a été téléchargé.");
+  showNotice("Le fichier scores.json de secours a été téléchargé.");
 }
 
 async function copyJson() {
@@ -390,16 +360,23 @@ async function loadScores(ignoreDraft = false) {
       }
     }
 
-    const response = await fetch(`scores.json?t=${Date.now()}`, {
-      cache: "no-store"
-    });
+    if (firebaseConfigured) {
+      const snapshot = await get(ref(firebaseDatabase, "liveScores"));
+      if (snapshot.exists()) {
+        render(snapshot.val());
+        showNotice("Les scores Firebase ont été chargés.");
+        return;
+      }
+    }
+
+    const response = await fetch(`scores.json?t=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     render(await response.json());
-    showNotice("Le fichier scores.json a été chargé.");
+    showNotice("Le fichier scores.json de secours a été chargé.");
   } catch (error) {
     console.error(error);
     render({ updated_at: formatCasablancaDate(), matches: [emptyMatch()] });
-    showNotice("Le fichier n’a pas pu être chargé. Un formulaire vide a été créé.", true);
+    showNotice("Les données n’ont pas pu être chargées.", true);
   }
 }
 
@@ -414,44 +391,42 @@ document.getElementById("setNowButton").addEventListener("click", () => {
 });
 
 document.getElementById("reloadButton").addEventListener("click", () => {
-  const confirmed = window.confirm(
-    "Recharger scores.json et remplacer le brouillon actuellement affiché ?"
-  );
-  if (!confirmed) return;
+  if (!window.confirm("Recharger les données distantes et remplacer le brouillon ?")) return;
   localStorage.removeItem(DRAFT_KEY);
   loadScores(true);
 });
 
 document.getElementById("downloadButton").addEventListener("click", downloadJson);
 document.getElementById("copyButton").addEventListener("click", copyJson);
-document.getElementById("verifyTokenButton").addEventListener("click", verifyGithubToken);
-publishButton.addEventListener("click", publishToGithub);
-
-document.getElementById("toggleTokenButton").addEventListener("click", event => {
-  const visible = githubTokenInput.type === "text";
-  githubTokenInput.type = visible ? "password" : "text";
-  event.currentTarget.textContent = visible ? "Afficher" : "Masquer";
-});
-
-document.getElementById("forgetTokenButton").addEventListener("click", () => {
-  sessionStorage.removeItem(TOKEN_KEY);
-  githubTokenInput.value = "";
-  githubTokenInput.type = "password";
-  document.getElementById("toggleTokenButton").textContent = "Afficher";
-  setGithubState(false);
-  showNotice("Le token a été supprimé de cet onglet.");
-});
-
-githubTokenInput.addEventListener("input", () => {
-  sessionStorage.setItem(TOKEN_KEY, getToken());
-  setGithubState(false, getToken() ? "À vérifier" : "Non connecté");
-});
-
+document.getElementById("firebaseLoginButton").addEventListener("click", loginToFirebase);
+document.getElementById("firebaseLogoutButton").addEventListener("click", logoutFromFirebase);
+publishButton.addEventListener("click", () => publishToFirebase(false));
 updatedAtInput.addEventListener("input", scheduleDraftSave);
+autoPublishToggle.addEventListener("change", () => {
+  if (autoPublishToggle.checked && !currentUser) {
+    autoPublishToggle.checked = false;
+    showNotice("Connectez-vous avant d’activer la publication automatique.", true);
+    return;
+  }
+  if (autoPublishToggle.checked) publishToFirebase(true);
+});
 
-githubTokenInput.value = sessionStorage.getItem(TOKEN_KEY) || "";
-if (githubTokenInput.value) {
-  setGithubState(false, "Token mémorisé dans cet onglet");
+firebasePasswordInput.addEventListener("keydown", event => {
+  if (event.key === "Enter") loginToFirebase();
+});
+
+if (firebaseConfigured) {
+  onAuthStateChanged(firebaseAuth, user => {
+    currentUser = user;
+    if (user) {
+      firebaseEmailInput.value = user.email || "";
+      setFirebaseState(true, `Connecté : ${user.email}`);
+    } else {
+      setFirebaseState(false);
+    }
+  });
+} else {
+  setFirebaseState(false, "Configuration requise");
 }
 
 loadScores();

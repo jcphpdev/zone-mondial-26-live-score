@@ -35,8 +35,8 @@
         <p class="eyebrow">TABLEAU DE CONTRÔLE</p>
         <h1>Mettre à jour les matchs</h1>
         <p>
-          Modifiez les données puis publiez directement le fichier
-          <code>scores.json</code> sur GitHub.
+          Modifiez les données puis publiez-les instantanément dans
+          Firebase Realtime Database.
         </p>
       </div>
 
@@ -60,59 +60,64 @@
 
     <section id="matchesEditor" class="matches-editor"></section>
 
-    <section class="github-panel">
+    <section class="github-panel firebase-panel">
       <div class="github-heading">
         <div>
           <p class="eyebrow">PUBLICATION À DISTANCE</p>
-          <h2>Connexion GitHub</h2>
+          <h2>Connexion Firebase</h2>
           <p>
-            Utilisez un token limité au dépôt avec la permission
-            <strong>Contents: Read and write</strong>. Il reste uniquement dans
-            cet onglet et disparaît lorsque vous le fermez.
+            Connectez-vous avec le compte administrateur créé dans Firebase
+            Authentication. Le mot de passe n’est jamais enregistré par cette page.
           </p>
         </div>
-        <span id="githubState" class="github-state offline">Non connecté</span>
+        <span id="firebaseState" class="github-state offline">Non connecté</span>
       </div>
 
       <div class="token-row">
-        <div class="field token-field">
-          <label for="githubToken">Token GitHub</label>
-          <div class="password-input">
-            <input
-              id="githubToken"
-              type="password"
-              autocomplete="off"
-              spellcheck="false"
-              placeholder="github_pat_..."
-            >
-            <button id="toggleTokenButton" type="button">Afficher</button>
-          </div>
+        <div class="field">
+          <label for="firebaseEmail">E-mail administrateur</label>
+          <input
+            id="firebaseEmail"
+            type="email"
+            autocomplete="username"
+            placeholder="admin@exemple.com"
+          >
         </div>
-        <button id="verifyTokenButton" class="button secondary" type="button">
-          Vérifier la connexion
+        <div class="field token-field">
+          <label for="firebasePassword">Mot de passe</label>
+          <input
+            id="firebasePassword"
+            type="password"
+            autocomplete="current-password"
+            placeholder="••••••••••••"
+          >
+        </div>
+        <button id="firebaseLoginButton" class="button secondary" type="button">
+          Se connecter
         </button>
-        <button id="forgetTokenButton" class="button ghost" type="button">
-          Oublier le token
+        <button id="firebaseLogoutButton" class="button ghost" type="button">
+          Se déconnecter
         </button>
       </div>
 
       <p class="security-note">
-        Ne saisissez pas votre mot de passe GitHub. Créez un
-        <a
-          href="https://github.com/settings/personal-access-tokens/new"
-          target="_blank"
-          rel="noopener noreferrer"
-        >token fine-grained</a>
-        réservé au dépôt <code>jcphpdev/zone-mondial-26-live-score</code>.
+        Une fois connecté, chaque clic sur « Publier en direct » met à jour
+        l’overlay immédiatement. Activez le mode automatique pour publier les
+        boutons de score et les champs après une courte temporisation.
       </p>
+
+      <label class="realtime-toggle">
+        <input id="autoPublishToggle" type="checkbox">
+        <span>Publication automatique en temps réel</span>
+      </label>
     </section>
 
     <section class="export-panel">
       <div>
         <h2>Publier les modifications</h2>
         <p>
-          Un commit sera créé automatiquement sur GitHub. L’overlay recevra
-          ensuite la nouvelle version dès que GitHub Pages l’aura publiée.
+          Les données seront écrites directement dans Firebase Realtime Database.
+          Aucun commit ni redéploiement GitHub Pages ne sera nécessaire.
         </p>
       </div>
       <div class="export-actions">
@@ -120,7 +125,7 @@
           Copier le JSON
         </button>
         <button id="publishButton" class="button publish" type="button">
-          Publier sur GitHub
+          Publier en direct
         </button>
       </div>
     </section>
@@ -214,6 +219,6 @@
     </article>
   </template>
 
-  <script src="admin.js"></script>
+  <script type="module" src="admin.js"></script>
 </body>
 </html>

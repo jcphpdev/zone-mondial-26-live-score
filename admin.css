@@ -505,7 +505,7 @@ a {
 
 .token-row {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) auto auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto auto;
   align-items: end;
   gap: 12px;
   margin-top: 20px;
@@ -550,6 +550,23 @@ a {
 .security-note code {
   color: var(--navy);
   font-weight: 700;
+}
+
+.realtime-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  color: var(--navy);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.realtime-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--green);
 }
 
 .export-panel {
@@ -610,7 +627,7 @@ a {
   }
 
   .token-field {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 }
 

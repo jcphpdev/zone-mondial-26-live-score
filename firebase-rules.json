@@ -3,7 +3,7 @@
     "liveScores": {
       ".read": true,
       ".write": "auth != null",
-      ".validate": "newData.hasChildren(['updated_at', 'matches'])"
+      ".validate": "newData.hasChildren(['updated_at', 'matches', 'groups'])"
     },
     "$other": {
       ".read": false,

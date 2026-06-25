@@ -60,6 +60,18 @@
 
     <section id="matchesEditor" class="matches-editor"></section>
 
+    <section class="toolbar standings-toolbar">
+      <div>
+        <h2>Classements <span id="groupCount">0</span></h2>
+        <p>Créez un tableau pour chaque groupe et choisissez ceux affichés dans le live.</p>
+      </div>
+      <button id="addGroupButton" class="button add" type="button">
+        + Ajouter un groupe
+      </button>
+    </section>
+
+    <section id="groupsEditor" class="matches-editor groups-editor"></section>
+
     <section class="github-panel firebase-panel">
       <div class="github-heading">
         <div>
@@ -136,11 +148,12 @@
       <div class="match-editor-header">
         <span class="match-number"></span>
         <div class="card-actions">
+          <label class="publish-switch">
+            <input data-field="published" type="checkbox" checked>
+            <span>Publié</span>
+          </label>
           <button class="icon-button duplicate-match" type="button" title="Dupliquer">
             Dupliquer
-          </button>
-          <button class="icon-button danger remove-match" type="button" title="Supprimer">
-            Supprimer
           </button>
         </div>
       </div>
@@ -217,6 +230,60 @@
         </div>
       </div>
     </article>
+  </template>
+
+  <template id="groupTemplate">
+    <article class="match-editor group-editor">
+      <div class="match-editor-header">
+        <span class="group-number"></span>
+        <div class="card-actions">
+          <label class="publish-switch">
+            <input data-group-field="published" type="checkbox" checked>
+            <span>Publié</span>
+          </label>
+          <button class="icon-button duplicate-group" type="button">Dupliquer</button>
+          <button class="icon-button danger remove-group" type="button">Supprimer</button>
+        </div>
+      </div>
+
+      <div class="group-meta">
+        <div class="field">
+          <label>Nom du groupe</label>
+          <input data-group-field="name" type="text" placeholder="Groupe A">
+        </div>
+        <div class="field">
+          <label>Sous-titre</label>
+          <input data-group-field="subtitle" type="text" placeholder="Coupe du Monde 2026">
+        </div>
+      </div>
+
+      <div class="standings-editor-table">
+        <div class="standings-editor-head">
+          <span>Équipe</span><span>J</span><span>G</span><span>N</span><span>P</span>
+          <span>BP</span><span>BC</span><span>Pts</span><span></span>
+        </div>
+        <div class="group-teams"></div>
+      </div>
+
+      <button class="button secondary add-team" type="button">+ Ajouter une équipe</button>
+    </article>
+  </template>
+
+  <template id="standingTeamTemplate">
+    <div class="standing-team-row">
+      <div class="standing-team-name">
+        <input data-team-field="code" type="text" maxlength="6" placeholder="ma" title="Code drapeau">
+        <input data-team-field="name" type="text" placeholder="Maroc">
+      </div>
+      <input data-team-field="played" type="number" min="0" value="0">
+      <input data-team-field="wins" type="number" min="0" value="0">
+      <input data-team-field="draws" type="number" min="0" value="0">
+      <input data-team-field="losses" type="number" min="0" value="0">
+      <input data-team-field="gf" type="number" min="0" value="0">
+      <input data-team-field="ga" type="number" min="0" value="0">
+      <input data-team-field="points" type="number" min="0" value="0">
+      <button class="remove-team" type="button" title="Retirer l’équipe">×</button>
+    </div>
   </template>
 
   <script type="module" src="admin.js"></script>

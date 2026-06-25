@@ -2,6 +2,7 @@
   "updated_at": "2026-06-24 18:10",
   "matches": [
     {
+      "published": true,
       "competition": "Coupe du Monde 2026",
       "home": "République tchèque",
       "home_code": "cz",
@@ -14,6 +15,7 @@
       "info": ""
     },
     {
+      "published": true,
       "competition": "Coupe du Monde 2026",
       "home": "Afrique du Sud",
       "home_code": "za",
@@ -25,5 +27,6 @@
       "status": "Reporté",
       "info": ""
     }
-  ]
+  ],
+  "groups": []
 }

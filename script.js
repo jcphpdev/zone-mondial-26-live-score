@@ -1,13 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-import {
-  getDatabase,
-  onValue,
-  ref
-} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
-import {
-  firebaseConfig,
-  firebaseConfigured
-} from "./firebase-config.js";
+import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
 
 const ROTATION_INTERVAL = 10_000;
 const JSON_REFRESH_INTERVAL = 30_000;
@@ -25,101 +18,127 @@ const elements = {
   minute: document.getElementById("minute"),
   matchInfo: document.getElementById("matchInfo"),
   pagination: document.getElementById("pagination"),
+  groupName: document.getElementById("groupName"),
+  groupSubtitle: document.getElementById("groupSubtitle"),
+  standingsRows: document.getElementById("standingsRows"),
   connectionState: document.getElementById("connectionState")
 };
 
-let matches = [];
-let activeMatch = 0;
+let scenes = [];
+let activeScene = 0;
 let jsonFallbackTimer;
 
-function escapeText(value, fallback = "") {
-  return value === undefined || value === null ? fallback : String(value);
+const value = (input, fallback = "") =>
+  input === undefined || input === null ? fallback : String(input);
+
+function flagUrl(code) {
+  const normalized = value(code).trim().toLowerCase();
+  return normalized ? `https://flagcdn.com/${normalized}.svg` : "";
 }
 
 function isFinished(match) {
-  const finishedValues = ["FT", "FIN", "TERMINÉ", "TERMINE"];
-  return finishedValues.includes(escapeText(match.minute).trim().toUpperCase())
-    || finishedValues.includes(escapeText(match.status).trim().toUpperCase());
-}
-
-function flagUrl(match, side) {
-  const directUrl = escapeText(match[`${side}_flag_url`]).trim();
-  if (directUrl) return directUrl;
-
-  const code = escapeText(match[`${side}_code`]).trim().toLowerCase();
-  return code ? `https://flagcdn.com/${code}.svg` : "";
-}
-
-function createMatchInfo(match) {
-  if (match.info) return escapeText(match.info);
-  if (match.scorers) return escapeText(match.scorers);
-
-  const venue = escapeText(match.venue);
-  const updated = escapeText(match.updated_at);
-  if (venue && updated) return `${venue} • Mis à jour ${updated}`;
-  if (venue) return venue;
-  return "Scores mis à jour automatiquement";
+  const values = ["FT", "FIN", "TERMINÉ", "TERMINE"];
+  return values.includes(value(match.minute).trim().toUpperCase())
+    || values.includes(value(match.status).trim().toUpperCase());
 }
 
 function renderPagination() {
-  elements.pagination.innerHTML = matches
-    .map((_, index) => `<span class="${index === activeMatch ? "active" : ""}"></span>`)
+  elements.pagination.innerHTML = scenes
+    .map((_, index) => `<span class="${index === activeScene ? "active" : ""}"></span>`)
     .join("");
 }
 
-function renderMatch() {
-  if (!matches.length) {
-    elements.matchInfo.textContent = "Aucun match disponible";
-    return;
-  }
-
-  const match = matches[activeMatch];
-  const finished = isFinished(match);
-
-  elements.competition.textContent = escapeText(
-    match.competition,
-    "COUPE DU MONDE 2026"
-  );
-  elements.status.textContent = finished ? "TERMINÉ" : escapeText(match.status, "EN DIRECT");
-  elements.homeFlag.src = flagUrl(match, "home");
-  elements.homeFlag.alt = `Drapeau ${escapeText(match.home, "équipe 1")}`;
-  elements.homeName.textContent = escapeText(match.home, "Équipe 1");
-  elements.homeScore.textContent = escapeText(match.home_score, "0");
-  elements.awayScore.textContent = escapeText(match.away_score, "0");
-  elements.awayFlag.src = flagUrl(match, "away");
-  elements.awayFlag.alt = `Drapeau ${escapeText(match.away, "équipe 2")}`;
-  elements.awayName.textContent = escapeText(match.away, "Équipe 2");
-  elements.minute.textContent = finished
-    ? "TERMINÉ"
-    : escapeText(match.minute, "EN DIRECT");
-  elements.minute.classList.toggle("is-finished", finished);
-  elements.matchInfo.textContent = createMatchInfo(match);
-
-  renderPagination();
+function animate() {
   elements.scoreboard.classList.remove("is-changing");
   void elements.scoreboard.offsetWidth;
   elements.scoreboard.classList.add("is-changing");
 }
 
-function applyScores(data) {
-  matches = Array.isArray(data?.matches)
-    ? data.matches.map(match => ({ ...match, updated_at: data.updated_at }))
-    : [];
-  activeMatch = Math.min(activeMatch, Math.max(matches.length - 1, 0));
+function renderMatch(match) {
+  elements.scoreboard.classList.remove("show-standings");
+  const finished = isFinished(match);
+  elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
+  elements.status.textContent = finished ? "TERMINÉ" : value(match.status, "EN DIRECT");
+  elements.homeFlag.src = flagUrl(match.home_code);
+  elements.homeName.textContent = value(match.home, "Équipe 1");
+  elements.homeScore.textContent = value(match.home_score, "0");
+  elements.awayScore.textContent = value(match.away_score, "0");
+  elements.awayFlag.src = flagUrl(match.away_code);
+  elements.awayName.textContent = value(match.away, "Équipe 2");
+  elements.minute.textContent = finished ? "TERMINÉ" : value(match.minute, "EN DIRECT");
+  elements.minute.classList.toggle("is-finished", finished);
+  elements.matchInfo.textContent = value(
+    match.info || match.scorers || match.venue,
+    "Scores mis à jour automatiquement"
+  );
+}
+
+function renderGroup(group) {
+  elements.scoreboard.classList.add("show-standings");
+  elements.competition.textContent = value(group.subtitle, "COUPE DU MONDE 2026");
+  elements.status.textContent = "CLASSEMENT";
+  elements.groupName.textContent = value(group.name, "GROUPE");
+  elements.groupSubtitle.textContent = value(group.subtitle, "COUPE DU MONDE 2026");
+  const teams = Array.isArray(group.teams) ? group.teams : [];
+  elements.standingsRows.innerHTML = teams.map((team, index) => {
+    const difference = Number(team.gf || 0) - Number(team.ga || 0);
+    const diffLabel = difference > 0 ? `+${difference}` : difference;
+    return `
+      <div class="standing-row">
+        <span>${index + 1}</span>
+        <span class="standing-country">
+          <img src="${flagUrl(team.code)}" alt="">
+          <strong>${value(team.name, "Équipe")}</strong>
+        </span>
+        <span>${Number(team.played || 0)}</span>
+        <span>${Number(team.wins || 0)}</span>
+        <span>${Number(team.draws || 0)}</span>
+        <span>${Number(team.losses || 0)}</span>
+        <span>${diffLabel}</span>
+        <span class="standing-points">${Number(team.points || 0)}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderScene() {
+  if (!scenes.length) {
+    elements.scoreboard.classList.remove("show-standings");
+    elements.matchInfo.textContent = "Aucun contenu publié";
+    return;
+  }
+  const scene = scenes[activeScene];
+  scene.type === "group" ? renderGroup(scene.data) : renderMatch(scene.data);
+  renderPagination();
+  animate();
+}
+
+function applyData(data) {
+  const publishedMatches = (Array.isArray(data?.matches) ? data.matches : [])
+    .filter(match => match.published !== false)
+    .map(match => ({ type: "match", data: match }));
+  const publishedGroups = (Array.isArray(data?.groups) ? data.groups : [])
+    .filter(group => group.published !== false)
+    .map(group => ({ type: "group", data: group }));
+  scenes = [...publishedMatches, ...publishedGroups];
+  const requestedScene = new URLSearchParams(window.location.search).get("scene");
+  if (requestedScene === "group") {
+    activeScene = scenes.findIndex(scene => scene.type === "group");
+    if (activeScene < 0) activeScene = 0;
+  } else {
+    activeScene = Math.min(activeScene, Math.max(scenes.length - 1, 0));
+  }
   elements.connectionState.hidden = true;
-  renderMatch();
+  renderScene();
 }
 
 async function loadJsonFallback() {
   try {
-    const response = await fetch(`scores.json?t=${Date.now()}`, {
-      cache: "no-store"
-    });
+    const response = await fetch(`scores.json?t=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    applyScores(await response.json());
+    applyData(await response.json());
   } catch (error) {
-    console.error("Impossible de charger scores.json :", error);
-    elements.connectionState.textContent = "Connexion aux scores impossible";
+    elements.connectionState.textContent = "Connexion aux données impossible";
     elements.connectionState.hidden = false;
   }
 }
@@ -127,51 +146,31 @@ async function loadJsonFallback() {
 function startJsonFallback() {
   loadJsonFallback();
   if (!jsonFallbackTimer) {
-    jsonFallbackTimer = window.setInterval(loadJsonFallback, JSON_REFRESH_INTERVAL);
+    jsonFallbackTimer = setInterval(loadJsonFallback, JSON_REFRESH_INTERVAL);
   }
 }
 
-function startFirebaseRealtime() {
-  if (!firebaseConfigured) {
-    console.info("Firebase non configuré : utilisation de scores.json.");
+function startRealtime() {
+  if (new URLSearchParams(window.location.search).get("source") === "json") {
     startJsonFallback();
     return;
   }
-
-  try {
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
-
-    onValue(
-      ref(database, "liveScores"),
-      snapshot => {
-        const data = snapshot.val();
-        if (data?.matches) {
-          window.clearInterval(jsonFallbackTimer);
-          jsonFallbackTimer = undefined;
-          applyScores(data);
-        } else {
-          startJsonFallback();
-        }
-      },
-      error => {
-        console.error("Écoute Firebase impossible :", error);
-        elements.connectionState.textContent = "Firebase indisponible — mode secours";
-        elements.connectionState.hidden = false;
-        startJsonFallback();
-      }
-    );
-  } catch (error) {
-    console.error("Initialisation Firebase impossible :", error);
-    startJsonFallback();
-  }
+  if (!firebaseConfigured) return startJsonFallback();
+  const database = getDatabase(initializeApp(firebaseConfig));
+  onValue(ref(database, "liveScores"), snapshot => {
+    const data = snapshot.val();
+    if (!data) return startJsonFallback();
+    clearInterval(jsonFallbackTimer);
+    jsonFallbackTimer = undefined;
+    applyData(data);
+  }, startJsonFallback);
 }
 
-function rotateMatch() {
-  if (matches.length < 2) return;
-  activeMatch = (activeMatch + 1) % matches.length;
-  renderMatch();
+function rotateScene() {
+  if (scenes.length < 2) return;
+  activeScene = (activeScene + 1) % scenes.length;
+  renderScene();
 }
 
-startFirebaseRealtime();
-window.setInterval(rotateMatch, ROTATION_INTERVAL);
+startRealtime();
+setInterval(rotateScene, ROTATION_INTERVAL);

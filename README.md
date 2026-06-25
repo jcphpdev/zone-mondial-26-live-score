@@ -15,3 +15,12 @@
 
 L’overlay écoute `/liveScores` en temps réel. `scores.json` reste disponible
 comme secours si Firebase n’est pas configuré ou temporairement indisponible.
+
+## Matchs archivés et classements
+
+- Décochez **Publié** pour retirer un ancien match du live sans le supprimer.
+- Les matchs dépubliés restent enregistrés dans Firebase et peuvent être
+  republiés ultérieurement.
+- Utilisez **Ajouter un groupe** pour saisir un classement.
+- Chaque classement possède également son propre interrupteur **Publié**.
+- L’overlay alterne automatiquement entre les matchs et classements publiés.

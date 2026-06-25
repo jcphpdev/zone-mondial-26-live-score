@@ -267,9 +267,25 @@ a {
   font-size: 13px;
 }
 
+.standings-toolbar {
+  align-items: flex-end;
+  margin-top: 42px;
+}
+
+.standings-toolbar p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .matches-editor {
   display: grid;
   gap: 22px;
+}
+
+.match-editor.is-unpublished {
+  border-top-color: #98a0b4;
+  opacity: 0.72;
 }
 
 .match-editor {
@@ -297,8 +313,35 @@ a {
 }
 
 .card-actions {
+  align-items: center;
   display: flex;
   gap: 8px;
+}
+
+.publish-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  color: #687086;
+  background: #f3f5fb;
+  border: 1px solid #d9deed;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.publish-switch input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--green);
+}
+
+.publish-switch:has(input:checked) {
+  color: #145a2a;
+  background: #e8f7ec;
+  border-color: #b9e3c3;
 }
 
 .icon-button {
@@ -451,6 +494,85 @@ a {
   grid-template-columns: 150px 190px 1fr;
   gap: 18px;
   margin-top: 24px;
+}
+
+.group-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.standings-editor-table {
+  overflow-x: auto;
+}
+
+.standings-editor-head,
+.standing-team-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 2.5fr) repeat(7, minmax(54px, 0.55fr)) 40px;
+  gap: 7px;
+  align-items: center;
+  min-width: 860px;
+}
+
+.standings-editor-head {
+  padding: 9px 8px;
+  color: #fff;
+  background: var(--navy);
+  border-radius: 8px 8px 0 0;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.standings-editor-head span:first-child {
+  text-align: left;
+}
+
+.standing-team-row {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.standing-team-row:nth-child(even) {
+  background: #f7f8fb;
+}
+
+.standing-team-row input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 6px;
+  text-align: center;
+  border: 1px solid #ccd2df;
+  border-radius: 5px;
+}
+
+.standing-team-name {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 7px;
+}
+
+.standing-team-name input:last-child {
+  text-align: left;
+}
+
+.remove-team {
+  width: 34px;
+  height: 34px;
+  color: #a0151c;
+  background: #fff0f1;
+  border: 1px solid #f0c7c9;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.add-team {
+  margin-top: 14px;
 }
 
 .github-panel {
@@ -616,6 +738,10 @@ a {
 
   .details-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .group-meta {
+    grid-template-columns: 1fr;
   }
 
   .info-field {

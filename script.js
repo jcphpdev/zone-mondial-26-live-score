@@ -119,19 +119,39 @@ function renderScene() {
 }
 
 function applyData(data) {
-  const publishedMatches = (Array.isArray(data?.matches) ? data.matches : [])
-    .filter(match => match.published !== false)
-    .map(match => ({ type: "match", data: match }));
-  const publishedGroups = (Array.isArray(data?.groups) ? data.groups : [])
-    .filter(group => group.published !== false)
-    .map(group => ({
+  const allMatches = Array.isArray(data?.matches) ? data.matches : [];
+  const allGroups = Array.isArray(data?.groups) ? data.groups : [];
+  const publishedMatches = allMatches.filter(match => match.published !== false);
+  const publishedGroupsById = new Map(
+    allGroups
+      .filter(group => group.published !== false)
+      .map(group => [group.id, group])
+  );
+  const displayedGroupIds = new Set();
+
+  scenes = [];
+  publishedMatches.forEach(match => {
+    scenes.push({ type: "match", data: match });
+
+    if (match.phase !== "group" || !match.group_id) return;
+    if (displayedGroupIds.has(match.group_id)) return;
+
+    const group = publishedGroupsById.get(match.group_id);
+    if (!group) return;
+
+    scenes.push({
       type: "group",
       data: {
         ...group,
-        teams: calculateStandings(group, data.matches || [], group.rules_profile)
+        // Les matchs dépubliés restent pris en compte dans l'historique
+        // du classement, mais seuls les groupes liés à un match publié
+        // apparaissent dans le live.
+        teams: calculateStandings(group, allMatches, group.rules_profile)
       }
-    }));
-  scenes = [...publishedMatches, ...publishedGroups];
+    });
+    displayedGroupIds.add(match.group_id);
+  });
+
   const requestedScene = new URLSearchParams(window.location.search).get("scene");
   if (requestedScene === "group") {
     activeScene = scenes.findIndex(scene => scene.type === "group");

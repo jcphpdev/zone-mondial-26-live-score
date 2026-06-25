@@ -31,4 +31,8 @@ comme secours si Firebase n’est pas configuré ou temporairement indisponible.
 - Le profil FIFA 2026 applique 3/1/0 et les critères de départage de l’article
   13 : confrontations directes, différence de buts, buts marqués, discipline,
   puis classement FIFA.
-- L’overlay alterne automatiquement entre les matchs et classements publiés.
+- L’overlay affiche uniquement les matchs publiés.
+- Un classement est affiché uniquement si son groupe est publié et qu’un match
+  publié de la phase de groupes lui est rattaché.
+- Les anciens matchs dépubliés restent pris en compte dans le calcul du
+  classement du groupe.

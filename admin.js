@@ -33,6 +33,13 @@ const firebasePasswordInput = document.getElementById("firebasePassword");
 const firebaseState = document.getElementById("firebaseState");
 const autoPublishToggle = document.getElementById("autoPublishToggle");
 const publishButton = document.getElementById("publishButton");
+const matchSearch = document.getElementById("matchSearch");
+const matchPhaseFilter = document.getElementById("matchPhaseFilter");
+const matchStatusFilter = document.getElementById("matchStatusFilter");
+const matchGroupFilter = document.getElementById("matchGroupFilter");
+const showUnpublishedMatches = document.getElementById("showUnpublishedMatches");
+const matchResultsInfo = document.getElementById("matchResultsInfo");
+const loadMoreMatches = document.getElementById("loadMoreMatches");
 
 let draftTimer;
 let autoPublishTimer;
@@ -40,6 +47,7 @@ let currentUser = null;
 let rendering = false;
 let firebaseAuth;
 let firebaseDatabase;
+let visibleMatchLimit = 30;
 
 if (firebaseConfigured) {
   const app = initializeApp(firebaseConfig);
@@ -203,10 +211,56 @@ function updateMatchAppearance(card) {
   card.querySelector(".publish-switch span").textContent = published ? "Publié" : "Dépublié";
 }
 
+function formatKickoffSummary(value) {
+  if (!value) return "Date à définir";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function updateMatchSummary(card) {
+  const match = readMatch(card);
+  const groupName = groupsEditor
+    .querySelector(`.group-editor[data-group-id="${CSS.escape(match.group_id || "")}"]`)
+    ?.querySelector('[data-group-field="name"]')?.value;
+  card.querySelector(".summary-date").textContent = formatKickoffSummary(match.kickoff);
+  card.querySelector(".summary-home").textContent = match.home || "Équipe 1";
+  card.querySelector(".summary-away").textContent = match.away || "Équipe 2";
+  card.querySelector(".summary-score").textContent = `${match.home_score} – ${match.away_score}`;
+  card.querySelector(".summary-meta").textContent = match.phase === "group"
+    ? `${groupName || "Groupe non défini"} • ${match.status || "À venir"}`
+    : `Élimination directe • ${match.status || "À venir"}`;
+}
+
+function updateGroupSummary(card) {
+  const name = card.querySelector('[data-group-field="name"]').value.trim() || "Nouveau groupe";
+  const count = card.querySelectorAll(".standing-team-row").length;
+  card.querySelector(".group-summary-name").textContent = name;
+  card.querySelector(".group-summary-teams").textContent = `${count} équipe${count > 1 ? "s" : ""}`;
+}
+
+function setCardExpanded(card, expanded) {
+  card.classList.toggle("is-collapsed", !expanded);
+  card.querySelector(".summary-toggle").setAttribute("aria-expanded", String(expanded));
+  if (expanded) {
+    const container = card.classList.contains("group-editor") ? groupsEditor : editor;
+    container.querySelectorAll(".match-editor").forEach(other => {
+      if (other !== card) {
+        other.classList.add("is-collapsed");
+        other.querySelector(".summary-toggle")?.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+}
+
 function fillMatch(card, match, index) {
   card.dataset.matchId = match.id || crypto.randomUUID();
   card.dataset.desiredGroupId = match.group_id || "";
-  card.querySelector(".match-number").textContent = `Match ${index + 1}`;
   card.querySelectorAll("[data-field]").forEach(input => {
     const key = input.dataset.field;
     if (input.type === "checkbox") {
@@ -231,6 +285,7 @@ function fillMatch(card, match, index) {
   });
   updateMatchAppearance(card);
   updatePhaseFields(card);
+  updateMatchSummary(card);
 }
 
 function populateGroupSelect(select, selected = "") {
@@ -249,6 +304,11 @@ function updateAllGroupSelects() {
     populateGroupSelect(select, desired);
     select.closest(".match-editor").dataset.desiredGroupId = select.value;
   });
+  const activeFilter = matchGroupFilter.value;
+  matchGroupFilter.innerHTML = `<option value="">Tous</option>` + [...groupsEditor.querySelectorAll(".group-editor")]
+    .map(card => `<option value="${card.dataset.groupId}">${escapeHtml(card.querySelector('[data-group-field="name"]').value || "Groupe")}</option>`)
+    .join("");
+  matchGroupFilter.value = activeFilter;
 }
 
 function allRegisteredTeams() {
@@ -339,6 +399,9 @@ function updatePhaseFields(card) {
 }
 
 function bindMatch(card) {
+  card.querySelector(".summary-toggle").addEventListener("click", () => {
+    setCardExpanded(card, card.classList.contains("is-collapsed"));
+  });
   card.addEventListener("input", event => {
     for (const side of ["home", "away"]) {
       if (event.target.matches(`[data-field="${side}_code"]`)) {
@@ -353,6 +416,7 @@ function bindMatch(card) {
         renderTeamSuggestions(card, side);
       }
     }
+    updateMatchSummary(card);
     scheduleSave();
   });
   card.addEventListener("change", event => {
@@ -362,6 +426,8 @@ function bindMatch(card) {
       clearInvalidSelectedTeam(card, "home");
       clearInvalidSelectedTeam(card, "away");
     }
+    updateMatchSummary(card);
+    applyMatchFilters();
     scheduleSave();
   });
   ["home", "away"].forEach(side => {
@@ -380,6 +446,7 @@ function bindMatch(card) {
       const [side, delta] = button.dataset.scoreAction.split(":");
       const input = card.querySelector(`[data-field="${side}_score"]`);
       input.value = Math.max(0, number(input.value) + Number(delta));
+      updateMatchSummary(card);
       scheduleSave();
     });
   });
@@ -391,17 +458,25 @@ function bindMatch(card) {
     if (!confirm("Supprimer définitivement ce match ? Cette action est irréversible après publication.")) return;
     card.remove();
     refreshNumbers();
+    applyMatchFilters();
     scheduleSave();
   });
 }
 
-function addMatch(match = emptyMatch(), afterCard = null) {
+function addMatch(match = emptyMatch(), afterCard = null, expand = true) {
   const fragment = matchTemplate.content.cloneNode(true);
   const card = fragment.querySelector(".match-editor");
   fillMatch(card, match, editor.children.length);
   bindMatch(card);
-  afterCard ? afterCard.insertAdjacentElement("afterend", card) : editor.appendChild(card);
+  if (afterCard) afterCard.insertAdjacentElement("afterend", card);
+  else if (expand && !rendering) editor.prepend(card);
+  else editor.appendChild(card);
   refreshNumbers();
+  if (expand) {
+    setCardExpanded(card, true);
+    card.classList.remove("is-beyond-limit", "is-filtered");
+  }
+  applyMatchFilters();
   scheduleSave();
   return card;
 }
@@ -420,9 +495,11 @@ function addTeam(groupCard, team = emptyTeam()) {
   row.addEventListener("input", scheduleSave);
   row.querySelector(".remove-team").addEventListener("click", () => {
     row.remove();
+    updateGroupSummary(groupCard);
     scheduleSave();
   });
   groupCard.querySelector(".group-teams").appendChild(row);
+  updateGroupSummary(groupCard);
 }
 
 function updateGroupAppearance(card) {
@@ -433,18 +510,22 @@ function updateGroupAppearance(card) {
 
 function fillGroup(card, group, index) {
   card.dataset.groupId = group.id || crypto.randomUUID();
-  card.querySelector(".group-number").textContent = `Classement ${index + 1}`;
   card.querySelector('[data-group-field="published"]').checked = group.published !== false;
   card.querySelector('[data-group-field="name"]').value = text(group.name, `Groupe ${String.fromCharCode(65 + index)}`);
   card.querySelector('[data-group-field="subtitle"]').value = text(group.subtitle, "Coupe du Monde 2026");
   card.querySelector('[data-group-field="rules_profile"]').value = text(group.rules_profile, "fifa-world-cup-2026");
   (Array.isArray(group.teams) ? group.teams : []).forEach(team => addTeam(card, team));
   updateGroupAppearance(card);
+  updateGroupSummary(card);
 }
 
 function bindGroup(card) {
+  card.querySelector(".summary-toggle").addEventListener("click", () => {
+    setCardExpanded(card, card.classList.contains("is-collapsed"));
+  });
   card.addEventListener("input", event => {
     if (event.target.matches('[data-group-field="name"]')) updateAllGroupSelects();
+    updateGroupSummary(card);
     scheduleSave();
   });
   card.addEventListener("change", event => {
@@ -453,6 +534,7 @@ function bindGroup(card) {
   });
   card.querySelector(".add-team").addEventListener("click", () => {
     addTeam(card);
+    updateGroupSummary(card);
     scheduleSave();
   });
   card.querySelector(".duplicate-group").addEventListener("click", () => {
@@ -473,22 +555,54 @@ function addGroup(group = emptyGroup(), afterCard = null) {
   const card = fragment.querySelector(".group-editor");
   bindGroup(card);
   fillGroup(card, group, groupsEditor.children.length);
-  afterCard ? afterCard.insertAdjacentElement("afterend", card) : groupsEditor.appendChild(card);
+  if (afterCard) afterCard.insertAdjacentElement("afterend", card);
+  else if (!rendering) groupsEditor.prepend(card);
+  else groupsEditor.appendChild(card);
   refreshNumbers();
   updateAllGroupSelects();
+  if (!rendering) setCardExpanded(card, true);
   scheduleSave();
   return card;
 }
 
 function refreshNumbers() {
-  [...editor.children].forEach((card, index) => {
-    card.querySelector(".match-number").textContent = `Match ${index + 1}`;
-  });
-  [...groupsEditor.children].forEach((card, index) => {
-    card.querySelector(".group-number").textContent = `Classement ${index + 1}`;
-  });
   matchCount.textContent = editor.children.length;
   groupCount.textContent = groupsEditor.children.length;
+}
+
+function applyMatchFilters(resetLimit = false) {
+  if (resetLimit) visibleMatchLimit = 30;
+  const query = matchSearch.value.trim().toLocaleLowerCase("fr");
+  const phase = matchPhaseFilter.value;
+  const status = matchStatusFilter.value;
+  const groupId = matchGroupFilter.value;
+  const includeUnpublished = showUnpublishedMatches.checked;
+  let filteredCount = 0;
+  let visibleCount = 0;
+
+  [...editor.querySelectorAll(".match-editor")].forEach(card => {
+    const match = readMatch(card);
+    const haystack = [
+      match.home, match.away, match.competition, match.kickoff, match.status, match.info
+    ].join(" ").toLocaleLowerCase("fr");
+    const matchesFilter = (!query || haystack.includes(query))
+      && (!phase || match.phase === phase)
+      && (!status || match.status === status)
+      && (!groupId || match.group_id === groupId)
+      && (includeUnpublished || match.published);
+    card.classList.toggle("is-filtered", !matchesFilter);
+    if (!matchesFilter) {
+      card.classList.remove("is-beyond-limit");
+      return;
+    }
+    filteredCount++;
+    visibleCount++;
+    card.classList.toggle("is-beyond-limit", visibleCount > visibleMatchLimit);
+  });
+
+  const displayed = Math.min(filteredCount, visibleMatchLimit);
+  matchResultsInfo.textContent = `${displayed} affiché${displayed > 1 ? "s" : ""} sur ${filteredCount} résultat${filteredCount > 1 ? "s" : ""} — ${editor.children.length} match${editor.children.length > 1 ? "s" : ""} au total`;
+  loadMoreMatches.hidden = filteredCount <= visibleMatchLimit;
 }
 
 function refreshCalculatedStandings() {
@@ -514,11 +628,12 @@ function render(data) {
   groupsEditor.innerHTML = "";
   updatedAtInput.value = text(data.updated_at, formatCasablancaDate());
   const sourceMatches = Array.isArray(data.matches) && data.matches.length ? data.matches : [emptyMatch()];
-  sourceMatches.forEach(match => addMatch(match));
+  sourceMatches.forEach(match => addMatch(match, null, false));
   (Array.isArray(data.groups) ? data.groups : []).forEach(group => addGroup(group));
   refreshNumbers();
   updateAllGroupSelects();
   refreshCalculatedStandings();
+  applyMatchFilters(true);
   rendering = false;
   saveDraft();
 }
@@ -585,7 +700,7 @@ async function loadData(ignoreDraft = false) {
         return showNotice("Brouillon local restauré.");
       }
     }
-    if (firebaseConfigured) {
+    if (firebaseConfigured && new URLSearchParams(location.search).get("source") !== "json") {
       const snapshot = await get(ref(firebaseDatabase, "liveScores"));
       if (snapshot.exists()) {
         render(snapshot.val());
@@ -611,8 +726,32 @@ function downloadJson() {
   URL.revokeObjectURL(url);
 }
 
-document.getElementById("addMatchButton").addEventListener("click", () => addMatch().scrollIntoView({ behavior: "smooth" }));
-document.getElementById("addGroupButton").addEventListener("click", () => addGroup().scrollIntoView({ behavior: "smooth" }));
+document.getElementById("addMatchButton").addEventListener("click", () => {
+  matchSearch.value = "";
+  matchPhaseFilter.value = "";
+  matchStatusFilter.value = "";
+  matchGroupFilter.value = "";
+  showUnpublishedMatches.checked = true;
+  const card = addMatch();
+  card.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+document.getElementById("addGroupButton").addEventListener("click", () => {
+  const card = addGroup();
+  card.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+[
+  matchSearch,
+  matchPhaseFilter,
+  matchStatusFilter,
+  matchGroupFilter,
+  showUnpublishedMatches
+].forEach(control => {
+  control.addEventListener(control === matchSearch ? "input" : "change", () => applyMatchFilters(true));
+});
+loadMoreMatches.addEventListener("click", () => {
+  visibleMatchLimit += 30;
+  applyMatchFilters();
+});
 document.getElementById("setNowButton").addEventListener("click", () => {
   updatedAtInput.value = formatCasablancaDate();
   scheduleSave();

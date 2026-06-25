@@ -71,7 +71,47 @@
       </button>
     </section>
 
+    <section class="management-filters">
+      <div class="field filter-search">
+        <label for="matchSearch">Rechercher</label>
+        <input id="matchSearch" type="search" placeholder="Équipe, compétition, date…">
+      </div>
+      <div class="field">
+        <label for="matchPhaseFilter">Phase</label>
+        <select id="matchPhaseFilter">
+          <option value="">Toutes</option>
+          <option value="group">Groupes</option>
+          <option value="knockout">Élimination directe</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="matchStatusFilter">Statut</label>
+        <select id="matchStatusFilter">
+          <option value="">Tous</option>
+          <option value="À venir">À venir</option>
+          <option value="En direct">En direct</option>
+          <option value="Mi-temps">Mi-temps</option>
+          <option value="Terminé">Terminé</option>
+          <option value="Reporté">Reporté</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="matchGroupFilter">Groupe</label>
+        <select id="matchGroupFilter">
+          <option value="">Tous</option>
+        </select>
+      </div>
+      <label class="compact-check">
+        <input id="showUnpublishedMatches" type="checkbox" checked>
+        <span>Inclure les dépubliés</span>
+      </label>
+    </section>
+
+    <div id="matchResultsInfo" class="results-info"></div>
     <section id="matchesEditor" class="matches-editor"></section>
+    <button id="loadMoreMatches" class="button secondary load-more" type="button" hidden>
+      Afficher plus de matchs
+    </button>
     </section>
 
     <section id="groupsSection" class="admin-section">
@@ -162,9 +202,17 @@
   </main>
 
   <template id="matchTemplate">
-    <article class="match-editor">
-      <div class="match-editor-header">
-        <span class="match-number"></span>
+    <article class="match-editor is-collapsed">
+      <div class="match-editor-header match-summary">
+        <button class="summary-toggle" type="button" aria-expanded="false">
+          <span class="summary-date">Date à définir</span>
+          <span class="summary-fixture">
+            <strong class="summary-home">Équipe 1</strong>
+            <span class="summary-score">0 – 0</span>
+            <strong class="summary-away">Équipe 2</strong>
+          </span>
+          <span class="summary-meta">Phase de groupes</span>
+        </button>
         <div class="card-actions">
           <label class="publish-switch">
             <input data-field="published" type="checkbox" checked>
@@ -179,6 +227,7 @@
         </div>
       </div>
 
+      <div class="match-editor-body">
       <div class="field full">
         <label>Compétition</label>
         <input data-field="competition" type="text" placeholder="Coupe du Monde 2026">
@@ -288,13 +337,21 @@
           <input data-field="info" type="text" placeholder="Buteurs, stade ou message">
         </div>
       </div>
+      </div>
     </article>
   </template>
 
   <template id="groupTemplate">
-    <article class="match-editor group-editor">
-      <div class="match-editor-header">
-        <span class="group-number"></span>
+    <article class="match-editor group-editor is-collapsed">
+      <div class="match-editor-header match-summary">
+        <button class="summary-toggle group-summary-toggle" type="button" aria-expanded="false">
+          <span class="summary-date">Groupe</span>
+          <span class="summary-fixture">
+            <strong class="group-summary-name">Nouveau groupe</strong>
+            <span class="group-summary-teams">0 équipe</span>
+          </span>
+          <span class="summary-meta">Classement automatique</span>
+        </button>
         <div class="card-actions">
           <label class="publish-switch">
             <input data-group-field="published" type="checkbox" checked>
@@ -305,6 +362,7 @@
         </div>
       </div>
 
+      <div class="match-editor-body">
       <div class="group-meta">
         <div class="field">
           <label>Nom du groupe</label>
@@ -333,6 +391,7 @@
       </div>
 
       <button class="button secondary add-team" type="button">+ Ajouter une équipe</button>
+      </div>
     </article>
   </template>
 

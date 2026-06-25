@@ -7,7 +7,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import { get, getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings } from "./standings-engine.js";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260625-4";
+import { flagUrl } from "./team-utils.js?v=20260625-4";
 
 window.addEventListener("error", event => {
   console.error(event.error || event.message);
@@ -182,6 +183,39 @@ function buildData() {
   };
 }
 
+function validateData(data) {
+  const errors = [];
+  const groupIds = new Set(data.groups.map(group => group.id));
+
+  data.groups.forEach(group => {
+    const codes = group.teams.map(team => team.code.toLowerCase()).filter(Boolean);
+    const duplicates = codes.filter((code, index) => codes.indexOf(code) !== index);
+    if (!group.name) errors.push("Un groupe ne possède pas de nom.");
+    if (duplicates.length) {
+      errors.push(`${group.name || "Un groupe"} contient plusieurs fois le code ${duplicates[0]}.`);
+    }
+  });
+
+  data.matches.forEach(match => {
+    if (!match.published) return;
+    if (!match.home_code || !match.away_code) {
+      errors.push(`${match.home || "Équipe 1"} – ${match.away || "Équipe 2"} : sélectionnez les équipes depuis les suggestions.`);
+    }
+    if (match.home_code && match.home_code === match.away_code) {
+      errors.push(`${match.home || "Match"} : une équipe ne peut pas jouer contre elle-même.`);
+    }
+    if (match.phase === "group") {
+      const resolvedGroupId = match.group_id || inferGroupId(match, data.groups);
+      if (!resolvedGroupId || !groupIds.has(resolvedGroupId)) {
+        errors.push(`${match.home || "Équipe 1"} – ${match.away || "Équipe 2"} : groupe manquant ou invalide.`);
+      } else {
+        match.group_id = resolvedGroupId;
+      }
+    }
+  });
+  return errors;
+}
+
 function buildJson() {
   return `${JSON.stringify(buildData(), null, 2)}\n`;
 }
@@ -281,7 +315,8 @@ function fillMatch(card, match, index) {
   });
   ["home", "away"].forEach(side => {
     const code = card.querySelector(`[data-field="${side}_code"]`).value.trim().toLowerCase();
-    card.querySelector(`[data-preview="${side}"]`).src = code ? `https://flagcdn.com/${code}.svg` : "";
+    const name = card.querySelector(`[data-field="${side}"]`).value;
+    card.querySelector(`[data-preview="${side}"]`).src = flagUrl(code, name);
   });
   updateMatchAppearance(card);
   updatePhaseFields(card);
@@ -309,6 +344,18 @@ function updateAllGroupSelects() {
     .map(card => `<option value="${card.dataset.groupId}">${escapeHtml(card.querySelector('[data-group-field="name"]').value || "Groupe")}</option>`)
     .join("");
   matchGroupFilter.value = activeFilter;
+
+  const groups = [...groupsEditor.querySelectorAll(".group-editor")].map(readGroup);
+  editor.querySelectorAll(".match-editor").forEach(card => {
+    const select = card.querySelector('[data-field="group_id"]');
+    if (select.value || card.querySelector('[data-field="phase"]').value !== "group") return;
+    const inferred = inferGroupId(readMatch(card), groups);
+    if (inferred) {
+      select.value = inferred;
+      card.dataset.desiredGroupId = inferred;
+      updateMatchSummary(card);
+    }
+  });
 }
 
 function allRegisteredTeams() {
@@ -340,7 +387,7 @@ function teamsForMatch(card) {
 function selectSuggestedTeam(card, side, team) {
   card.querySelector(`[data-field="${side}"]`).value = team.name;
   card.querySelector(`[data-field="${side}_code"]`).value = team.code;
-  card.querySelector(`[data-preview="${side}"]`).src = `https://flagcdn.com/${team.code}.svg`;
+  card.querySelector(`[data-preview="${side}"]`).src = flagUrl(team.code, team.name);
   card.querySelector(`[data-suggestions="${side}"]`).hidden = true;
   scheduleSave();
 }
@@ -363,7 +410,7 @@ function renderTeamSuggestions(card, side) {
   } else {
     suggestions.innerHTML = candidates.map(team => `
       <button class="team-suggestion" type="button" data-team-code="${team.code}">
-        <img src="https://flagcdn.com/${team.code}.svg" alt="">
+        <img src="${flagUrl(team.code, team.name)}" alt="">
         <strong>${escapeHtml(team.name)}</strong>
         <small>${escapeHtml(team.groupName || team.code)}</small>
       </button>
@@ -406,7 +453,8 @@ function bindMatch(card) {
     for (const side of ["home", "away"]) {
       if (event.target.matches(`[data-field="${side}_code"]`)) {
         const code = event.target.value.trim().toLowerCase();
-        card.querySelector(`[data-preview="${side}"]`).src = code ? `https://flagcdn.com/${code}.svg` : "";
+        const name = card.querySelector(`[data-field="${side}"]`).value;
+        card.querySelector(`[data-preview="${side}"]`).src = flagUrl(code, name);
       }
     }
     for (const side of ["home", "away"]) {
@@ -678,7 +726,12 @@ async function publishToFirebase(silent = false) {
   }
   try {
     updatedAtInput.value = formatCasablancaDate();
-    await set(ref(firebaseDatabase, "liveScores"), buildData());
+    const data = buildData();
+    const errors = validateData(data);
+    if (errors.length) {
+      throw new Error(errors.slice(0, 3).join(" "));
+    }
+    await set(ref(firebaseDatabase, "liveScores"), data);
     localStorage.removeItem(DRAFT_KEY);
     if (!silent) showNotice("Matchs et classements publiés instantanément.");
   } catch (error) {

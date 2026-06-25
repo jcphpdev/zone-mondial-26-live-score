@@ -1,7 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings } from "./standings-engine.js";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260625-4";
+import { flagUrl } from "./team-utils.js?v=20260625-4";
 
 const ROTATION_INTERVAL = 10_000;
 const JSON_REFRESH_INTERVAL = 30_000;
@@ -32,9 +33,13 @@ let jsonFallbackTimer;
 const value = (input, fallback = "") =>
   input === undefined || input === null ? fallback : String(input);
 
-function flagUrl(code) {
-  const normalized = value(code).trim().toLowerCase();
-  return normalized ? `https://flagcdn.com/${normalized}.svg` : "";
+function escapeHtml(input) {
+  return value(input)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function isFinished(match) {
@@ -60,11 +65,11 @@ function renderMatch(match) {
   const finished = isFinished(match);
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = finished ? "TERMINÉ" : value(match.status, "EN DIRECT");
-  elements.homeFlag.src = flagUrl(match.home_code);
+  elements.homeFlag.src = flagUrl(match.home_code, match.home);
   elements.homeName.textContent = value(match.home, "Équipe 1");
   elements.homeScore.textContent = value(match.home_score, "0");
   elements.awayScore.textContent = value(match.away_score, "0");
-  elements.awayFlag.src = flagUrl(match.away_code);
+  elements.awayFlag.src = flagUrl(match.away_code, match.away);
   elements.awayName.textContent = value(match.away, "Équipe 2");
   elements.minute.textContent = finished ? "TERMINÉ" : value(match.minute, "EN DIRECT");
   elements.minute.classList.toggle("is-finished", finished);
@@ -92,13 +97,15 @@ function renderGroup(group) {
       <div class="standing-row">
         <span>${index + 1}</span>
         <span class="standing-country">
-          <img src="${flagUrl(team.code)}" alt="">
-          <strong>${value(team.name, "Équipe")}</strong>
+          <img src="${flagUrl(team.code, team.name)}" alt="">
+          <strong>${escapeHtml(team.name || "Équipe")}</strong>
         </span>
         <span>${Number(team.played || 0)}</span>
         <span>${Number(team.wins || 0)}</span>
         <span>${Number(team.draws || 0)}</span>
         <span>${Number(team.losses || 0)}</span>
+        <span>${Number(team.gf || 0)}</span>
+        <span>${Number(team.ga || 0)}</span>
         <span>${diffLabel}</span>
         <span class="standing-points">${Number(team.points || 0)}</span>
       </div>
@@ -129,21 +136,11 @@ function applyData(data) {
   );
   const displayedGroupIds = new Set();
 
-  function inferGroupId(match) {
-    if (match.group_id) return match.group_id;
-    if (match.phase !== "group") return "";
-    const candidates = allGroups.filter(group => {
-      const codes = new Set((group.teams || []).map(team => team.code).filter(Boolean));
-      return codes.has(match.home_code) && codes.has(match.away_code);
-    });
-    return candidates.length === 1 ? candidates[0].id : "";
-  }
-
   scenes = [];
   publishedMatches.forEach(match => {
     scenes.push({ type: "match", data: match });
 
-    const groupId = inferGroupId(match);
+    const groupId = inferGroupId(match, allGroups);
     if (match.phase !== "group" || !groupId) return;
     if (displayedGroupIds.has(groupId)) return;
 
@@ -154,9 +151,8 @@ function applyData(data) {
       type: "group",
       data: {
         ...group,
-        // Les matchs dépubliés restent pris en compte dans l'historique
-        // du classement, mais seuls les groupes liés à un match publié
-        // apparaissent dans le live.
+        // La publication contrôle uniquement la visibilité des matchs.
+        // Tous les résultats du groupe alimentent son classement.
         teams: calculateStandings(group, allMatches, group.rules_profile)
       }
     });

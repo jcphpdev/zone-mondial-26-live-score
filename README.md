@@ -34,5 +34,7 @@ comme secours si Firebase n’est pas configuré ou temporairement indisponible.
 - L’overlay affiche uniquement les matchs publiés.
 - Un classement est affiché uniquement si son groupe est publié et qu’un match
   publié de la phase de groupes lui est rattaché.
-- Les anciens matchs dépubliés restent pris en compte dans le calcul du
-  classement du groupe.
+- Tous les matchs de groupe dont le statut diffère de `À venir` sont pris en
+  compte dans le classement, y compris les matchs dépubliés.
+- La publication/dépublication contrôle uniquement la visibilité dans
+  l’overlay.

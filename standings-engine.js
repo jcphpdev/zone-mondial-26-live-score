@@ -16,6 +16,8 @@ export const COMPETITION_RULES = {
 };
 
 const n = value => Number.isFinite(Number(value)) ? Number(value) : 0;
+const normalizeCode = value => String(value || "").trim().toLowerCase();
+
 const countsInStandings = match => {
   const status = String(match.status || "").trim().toUpperCase();
   return Boolean(status) && !["À VENIR", "A VENIR"].includes(status);
@@ -23,7 +25,7 @@ const countsInStandings = match => {
 
 function createStats(team) {
   return {
-    code: team.code || "",
+    code: normalizeCode(team.code),
     name: team.name || "",
     played: 0,
     wins: 0,
@@ -39,8 +41,8 @@ function createStats(team) {
 }
 
 function applyMatch(stats, match, rules) {
-  const home = stats.get(match.home_code);
-  const away = stats.get(match.away_code);
+  const home = stats.get(normalizeCode(match.home_code));
+  const away = stats.get(normalizeCode(match.away_code));
   if (!home || !away || !countsInStandings(match)) return;
   const hs = n(match.home_score);
   const as = n(match.away_score);
@@ -63,7 +65,10 @@ function applyMatch(stats, match, rules) {
 
 function miniTable(codes, matches, rules) {
   const map = new Map(codes.map(code => [code, createStats({ code })]));
-  matches.filter(match => codes.includes(match.home_code) && codes.includes(match.away_code))
+  matches.filter(match =>
+    codes.includes(normalizeCode(match.home_code))
+    && codes.includes(normalizeCode(match.away_code))
+  )
     .forEach(match => applyMatch(map, match, rules));
   return map;
 }
@@ -98,19 +103,43 @@ function rankFifaTie(teams, matches, rules) {
     .flatMap(([, bucket]) => bucket.length > 1 ? rankFifaTie(bucket, matches, rules) : bucket);
 }
 
+export function inferGroupId(match, groups) {
+  if (match.group_id) return match.group_id;
+  if (match.phase !== "group") return "";
+  const homeCode = normalizeCode(match.home_code);
+  const awayCode = normalizeCode(match.away_code);
+  if (!homeCode || !awayCode) return "";
+
+  const candidates = (Array.isArray(groups) ? groups : []).filter(group => {
+    const codes = new Set(
+      (Array.isArray(group.teams) ? group.teams : [])
+        .map(team => normalizeCode(team.code))
+        .filter(Boolean)
+    );
+    return codes.has(homeCode) && codes.has(awayCode);
+  });
+  return candidates.length === 1 ? candidates[0].id : "";
+}
+
 export function calculateStandings(group, allMatches, profile = "fifa-world-cup-2026") {
   const rules = COMPETITION_RULES[profile] || COMPETITION_RULES.standard;
-  const teams = Array.isArray(group.teams) ? group.teams : [];
-  const teamCodes = new Set(teams.map(team => team.code).filter(Boolean));
-  const stats = new Map(teams.map(team => [team.code, createStats(team)]));
+  const seenCodes = new Set();
+  const teams = (Array.isArray(group.teams) ? group.teams : []).filter(team => {
+    const code = normalizeCode(team.code);
+    if (!code || !team.name || seenCodes.has(code)) return false;
+    seenCodes.add(code);
+    return true;
+  });
+  const teamCodes = new Set(teams.map(team => normalizeCode(team.code)));
+  const stats = new Map(teams.map(team => [normalizeCode(team.code), createStats(team)]));
   const matches = (Array.isArray(allMatches) ? allMatches : []).filter(match =>
     match.phase === "group"
     && (
       match.group_id === group.id
       || (
         !match.group_id
-        && teamCodes.has(match.home_code)
-        && teamCodes.has(match.away_code)
+        && teamCodes.has(normalizeCode(match.home_code))
+        && teamCodes.has(normalizeCode(match.away_code))
       )
     )
     && match.cancelled !== true

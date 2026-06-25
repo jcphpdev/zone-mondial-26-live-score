@@ -434,6 +434,80 @@ a {
   font-size: 11px;
 }
 
+.team-autocomplete {
+  position: relative;
+}
+
+.team-autocomplete > input {
+  width: 100%;
+}
+
+.team-suggestions {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  left: 0;
+  z-index: 30;
+  max-height: 230px;
+  overflow-y: auto;
+  padding: 5px;
+  background: #fff;
+  border: 1px solid #cbd1df;
+  border-radius: 8px;
+  box-shadow: 0 14px 30px rgba(16, 27, 79, 0.18);
+}
+
+.team-suggestion {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.team-suggestion:hover,
+.team-suggestion.active {
+  background: #edf0f8;
+}
+
+.team-suggestion img {
+  width: 34px;
+  height: 23px;
+  object-fit: cover;
+  border: 1px solid #d5d9e3;
+  border-radius: 3px;
+}
+
+.team-suggestion strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-suggestion small {
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.team-suggestions-empty {
+  padding: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.field input[readonly] {
+  color: #606980;
+  background: #eef1f6;
+}
+
 .full {
   margin-bottom: 24px;
 }

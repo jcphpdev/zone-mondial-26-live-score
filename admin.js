@@ -50,6 +50,15 @@ if (firebaseConfigured) {
 const text = (value, fallback = "") =>
   value === undefined || value === null ? fallback : String(value);
 
+function escapeHtml(value) {
+  return text(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function number(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
@@ -242,6 +251,88 @@ function updateAllGroupSelects() {
   });
 }
 
+function allRegisteredTeams() {
+  const unique = new Map();
+  groupsEditor.querySelectorAll(".group-editor").forEach(card => {
+    const groupId = card.dataset.groupId;
+    const groupName = card.querySelector('[data-group-field="name"]').value.trim();
+    card.querySelectorAll(".standing-team-row").forEach(row => {
+      const code = row.querySelector('[data-team-field="code"]').value.trim().toLowerCase();
+      const name = row.querySelector('[data-team-field="name"]').value.trim();
+      if (!code || !name) return;
+      unique.set(`${groupId}:${code}`, { code, name, groupId, groupName });
+    });
+  });
+  return [...unique.values()];
+}
+
+function teamsForMatch(card) {
+  const phase = card.querySelector('[data-field="phase"]').value;
+  const groupId = card.querySelector('[data-field="group_id"]').value;
+  const teams = allRegisteredTeams();
+  return phase === "group" && groupId
+    ? teams.filter(team => team.groupId === groupId)
+    : teams.filter((team, index, source) =>
+        source.findIndex(candidate => candidate.code === team.code) === index
+      );
+}
+
+function selectSuggestedTeam(card, side, team) {
+  card.querySelector(`[data-field="${side}"]`).value = team.name;
+  card.querySelector(`[data-field="${side}_code"]`).value = team.code;
+  card.querySelector(`[data-preview="${side}"]`).src = `https://flagcdn.com/${team.code}.svg`;
+  card.querySelector(`[data-suggestions="${side}"]`).hidden = true;
+  scheduleSave();
+}
+
+function renderTeamSuggestions(card, side) {
+  const input = card.querySelector(`[data-field="${side}"]`);
+  const suggestions = card.querySelector(`[data-suggestions="${side}"]`);
+  const query = input.value.trim().toLocaleLowerCase("fr");
+  const opponentSide = side === "home" ? "away" : "home";
+  const opponentCode = card.querySelector(`[data-field="${opponentSide}_code"]`).value;
+  const candidates = teamsForMatch(card)
+    .filter(team => team.code !== opponentCode)
+    .filter(team => !query
+      || team.name.toLocaleLowerCase("fr").includes(query)
+      || team.code.includes(query)
+    );
+
+  if (!candidates.length) {
+    suggestions.innerHTML = `<div class="team-suggestions-empty">Aucune équipe disponible dans ce groupe</div>`;
+  } else {
+    suggestions.innerHTML = candidates.map(team => `
+      <button class="team-suggestion" type="button" data-team-code="${team.code}">
+        <img src="https://flagcdn.com/${team.code}.svg" alt="">
+        <strong>${escapeHtml(team.name)}</strong>
+        <small>${escapeHtml(team.groupName || team.code)}</small>
+      </button>
+    `).join("");
+    suggestions.querySelectorAll(".team-suggestion").forEach(button => {
+      button.addEventListener("mousedown", event => {
+        event.preventDefault();
+        selectSuggestedTeam(
+          card,
+          side,
+          candidates.find(team => team.code === button.dataset.teamCode)
+        );
+      });
+    });
+  }
+  suggestions.hidden = false;
+}
+
+function clearInvalidSelectedTeam(card, side) {
+  const codeInput = card.querySelector(`[data-field="${side}_code"]`);
+  if (!codeInput.value) return;
+  const valid = teamsForMatch(card).some(team => team.code === codeInput.value);
+  if (!valid) {
+    card.querySelector(`[data-field="${side}"]`).value = "";
+    codeInput.value = "";
+    card.querySelector(`[data-preview="${side}"]`).src = "";
+  }
+}
+
 function updatePhaseFields(card) {
   const isGroup = card.querySelector('[data-field="phase"]').value === "group";
   card.querySelector(".group-reference-field").hidden = !isGroup;
@@ -255,12 +346,34 @@ function bindMatch(card) {
         card.querySelector(`[data-preview="${side}"]`).src = code ? `https://flagcdn.com/${code}.svg` : "";
       }
     }
+    for (const side of ["home", "away"]) {
+      if (event.target.matches(`[data-field="${side}"]`)) {
+        card.querySelector(`[data-field="${side}_code"]`).value = "";
+        card.querySelector(`[data-preview="${side}"]`).src = "";
+        renderTeamSuggestions(card, side);
+      }
+    }
     scheduleSave();
   });
   card.addEventListener("change", event => {
     if (event.target.matches('[data-field="published"]')) updateMatchAppearance(card);
-    if (event.target.matches('[data-field="phase"]')) updatePhaseFields(card);
+    if (event.target.matches('[data-field="phase"], [data-field="group_id"]')) {
+      updatePhaseFields(card);
+      clearInvalidSelectedTeam(card, "home");
+      clearInvalidSelectedTeam(card, "away");
+    }
     scheduleSave();
+  });
+  ["home", "away"].forEach(side => {
+    const input = card.querySelector(`[data-field="${side}"]`);
+    const suggestions = card.querySelector(`[data-suggestions="${side}"]`);
+    input.addEventListener("focus", () => renderTeamSuggestions(card, side));
+    input.addEventListener("keydown", event => {
+      if (event.key === "Escape") suggestions.hidden = true;
+    });
+    input.addEventListener("blur", () => {
+      setTimeout(() => { suggestions.hidden = true; }, 120);
+    });
   });
   card.querySelectorAll("[data-score-action]").forEach(button => {
     button.addEventListener("click", () => {

@@ -224,11 +224,14 @@
           </div>
           <div class="field">
             <label>Nom</label>
-            <input data-field="home" type="text" placeholder="Maroc">
+            <div class="team-autocomplete">
+              <input data-field="home" type="text" placeholder="Rechercher une équipe…" autocomplete="off">
+              <div class="team-suggestions" data-suggestions="home" hidden></div>
+            </div>
           </div>
           <div class="field">
             <label>Code du drapeau</label>
-            <input data-field="home_code" type="text" maxlength="6" placeholder="ma">
+            <input data-field="home_code" type="text" maxlength="6" placeholder="ma" readonly>
             <small>Exemples : ma, fr, br, gb-sct</small>
           </div>
           <div class="score-control">
@@ -247,11 +250,14 @@
           </div>
           <div class="field">
             <label>Nom</label>
-            <input data-field="away" type="text" placeholder="Écosse">
+            <div class="team-autocomplete">
+              <input data-field="away" type="text" placeholder="Rechercher une équipe…" autocomplete="off">
+              <div class="team-suggestions" data-suggestions="away" hidden></div>
+            </div>
           </div>
           <div class="field">
             <label>Code du drapeau</label>
-            <input data-field="away_code" type="text" maxlength="6" placeholder="gb-sct">
+            <input data-field="away_code" type="text" maxlength="6" placeholder="gb-sct" readonly>
             <small>Exemples : mx, kr, us, gb-eng</small>
           </div>
           <div class="score-control">

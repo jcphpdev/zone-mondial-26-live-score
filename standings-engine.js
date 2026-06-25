@@ -101,10 +101,18 @@ function rankFifaTie(teams, matches, rules) {
 export function calculateStandings(group, allMatches, profile = "fifa-world-cup-2026") {
   const rules = COMPETITION_RULES[profile] || COMPETITION_RULES.standard;
   const teams = Array.isArray(group.teams) ? group.teams : [];
+  const teamCodes = new Set(teams.map(team => team.code).filter(Boolean));
   const stats = new Map(teams.map(team => [team.code, createStats(team)]));
   const matches = (Array.isArray(allMatches) ? allMatches : []).filter(match =>
     match.phase === "group"
-    && match.group_id === group.id
+    && (
+      match.group_id === group.id
+      || (
+        !match.group_id
+        && teamCodes.has(match.home_code)
+        && teamCodes.has(match.away_code)
+      )
+    )
     && match.cancelled !== true
   );
   matches.forEach(match => applyMatch(stats, match, rules));

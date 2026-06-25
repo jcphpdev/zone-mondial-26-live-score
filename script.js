@@ -129,14 +129,25 @@ function applyData(data) {
   );
   const displayedGroupIds = new Set();
 
+  function inferGroupId(match) {
+    if (match.group_id) return match.group_id;
+    if (match.phase !== "group") return "";
+    const candidates = allGroups.filter(group => {
+      const codes = new Set((group.teams || []).map(team => team.code).filter(Boolean));
+      return codes.has(match.home_code) && codes.has(match.away_code);
+    });
+    return candidates.length === 1 ? candidates[0].id : "";
+  }
+
   scenes = [];
   publishedMatches.forEach(match => {
     scenes.push({ type: "match", data: match });
 
-    if (match.phase !== "group" || !match.group_id) return;
-    if (displayedGroupIds.has(match.group_id)) return;
+    const groupId = inferGroupId(match);
+    if (match.phase !== "group" || !groupId) return;
+    if (displayedGroupIds.has(groupId)) return;
 
-    const group = publishedGroupsById.get(match.group_id);
+    const group = publishedGroupsById.get(groupId);
     if (!group) return;
 
     scenes.push({
@@ -149,7 +160,7 @@ function applyData(data) {
         teams: calculateStandings(group, allMatches, group.rules_profile)
       }
     });
-    displayedGroupIds.add(match.group_id);
+    displayedGroupIds.add(groupId);
   });
 
   const requestedScene = new URLSearchParams(window.location.search).get("scene");

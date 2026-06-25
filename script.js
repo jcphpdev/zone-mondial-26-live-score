@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
+import { calculateStandings } from "./standings-engine.js";
 
 const ROTATION_INTERVAL = 10_000;
 const JSON_REFRESH_INTERVAL = 30_000;
@@ -68,7 +69,11 @@ function renderMatch(match) {
   elements.minute.textContent = finished ? "TERMINÉ" : value(match.minute, "EN DIRECT");
   elements.minute.classList.toggle("is-finished", finished);
   elements.matchInfo.textContent = value(
-    match.info || match.scorers || match.venue,
+    match.info || match.scorers || match.venue || (
+      match.kickoff
+        ? new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" }).format(new Date(match.kickoff))
+        : ""
+    ),
     "Scores mis à jour automatiquement"
   );
 }
@@ -119,7 +124,13 @@ function applyData(data) {
     .map(match => ({ type: "match", data: match }));
   const publishedGroups = (Array.isArray(data?.groups) ? data.groups : [])
     .filter(group => group.published !== false)
-    .map(group => ({ type: "group", data: group }));
+    .map(group => ({
+      type: "group",
+      data: {
+        ...group,
+        teams: calculateStandings(group, data.matches || [], group.rules_profile)
+      }
+    }));
   scenes = [...publishedMatches, ...publishedGroups];
   const requestedScene = new URLSearchParams(window.location.search).get("scene");
   if (requestedScene === "group") {

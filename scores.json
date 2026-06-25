@@ -3,7 +3,12 @@
   "matches": [
     {
       "published": true,
+      "id": "match-demo-1",
       "competition": "Coupe du Monde 2026",
+      "phase": "group",
+      "group_id": "",
+      "round": "group-day-1",
+      "kickoff": "",
       "home": "République tchèque",
       "home_code": "cz",
       "home_score": 0,
@@ -16,7 +21,12 @@
     },
     {
       "published": true,
+      "id": "match-demo-2",
       "competition": "Coupe du Monde 2026",
+      "phase": "group",
+      "group_id": "",
+      "round": "group-day-1",
+      "kickoff": "",
       "home": "Afrique du Sud",
       "home_code": "za",
       "home_score": 0,

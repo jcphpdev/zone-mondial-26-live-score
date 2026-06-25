@@ -51,6 +51,19 @@
 
     <div id="notice" class="notice" role="status" hidden></div>
 
+    <nav class="admin-sections" aria-label="Sections d’administration">
+      <button class="section-tab active" data-section-target="matchesSection" type="button">
+        Matchs
+      </button>
+      <button class="section-tab" data-section-target="groupsSection" type="button">
+        Groupes
+      </button>
+      <button class="section-tab" data-section-target="connectionSection" type="button">
+        Publication
+      </button>
+    </nav>
+
+    <section id="matchesSection" class="admin-section active">
     <section class="toolbar">
       <h2>Matchs <span id="matchCount">0</span></h2>
       <button id="addMatchButton" class="button add" type="button">
@@ -59,7 +72,9 @@
     </section>
 
     <section id="matchesEditor" class="matches-editor"></section>
+    </section>
 
+    <section id="groupsSection" class="admin-section">
     <section class="toolbar standings-toolbar">
       <div>
         <h2>Classements <span id="groupCount">0</span></h2>
@@ -71,7 +86,9 @@
     </section>
 
     <section id="groupsEditor" class="matches-editor groups-editor"></section>
+    </section>
 
+    <section id="connectionSection" class="admin-section">
     <section class="github-panel firebase-panel">
       <div class="github-heading">
         <div>
@@ -123,6 +140,7 @@
         <span>Publication automatique en temps réel</span>
       </label>
     </section>
+    </section>
 
     <section class="export-panel">
       <div>
@@ -155,12 +173,47 @@
           <button class="icon-button duplicate-match" type="button" title="Dupliquer">
             Dupliquer
           </button>
+          <button class="icon-button danger remove-match" type="button" title="Supprimer définitivement">
+            Supprimer
+          </button>
         </div>
       </div>
 
       <div class="field full">
         <label>Compétition</label>
         <input data-field="competition" type="text" placeholder="Coupe du Monde 2026">
+      </div>
+
+      <div class="match-meta-grid">
+        <div class="field">
+          <label>Type de phase</label>
+          <select data-field="phase">
+            <option value="group">Phase de groupes</option>
+            <option value="knockout">Élimination directe</option>
+          </select>
+        </div>
+        <div class="field group-reference-field">
+          <label>Groupe</label>
+          <select data-field="group_id"></select>
+        </div>
+        <div class="field">
+          <label>Tour</label>
+          <select data-field="round">
+            <option value="group-day-1">Journée 1</option>
+            <option value="group-day-2">Journée 2</option>
+            <option value="group-day-3">Journée 3</option>
+            <option value="round-of-32">Seizièmes de finale</option>
+            <option value="round-of-16">Huitièmes de finale</option>
+            <option value="quarter-final">Quarts de finale</option>
+            <option value="semi-final">Demi-finales</option>
+            <option value="third-place">Petite finale</option>
+            <option value="final">Finale</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Date et heure</label>
+          <input data-field="kickoff" type="datetime-local">
+        </div>
       </div>
 
       <div class="teams-grid">
@@ -255,11 +308,19 @@
           <label>Sous-titre</label>
           <input data-group-field="subtitle" type="text" placeholder="Coupe du Monde 2026">
         </div>
+        <div class="field">
+          <label>Profil de règles</label>
+          <select data-group-field="rules_profile">
+            <option value="fifa-world-cup-2026">Coupe du Monde FIFA 2026</option>
+            <option value="standard">Règles standard</option>
+          </select>
+        </div>
       </div>
 
       <div class="standings-editor-table">
         <div class="standings-editor-head">
-          <span>Équipe</span><span>J</span><span>G</span><span>N</span><span>P</span>
+          <span>Équipe</span><span>Discipline</span><span>Rang FIFA</span>
+          <span>J</span><span>G</span><span>N</span><span>P</span>
           <span>BP</span><span>BC</span><span>Pts</span><span></span>
         </div>
         <div class="group-teams"></div>
@@ -275,13 +336,15 @@
         <input data-team-field="code" type="text" maxlength="6" placeholder="ma" title="Code drapeau">
         <input data-team-field="name" type="text" placeholder="Maroc">
       </div>
-      <input data-team-field="played" type="number" min="0" value="0">
-      <input data-team-field="wins" type="number" min="0" value="0">
-      <input data-team-field="draws" type="number" min="0" value="0">
-      <input data-team-field="losses" type="number" min="0" value="0">
-      <input data-team-field="gf" type="number" min="0" value="0">
-      <input data-team-field="ga" type="number" min="0" value="0">
-      <input data-team-field="points" type="number" min="0" value="0">
+      <input data-team-field="fair_play" type="number" max="0" value="0" title="Score disciplinaire : jaune -1, rouge indirect -3, rouge direct -4">
+      <input data-team-field="ranking" type="number" min="1" value="9999" title="Rang FIFA utilisé en dernier recours">
+      <output data-stat="played">0</output>
+      <output data-stat="wins">0</output>
+      <output data-stat="draws">0</output>
+      <output data-stat="losses">0</output>
+      <output data-stat="gf">0</output>
+      <output data-stat="ga">0</output>
+      <output data-stat="points">0</output>
       <button class="remove-team" type="button" title="Retirer l’équipe">×</button>
     </div>
   </template>

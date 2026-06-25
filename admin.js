@@ -7,6 +7,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import { get, getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
+import { calculateStandings } from "./standings-engine.js";
+
+window.addEventListener("error", event => {
+  console.error(event.error || event.message);
+});
+window.addEventListener("unhandledrejection", event => {
+  console.error(event.reason);
+});
 
 const DRAFT_KEY = "zone-mondial-26-live-data-draft";
 const AUTO_PUBLISH_DELAY = 650;
@@ -77,8 +85,13 @@ function setFirebaseState(connected, label = "") {
 
 function emptyMatch() {
   return {
+    id: crypto.randomUUID(),
     published: true,
     competition: "Coupe du Monde 2026",
+    phase: "group",
+    group_id: "",
+    round: "group-day-1",
+    kickoff: "",
     home: "",
     home_code: "",
     away: "",
@@ -92,20 +105,22 @@ function emptyMatch() {
 }
 
 function emptyTeam() {
-  return { code: "", name: "", played: 0, wins: 0, draws: 0, losses: 0, gf: 0, ga: 0, points: 0 };
+  return { code: "", name: "", fair_play: 0, ranking: 9999 };
 }
 
 function emptyGroup() {
   return {
+    id: crypto.randomUUID(),
     published: true,
     name: "Groupe A",
     subtitle: "Coupe du Monde 2026",
+    rules_profile: "fifa-world-cup-2026",
     teams: [emptyTeam(), emptyTeam(), emptyTeam(), emptyTeam()]
   };
 }
 
 function readMatch(card) {
-  const match = {};
+  const match = { id: card.dataset.matchId || crypto.randomUUID() };
   card.querySelectorAll("[data-field]").forEach(input => {
     const key = input.dataset.field;
     if (input.type === "checkbox") match[key] = input.checked;
@@ -118,13 +133,18 @@ function readTeam(row) {
   const team = {};
   row.querySelectorAll("[data-team-field]").forEach(input => {
     const key = input.dataset.teamField;
-    team[key] = ["code", "name"].includes(key) ? input.value.trim() : number(input.value);
+    if (["code", "name"].includes(key)) team[key] = input.value.trim();
+    else if (key === "fair_play") team[key] = Number.parseInt(input.value, 10) || 0;
+    else team[key] = number(input.value);
   });
   return team;
 }
 
 function readGroup(card) {
-  const group = { teams: [...card.querySelectorAll(".standing-team-row")].map(readTeam) };
+  const group = {
+    id: card.dataset.groupId || crypto.randomUUID(),
+    teams: [...card.querySelectorAll(".standing-team-row")].map(readTeam)
+  };
   card.querySelectorAll("[data-group-field]").forEach(input => {
     const key = input.dataset.groupField;
     group[key] = input.type === "checkbox" ? input.checked : input.value.trim();
@@ -133,10 +153,15 @@ function readGroup(card) {
 }
 
 function buildData() {
+  const matches = [...editor.querySelectorAll(".match-editor")].map(readMatch);
+  const groups = [...groupsEditor.querySelectorAll(".group-editor")].map(readGroup);
   return {
     updated_at: updatedAtInput.value.trim() || formatCasablancaDate(),
-    matches: [...editor.querySelectorAll(".match-editor")].map(readMatch),
-    groups: [...groupsEditor.querySelectorAll(".group-editor")].map(readGroup)
+    matches,
+    groups: groups.map(group => ({
+      ...group,
+      standings: calculateStandings(group, matches, group.rules_profile)
+    }))
   };
 }
 
@@ -158,6 +183,7 @@ function scheduleAutoPublish() {
 function scheduleSave() {
   if (rendering) return;
   clearTimeout(draftTimer);
+  refreshCalculatedStandings();
   draftTimer = setTimeout(saveDraft, 200);
   scheduleAutoPublish();
 }
@@ -169,6 +195,8 @@ function updateMatchAppearance(card) {
 }
 
 function fillMatch(card, match, index) {
+  card.dataset.matchId = match.id || crypto.randomUUID();
+  card.dataset.desiredGroupId = match.group_id || "";
   card.querySelector(".match-number").textContent = `Match ${index + 1}`;
   card.querySelectorAll("[data-field]").forEach(input => {
     const key = input.dataset.field;
@@ -177,16 +205,46 @@ function fillMatch(card, match, index) {
       return;
     }
     let fallback = key.endsWith("_score") ? 0 : "";
+    if (key === "phase") fallback = "group";
+    if (key === "round") fallback = "group-day-1";
     if (key === "status") {
       fallback = ["FT", "FIN"].includes(text(match.minute).toUpperCase()) ? "Terminé" : "À venir";
     }
-    input.value = text(match[key], fallback);
+    if (key === "group_id") {
+      populateGroupSelect(input, match[key] || "");
+    } else {
+      input.value = text(match[key], fallback);
+    }
   });
   ["home", "away"].forEach(side => {
     const code = card.querySelector(`[data-field="${side}_code"]`).value.trim().toLowerCase();
     card.querySelector(`[data-preview="${side}"]`).src = code ? `https://flagcdn.com/${code}.svg` : "";
   });
   updateMatchAppearance(card);
+  updatePhaseFields(card);
+}
+
+function populateGroupSelect(select, selected = "") {
+  const groups = [...groupsEditor.querySelectorAll(".group-editor")].map(card => ({
+    id: card.dataset.groupId,
+    name: card.querySelector('[data-group-field="name"]').value || "Groupe"
+  }));
+  select.innerHTML = `<option value="">Sélectionner un groupe</option>`
+    + groups.map(group => `<option value="${group.id}">${group.name}</option>`).join("");
+  select.value = selected;
+}
+
+function updateAllGroupSelects() {
+  editor.querySelectorAll('[data-field="group_id"]').forEach(select => {
+    const desired = select.value || select.closest(".match-editor").dataset.desiredGroupId || "";
+    populateGroupSelect(select, desired);
+    select.closest(".match-editor").dataset.desiredGroupId = select.value;
+  });
+}
+
+function updatePhaseFields(card) {
+  const isGroup = card.querySelector('[data-field="phase"]').value === "group";
+  card.querySelector(".group-reference-field").hidden = !isGroup;
 }
 
 function bindMatch(card) {
@@ -201,6 +259,7 @@ function bindMatch(card) {
   });
   card.addEventListener("change", event => {
     if (event.target.matches('[data-field="published"]')) updateMatchAppearance(card);
+    if (event.target.matches('[data-field="phase"]')) updatePhaseFields(card);
     scheduleSave();
   });
   card.querySelectorAll("[data-score-action]").forEach(button => {
@@ -212,8 +271,14 @@ function bindMatch(card) {
     });
   });
   card.querySelector(".duplicate-match").addEventListener("click", () => {
-    addMatch(readMatch(card), card);
+    addMatch({ ...readMatch(card), id: crypto.randomUUID() }, card);
     showNotice("Le match a été dupliqué.");
+  });
+  card.querySelector(".remove-match").addEventListener("click", () => {
+    if (!confirm("Supprimer définitivement ce match ? Cette action est irréversible après publication.")) return;
+    card.remove();
+    refreshNumbers();
+    scheduleSave();
   });
 }
 
@@ -254,16 +319,21 @@ function updateGroupAppearance(card) {
 }
 
 function fillGroup(card, group, index) {
+  card.dataset.groupId = group.id || crypto.randomUUID();
   card.querySelector(".group-number").textContent = `Classement ${index + 1}`;
   card.querySelector('[data-group-field="published"]').checked = group.published !== false;
   card.querySelector('[data-group-field="name"]').value = text(group.name, `Groupe ${String.fromCharCode(65 + index)}`);
   card.querySelector('[data-group-field="subtitle"]').value = text(group.subtitle, "Coupe du Monde 2026");
+  card.querySelector('[data-group-field="rules_profile"]').value = text(group.rules_profile, "fifa-world-cup-2026");
   (Array.isArray(group.teams) ? group.teams : []).forEach(team => addTeam(card, team));
   updateGroupAppearance(card);
 }
 
 function bindGroup(card) {
-  card.addEventListener("input", scheduleSave);
+  card.addEventListener("input", event => {
+    if (event.target.matches('[data-group-field="name"]')) updateAllGroupSelects();
+    scheduleSave();
+  });
   card.addEventListener("change", event => {
     if (event.target.matches('[data-group-field="published"]')) updateGroupAppearance(card);
     scheduleSave();
@@ -273,13 +343,14 @@ function bindGroup(card) {
     scheduleSave();
   });
   card.querySelector(".duplicate-group").addEventListener("click", () => {
-    addGroup(readGroup(card), card);
+    addGroup({ ...readGroup(card), id: crypto.randomUUID() }, card);
     showNotice("Le classement a été dupliqué.");
   });
   card.querySelector(".remove-group").addEventListener("click", () => {
     if (!confirm("Supprimer définitivement ce classement ?")) return;
     card.remove();
     refreshNumbers();
+    updateAllGroupSelects();
     scheduleSave();
   });
 }
@@ -291,6 +362,7 @@ function addGroup(group = emptyGroup(), afterCard = null) {
   fillGroup(card, group, groupsEditor.children.length);
   afterCard ? afterCard.insertAdjacentElement("afterend", card) : groupsEditor.appendChild(card);
   refreshNumbers();
+  updateAllGroupSelects();
   scheduleSave();
   return card;
 }
@@ -306,6 +378,23 @@ function refreshNumbers() {
   groupCount.textContent = groupsEditor.children.length;
 }
 
+function refreshCalculatedStandings() {
+  const matches = [...editor.querySelectorAll(".match-editor")].map(readMatch);
+  groupsEditor.querySelectorAll(".group-editor").forEach(card => {
+    const group = readGroup(card);
+    const standings = calculateStandings(group, matches, group.rules_profile);
+    const rows = [...card.querySelectorAll(".standing-team-row")];
+    standings.forEach(stats => {
+      const row = rows.find(item => item.querySelector('[data-team-field="code"]').value.trim() === stats.code);
+      if (!row) return;
+      row.querySelectorAll("[data-stat]").forEach(output => {
+        output.textContent = stats[output.dataset.stat];
+      });
+      card.querySelector(".group-teams").appendChild(row);
+    });
+  });
+}
+
 function render(data) {
   rendering = true;
   editor.innerHTML = "";
@@ -315,6 +404,8 @@ function render(data) {
   sourceMatches.forEach(match => addMatch(match));
   (Array.isArray(data.groups) ? data.groups : []).forEach(group => addGroup(group));
   refreshNumbers();
+  updateAllGroupSelects();
+  refreshCalculatedStandings();
   rendering = false;
   saveDraft();
 }
@@ -436,6 +527,20 @@ autoPublishToggle.addEventListener("change", () => {
 firebasePasswordInput.addEventListener("keydown", event => {
   if (event.key === "Enter") loginToFirebase();
 });
+
+document.querySelectorAll(".section-tab").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".section-tab").forEach(tab => tab.classList.toggle("active", tab === button));
+    document.querySelectorAll(".admin-section").forEach(section => {
+      section.classList.toggle("active", section.id === button.dataset.sectionTarget);
+    });
+  });
+});
+
+const requestedSection = new URLSearchParams(window.location.search).get("section");
+if (requestedSection) {
+  document.querySelector(`.section-tab[data-section-target="${requestedSection}Section"]`)?.click();
+}
 
 if (firebaseConfigured) {
   onAuthStateChanged(firebaseAuth, user => {

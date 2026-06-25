@@ -238,6 +238,40 @@ a {
   border-color: #f2b9bc;
 }
 
+.admin-sections {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 28px;
+  padding: 7px;
+  background: #e5e8f0;
+  border-radius: 12px;
+}
+
+.section-tab {
+  flex: 1;
+  min-height: 46px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.section-tab.active {
+  color: #fff;
+  background: var(--navy);
+  box-shadow: 0 6px 16px rgba(16, 27, 79, 0.2);
+}
+
+.admin-section {
+  display: none;
+}
+
+.admin-section.active {
+  display: block;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -404,6 +438,16 @@ a {
   margin-bottom: 24px;
 }
 
+.match-meta-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1.2fr 1.4fr;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #eef1f8;
+  border-radius: 10px;
+}
+
 .teams-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -510,10 +554,10 @@ a {
 .standings-editor-head,
 .standing-team-row {
   display: grid;
-  grid-template-columns: minmax(260px, 2.5fr) repeat(7, minmax(54px, 0.55fr)) 40px;
+  grid-template-columns: minmax(230px, 2.3fr) repeat(2, minmax(72px, 0.7fr)) repeat(7, minmax(50px, 0.5fr)) 40px;
   gap: 7px;
   align-items: center;
-  min-width: 860px;
+  min-width: 1050px;
 }
 
 .standings-editor-head {
@@ -548,6 +592,16 @@ a {
   text-align: center;
   border: 1px solid #ccd2df;
   border-radius: 5px;
+}
+
+.standing-team-row output {
+  display: grid;
+  min-height: 38px;
+  place-items: center;
+  color: var(--navy);
+  background: #eef1f8;
+  border-radius: 5px;
+  font-weight: 900;
 }
 
 .standing-team-name {
@@ -744,6 +798,10 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .match-meta-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .info-field {
     grid-column: 1 / -1;
   }
@@ -754,6 +812,15 @@ a {
 
   .token-field {
     grid-column: auto;
+  }
+
+  .admin-sections,
+  .match-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sections {
+    display: grid;
   }
 }
 

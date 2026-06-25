@@ -18,9 +18,17 @@ comme secours si Firebase n’est pas configuré ou temporairement indisponible.
 
 ## Matchs archivés et classements
 
+- `admin.html` est le point d’entrée avec trois modules : Matchs, Groupes et
+  Publication.
+- Un match possède une phase, un groupe éventuel, un tour et une date/heure.
 - Décochez **Publié** pour retirer un ancien match du live sans le supprimer.
 - Les matchs dépubliés restent enregistrés dans Firebase et peuvent être
   republiés ultérieurement.
 - Utilisez **Ajouter un groupe** pour saisir un classement.
 - Chaque classement possède également son propre interrupteur **Publié**.
+- J, G, N, P, BP, BC et Pts sont calculés automatiquement dès que le statut
+  d’un match de groupe est différent de `À venir`.
+- Le profil FIFA 2026 applique 3/1/0 et les critères de départage de l’article
+  13 : confrontations directes, différence de buts, buts marqués, discipline,
+  puis classement FIFA.
 - L’overlay alterne automatiquement entre les matchs et classements publiés.

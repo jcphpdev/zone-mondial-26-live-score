@@ -94,6 +94,11 @@ const DEFAULT_SETTINGS = {
   ticker_background_url: "assets/bg-scene-live-updates.png"
 };
 
+const LEGACY_SCOREBOARD_BACKGROUNDS = new Set([
+  "assets/bg-scoreboard-16-9-v2.png",
+  "assets/bg-scoreboard-16-9.png"
+]);
+
 function escapeHtml(value) {
   return text(value)
     .replaceAll("&", "&amp;")
@@ -129,10 +134,15 @@ function readSettings() {
     include_match_scenes: includeMatchScenesInput.checked,
     include_group_scenes: includeGroupScenesInput.checked,
     include_ticker_scene: includeTickerSceneInput.checked,
-    match_background_url: matchBackgroundUrlInput.value.trim() || DEFAULT_SETTINGS.match_background_url,
-    standings_background_url: standingsBackgroundUrlInput.value.trim() || DEFAULT_SETTINGS.standings_background_url,
-    ticker_background_url: tickerBackgroundUrlInput.value.trim() || DEFAULT_SETTINGS.ticker_background_url
+    match_background_url: sceneBackgroundSetting(matchBackgroundUrlInput.value, DEFAULT_SETTINGS.match_background_url),
+    standings_background_url: sceneBackgroundSetting(standingsBackgroundUrlInput.value, DEFAULT_SETTINGS.standings_background_url),
+    ticker_background_url: sceneBackgroundSetting(tickerBackgroundUrlInput.value, DEFAULT_SETTINGS.ticker_background_url)
   };
+}
+
+function sceneBackgroundSetting(input, fallback) {
+  const url = text(input, fallback).trim();
+  return LEGACY_SCOREBOARD_BACKGROUNDS.has(url) ? fallback : url;
 }
 
 function fillSettings(settings = {}) {
@@ -150,9 +160,9 @@ function fillSettings(settings = {}) {
   includeMatchScenesInput.checked = merged.include_match_scenes !== false;
   includeGroupScenesInput.checked = merged.include_group_scenes !== false;
   includeTickerSceneInput.checked = merged.include_ticker_scene === true;
-  matchBackgroundUrlInput.value = text(merged.match_background_url, DEFAULT_SETTINGS.match_background_url);
-  standingsBackgroundUrlInput.value = text(merged.standings_background_url, DEFAULT_SETTINGS.standings_background_url);
-  tickerBackgroundUrlInput.value = text(merged.ticker_background_url, DEFAULT_SETTINGS.ticker_background_url);
+  matchBackgroundUrlInput.value = sceneBackgroundSetting(merged.match_background_url, DEFAULT_SETTINGS.match_background_url);
+  standingsBackgroundUrlInput.value = sceneBackgroundSetting(merged.standings_background_url, DEFAULT_SETTINGS.standings_background_url);
+  tickerBackgroundUrlInput.value = sceneBackgroundSetting(merged.ticker_background_url, DEFAULT_SETTINGS.ticker_background_url);
 }
 
 function formatCasablancaDate() {

@@ -30,6 +30,11 @@ const DEFAULT_SETTINGS = {
   ticker_background_url: "assets/bg-scene-live-updates.png"
 };
 
+const LEGACY_SCOREBOARD_BACKGROUNDS = new Set([
+  "assets/bg-scoreboard-16-9-v2.png",
+  "assets/bg-scoreboard-16-9.png"
+]);
+
 const elements = {
   scoreboard: document.querySelector(".scoreboard"),
   competition: document.getElementById("competition"),
@@ -105,10 +110,15 @@ function normalizeSettings(settings = {}) {
     include_match_scenes: settings.include_match_scenes !== false,
     include_group_scenes: settings.include_group_scenes !== false,
     include_ticker_scene: settings.include_ticker_scene === true,
-    match_background_url: value(settings.match_background_url, DEFAULT_SETTINGS.match_background_url),
-    standings_background_url: value(settings.standings_background_url, DEFAULT_SETTINGS.standings_background_url),
-    ticker_background_url: value(settings.ticker_background_url, DEFAULT_SETTINGS.ticker_background_url)
+    match_background_url: sceneBackgroundSetting(settings.match_background_url, DEFAULT_SETTINGS.match_background_url),
+    standings_background_url: sceneBackgroundSetting(settings.standings_background_url, DEFAULT_SETTINGS.standings_background_url),
+    ticker_background_url: sceneBackgroundSetting(settings.ticker_background_url, DEFAULT_SETTINGS.ticker_background_url)
   };
+}
+
+function sceneBackgroundSetting(input, fallback) {
+  const url = value(input, fallback).trim();
+  return LEGACY_SCOREBOARD_BACKGROUNDS.has(url) ? fallback : url;
 }
 
 function cssUrl(url) {

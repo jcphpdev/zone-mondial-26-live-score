@@ -358,6 +358,40 @@ body {
   backdrop-filter: blur(3px);
 }
 
+.scoreboard.scene-live-updates .live-updates-view {
+  top: 18.2%;
+  left: 15.1%;
+  width: 69.8%;
+  height: 65.6%;
+  padding: 2.6vh 1.9vw;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.scoreboard.scene-live-updates .live-updates-title {
+  display: none;
+}
+
+.scoreboard.scene-live-updates .live-updates-rows {
+  height: 100%;
+  display: grid;
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  gap: 1.2vh;
+}
+
+.scoreboard.scene-live-updates .live-update-row {
+  min-height: 0;
+  background: rgba(255, 255, 255, 0.018);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.scoreboard.scene-live-updates .live-update-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .live-updates-title {
   display: flex;
   align-items: baseline;

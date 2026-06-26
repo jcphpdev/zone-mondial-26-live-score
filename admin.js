@@ -7,8 +7,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import { get, getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-14";
-import { flagUrl } from "./team-utils.js?v=20260626-14";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-15";
+import { flagUrl } from "./team-utils.js?v=20260626-15";
 
 window.addEventListener("error", event => {
   console.error(event.error || event.message);
@@ -89,7 +89,7 @@ const DEFAULT_SETTINGS = {
   include_ticker_scene: false,
   match_background_url: "assets/bg-scene-match.png",
   standings_background_url: "assets/bg-scene-standings.png",
-  ticker_background_url: "assets/bg-scoreboard-16-9-v2.png"
+  ticker_background_url: "assets/bg-scene-live-updates.png"
 };
 
 function escapeHtml(value) {

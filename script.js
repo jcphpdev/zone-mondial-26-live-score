@@ -1,8 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-7";
-import { flagUrl } from "./team-utils.js?v=20260626-7";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-8";
+import { flagUrl } from "./team-utils.js?v=20260626-8";
 
 const JSON_REFRESH_INTERVAL = 30_000;
 const SCENE_EXIT_DURATION = 260;
@@ -15,7 +15,13 @@ const DEFAULT_SETTINGS = {
   auto_rotate: true,
   show_ticker: true,
   show_goal_alert: true,
-  enable_goal_sound: true
+  enable_goal_sound: true,
+  scene_mode: "auto",
+  selected_match_id: "",
+  selected_group_id: "",
+  include_match_scenes: true,
+  include_group_scenes: true,
+  include_ticker_scene: false
 };
 
 const elements = {
@@ -34,6 +40,8 @@ const elements = {
   groupName: document.getElementById("groupName"),
   groupSubtitle: document.getElementById("groupSubtitle"),
   standingsRows: document.getElementById("standingsRows"),
+  liveUpdatesView: document.getElementById("liveUpdatesView"),
+  liveUpdatesRows: document.getElementById("liveUpdatesRows"),
   ticker: document.querySelector(".ticker"),
   goalAlert: document.getElementById("goalAlert"),
   goalTeam: document.getElementById("goalTeam"),
@@ -77,7 +85,13 @@ function normalizeSettings(settings = {}) {
     auto_rotate: settings.auto_rotate !== false,
     show_ticker: settings.show_ticker !== false,
     show_goal_alert: settings.show_goal_alert !== false,
-    enable_goal_sound: settings.enable_goal_sound !== false
+    enable_goal_sound: settings.enable_goal_sound !== false,
+    scene_mode: ["auto", "match", "group", "ticker"].includes(settings.scene_mode) ? settings.scene_mode : "auto",
+    selected_match_id: value(settings.selected_match_id),
+    selected_group_id: value(settings.selected_group_id),
+    include_match_scenes: settings.include_match_scenes !== false,
+    include_group_scenes: settings.include_group_scenes !== false,
+    include_ticker_scene: settings.include_ticker_scene === true
   };
 }
 
@@ -302,6 +316,30 @@ function tickerMessage(match, groups) {
   return `<strong>En direct</strong> ${escapeHtml(label)} — ${escapeHtml(home)} ${score} ${escapeHtml(away)} • ${escapeHtml(value(match.minute, value(match.status, "LIVE")))}`;
 }
 
+function liveUpdateRows(matches, groups) {
+  const orderedMatches = [...matches].sort((left, right) => {
+    const statusRank = match => isLive(match) ? 0 : isUpcoming(match) ? 1 : 2;
+    const rankDiff = statusRank(left) - statusRank(right);
+    if (rankDiff) return rankDiff;
+    return value(left.kickoff).localeCompare(value(right.kickoff));
+  });
+
+  return orderedMatches.slice(0, 6).map(match => {
+    const status = isFinished(match) ? "Terminé" : isUpcoming(match) ? "À venir" : "En direct";
+    const score = isUpcoming(match)
+      ? kickoffLabel(match) || value(match.status, "À venir")
+      : `${scoreNumber(match.home_score)} - ${scoreNumber(match.away_score)}`;
+    return {
+      status,
+      group: groupLabel(match, groups),
+      home: value(match.home, "Équipe 1"),
+      away: value(match.away, "Équipe 2"),
+      score,
+      minute: isLive(match) ? value(match.minute, value(match.status, "LIVE")) : ""
+    };
+  });
+}
+
 function renderTicker(matches, groups) {
   if (!elements.tickerTrack) return;
   elements.ticker.hidden = !currentSettings.show_ticker;
@@ -327,6 +365,27 @@ function renderTicker(matches, groups) {
   elements.tickerTrack.style.setProperty("--ticker-duration", `${Math.max(24, messages.length * 7)}s`);
 }
 
+function renderLiveUpdates(data) {
+  elements.scoreboard.classList.remove("show-standings");
+  elements.scoreboard.classList.add("show-live-updates");
+  elements.competition.textContent = "ZONE MONDIAL 26";
+  elements.status.textContent = "LIVE UPDATES";
+
+  const rows = Array.isArray(data.rows) ? data.rows : [];
+  elements.liveUpdatesRows.innerHTML = rows.length
+    ? rows.map(row => `
+        <div class="live-update-row">
+          <span class="live-update-status">${escapeHtml(row.status)}</span>
+          <span class="live-update-group">${escapeHtml(row.group)}</span>
+          <strong>${escapeHtml(row.home)}</strong>
+          <span class="live-update-score">${escapeHtml(row.score)}</span>
+          <strong>${escapeHtml(row.away)}</strong>
+          <span class="live-update-minute">${escapeHtml(row.minute)}</span>
+        </div>
+      `).join("")
+    : `<div class="live-update-empty">Aucun match publié pour le moment</div>`;
+}
+
 function animate() {
   elements.scoreboard.classList.remove("is-changing", "is-entering", "is-leaving");
   void elements.scoreboard.offsetWidth;
@@ -337,7 +396,7 @@ function animate() {
 }
 
 function renderMatch(match) {
-  elements.scoreboard.classList.remove("show-standings");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates");
   const finished = isFinished(match);
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = finished ? "TERMINÉ" : value(match.status, "EN DIRECT");
@@ -360,6 +419,7 @@ function renderMatch(match) {
 }
 
 function renderGroup(group) {
+  elements.scoreboard.classList.remove("show-live-updates");
   elements.scoreboard.classList.add("show-standings");
   elements.competition.textContent = value(group.subtitle, "COUPE DU MONDE 2026");
   elements.status.textContent = "CLASSEMENT";
@@ -393,7 +453,7 @@ function renderScene() {
   clearTimeout(rotationTimer);
   const token = ++sceneRenderToken;
   if (!scenes.length) {
-    elements.scoreboard.classList.remove("show-standings", "scene-group");
+    elements.scoreboard.classList.remove("show-standings", "show-live-updates", "scene-group", "scene-live-updates");
     elements.scoreboard.classList.add("scene-match");
     elements.matchInfo.textContent = "Aucun contenu publié";
     return;
@@ -403,8 +463,11 @@ function renderScene() {
     if (token !== sceneRenderToken) return;
     const scene = scenes[activeScene];
     elements.scoreboard.classList.toggle("scene-group", scene.type === "group");
-    elements.scoreboard.classList.toggle("scene-match", scene.type !== "group");
-    scene.type === "group" ? renderGroup(scene.data) : renderMatch(scene.data);
+    elements.scoreboard.classList.toggle("scene-live-updates", scene.type === "ticker");
+    elements.scoreboard.classList.toggle("scene-match", scene.type === "match");
+    if (scene.type === "group") renderGroup(scene.data);
+    else if (scene.type === "ticker") renderLiveUpdates(scene.data);
+    else renderMatch(scene.data);
     renderPagination();
     elements.scoreboard.classList.remove("is-leaving");
     animate();
@@ -437,9 +500,9 @@ function applyData(data) {
   );
   const displayedGroupIds = new Set();
 
-  scenes = [];
+  const matchScenes = publishedMatches.map(match => ({ type: "match", id: match.id, data: match }));
+  const groupScenes = [];
   publishedMatches.forEach(match => {
-    scenes.push({ type: "match", data: match });
 
     const groupId = inferGroupId(match, allGroups);
     if (match.phase !== "group" || !groupId) return;
@@ -448,8 +511,9 @@ function applyData(data) {
     const group = publishedGroupsById.get(groupId);
     if (!group) return;
 
-    scenes.push({
+    groupScenes.push({
       type: "group",
+      id: group.id,
       data: {
         ...group,
         // La publication contrôle uniquement la visibilité des matchs.
@@ -460,8 +524,36 @@ function applyData(data) {
     displayedGroupIds.add(groupId);
   });
 
+  const tickerScene = {
+    type: "ticker",
+    id: "ticker",
+    data: { rows: liveUpdateRows(publishedMatches, allGroups) }
+  };
+
+  if (currentSettings.scene_mode === "match") {
+    scenes = [
+      matchScenes.find(scene => scene.id === currentSettings.selected_match_id) || matchScenes[0]
+    ].filter(Boolean);
+  } else if (currentSettings.scene_mode === "group") {
+    scenes = [
+      groupScenes.find(scene => scene.id === currentSettings.selected_group_id) || groupScenes[0]
+    ].filter(Boolean);
+  } else if (currentSettings.scene_mode === "ticker") {
+    scenes = [tickerScene];
+  } else {
+    scenes = [
+      ...(currentSettings.include_match_scenes ? matchScenes : []),
+      ...(currentSettings.include_group_scenes ? groupScenes : []),
+      ...(currentSettings.include_ticker_scene ? [tickerScene] : [])
+    ];
+    if (!scenes.length) scenes = matchScenes.length ? matchScenes : [tickerScene];
+  }
+
   const requestedScene = new URLSearchParams(window.location.search).get("scene");
-  if (requestedScene === "group") {
+  if (requestedScene === "ticker") {
+    activeScene = scenes.findIndex(scene => scene.type === "ticker");
+    if (activeScene < 0) activeScene = 0;
+  } else if (requestedScene === "group") {
     activeScene = scenes.findIndex(scene => scene.type === "group");
     if (activeScene < 0) activeScene = 0;
   } else if (goalEvents.length) {

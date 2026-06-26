@@ -196,6 +196,30 @@
       <section class="settings-panel">
         <div class="settings-grid">
           <div class="field">
+            <label for="sceneMode">Mode d’affichage</label>
+            <select id="sceneMode">
+              <option value="auto">Automatique</option>
+              <option value="match">Forcer un match</option>
+              <option value="group">Forcer un classement</option>
+              <option value="ticker">Forcer la scène ticker</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="selectedMatchScene">Match forcé</label>
+            <select id="selectedMatchScene">
+              <option value="">Premier match publié</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="selectedGroupScene">Classement forcé</label>
+            <select id="selectedGroupScene">
+              <option value="">Premier classement disponible</option>
+            </select>
+          </div>
+
+          <div class="field">
             <label for="scoreSceneDuration">Durée score / match</label>
             <div class="unit-field">
               <input id="scoreSceneDuration" type="number" min="3" max="60" step="1" value="10">
@@ -216,6 +240,30 @@
             <span>
               <strong>Rotation automatique</strong>
               <small>Fait défiler les matchs et classements publiés.</small>
+            </span>
+          </label>
+
+          <label class="setting-switch">
+            <input id="includeMatchScenes" type="checkbox" checked>
+            <span>
+              <strong>Inclure les scènes matchs</strong>
+              <small>Ajoute les scores publiés dans la rotation automatique.</small>
+            </span>
+          </label>
+
+          <label class="setting-switch">
+            <input id="includeGroupScenes" type="checkbox" checked>
+            <span>
+              <strong>Inclure les classements</strong>
+              <small>Ajoute les classements liés aux matchs publiés.</small>
+            </span>
+          </label>
+
+          <label class="setting-switch">
+            <input id="includeTickerScene" type="checkbox">
+            <span>
+              <strong>Inclure une scène ticker</strong>
+              <small>Affiche périodiquement un écran résumé des infos live.</small>
             </span>
           </label>
 
@@ -478,6 +526,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260626-7"></script>
+  <script type="module" src="admin.js?v=20260626-8"></script>
 </body>
 </html>

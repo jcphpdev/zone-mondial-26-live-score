@@ -7,8 +7,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import { get, getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-7";
-import { flagUrl } from "./team-utils.js?v=20260626-7";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-8";
+import { flagUrl } from "./team-utils.js?v=20260626-8";
 
 window.addEventListener("error", event => {
   console.error(event.error || event.message);
@@ -47,6 +47,12 @@ const autoRotateScenesInput = document.getElementById("autoRotateScenes");
 const showTickerInput = document.getElementById("showTicker");
 const showGoalAlertInput = document.getElementById("showGoalAlert");
 const enableGoalSoundInput = document.getElementById("enableGoalSound");
+const sceneModeInput = document.getElementById("sceneMode");
+const selectedMatchSceneInput = document.getElementById("selectedMatchScene");
+const selectedGroupSceneInput = document.getElementById("selectedGroupScene");
+const includeMatchScenesInput = document.getElementById("includeMatchScenes");
+const includeGroupScenesInput = document.getElementById("includeGroupScenes");
+const includeTickerSceneInput = document.getElementById("includeTickerScene");
 
 let draftTimer;
 let autoPublishTimer;
@@ -71,7 +77,13 @@ const DEFAULT_SETTINGS = {
   auto_rotate: true,
   show_ticker: true,
   show_goal_alert: true,
-  enable_goal_sound: true
+  enable_goal_sound: true,
+  scene_mode: "auto",
+  selected_match_id: "",
+  selected_group_id: "",
+  include_match_scenes: true,
+  include_group_scenes: true,
+  include_ticker_scene: false
 };
 
 function escapeHtml(value) {
@@ -101,7 +113,13 @@ function readSettings() {
     auto_rotate: autoRotateScenesInput.checked,
     show_ticker: showTickerInput.checked,
     show_goal_alert: showGoalAlertInput.checked,
-    enable_goal_sound: enableGoalSoundInput.checked
+    enable_goal_sound: enableGoalSoundInput.checked,
+    scene_mode: sceneModeInput.value || "auto",
+    selected_match_id: selectedMatchSceneInput.value,
+    selected_group_id: selectedGroupSceneInput.value,
+    include_match_scenes: includeMatchScenesInput.checked,
+    include_group_scenes: includeGroupScenesInput.checked,
+    include_ticker_scene: includeTickerSceneInput.checked
   };
 }
 
@@ -113,6 +131,12 @@ function fillSettings(settings = {}) {
   showTickerInput.checked = merged.show_ticker !== false;
   showGoalAlertInput.checked = merged.show_goal_alert !== false;
   enableGoalSoundInput.checked = merged.enable_goal_sound !== false;
+  sceneModeInput.value = ["auto", "match", "group", "ticker"].includes(merged.scene_mode) ? merged.scene_mode : "auto";
+  selectedMatchSceneInput.dataset.selectedValue = text(merged.selected_match_id);
+  selectedGroupSceneInput.dataset.selectedValue = text(merged.selected_group_id);
+  includeMatchScenesInput.checked = merged.include_match_scenes !== false;
+  includeGroupScenesInput.checked = merged.include_group_scenes !== false;
+  includeTickerSceneInput.checked = merged.include_ticker_scene === true;
 }
 
 function formatCasablancaDate() {
@@ -312,6 +336,7 @@ function updateMatchSummary(card) {
   card.querySelector(".summary-meta").textContent = match.phase === "group"
     ? `${groupName || "Groupe non défini"} • ${match.status || "À venir"}`
     : `Élimination directe • ${match.status || "À venir"}`;
+  updateSceneSelectors();
 }
 
 function updateGroupSummary(card) {
@@ -319,6 +344,37 @@ function updateGroupSummary(card) {
   const count = card.querySelectorAll(".standing-team-row").length;
   card.querySelector(".group-summary-name").textContent = name;
   card.querySelector(".group-summary-teams").textContent = `${count} équipe${count > 1 ? "s" : ""}`;
+  updateSceneSelectors();
+}
+
+function updateSceneSelectors() {
+  if (!selectedMatchSceneInput || !selectedGroupSceneInput) return;
+
+  const selectedMatch = selectedMatchSceneInput.value || selectedMatchSceneInput.dataset.selectedValue || "";
+  const selectedGroup = selectedGroupSceneInput.value || selectedGroupSceneInput.dataset.selectedValue || "";
+
+  const matches = [...editor.querySelectorAll(".match-editor")].map(readMatch);
+  selectedMatchSceneInput.innerHTML = `<option value="">Premier match publié</option>` + matches
+    .filter(match => match.published !== false)
+    .map(match => {
+      const label = `${match.home || "Équipe 1"} ${match.home_score} - ${match.away_score} ${match.away || "Équipe 2"} • ${match.status || "Statut"}`;
+      return `<option value="${escapeHtml(match.id)}">${escapeHtml(label)}</option>`;
+    })
+    .join("");
+  selectedMatchSceneInput.value = [...selectedMatchSceneInput.options].some(option => option.value === selectedMatch)
+    ? selectedMatch
+    : "";
+  selectedMatchSceneInput.dataset.selectedValue = selectedMatchSceneInput.value;
+
+  const groups = [...groupsEditor.querySelectorAll(".group-editor")].map(readGroup);
+  selectedGroupSceneInput.innerHTML = `<option value="">Premier classement disponible</option>` + groups
+    .filter(group => group.published !== false)
+    .map(group => `<option value="${escapeHtml(group.id)}">${escapeHtml(group.name || "Groupe")}</option>`)
+    .join("");
+  selectedGroupSceneInput.value = [...selectedGroupSceneInput.options].some(option => option.value === selectedGroup)
+    ? selectedGroup
+    : "";
+  selectedGroupSceneInput.dataset.selectedValue = selectedGroupSceneInput.value;
 }
 
 function setCardExpanded(card, expanded) {
@@ -549,6 +605,7 @@ function bindMatch(card) {
     if (!confirm("Supprimer définitivement ce match ? Cette action est irréversible après publication.")) return;
     card.remove();
     refreshNumbers();
+    updateSceneSelectors();
     applyMatchFilters();
     scheduleSave();
   });
@@ -563,6 +620,7 @@ function addMatch(match = emptyMatch(), afterCard = null, expand = true) {
   else if (expand && !rendering) editor.prepend(card);
   else editor.appendChild(card);
   refreshNumbers();
+  updateSceneSelectors();
   if (expand) {
     setCardExpanded(card, true);
     card.classList.remove("is-beyond-limit", "is-filtered");
@@ -637,6 +695,7 @@ function bindGroup(card) {
     card.remove();
     refreshNumbers();
     updateAllGroupSelects();
+    updateSceneSelectors();
     scheduleSave();
   });
 }
@@ -651,6 +710,7 @@ function addGroup(group = emptyGroup(), afterCard = null) {
   else groupsEditor.appendChild(card);
   refreshNumbers();
   updateAllGroupSelects();
+  updateSceneSelectors();
   if (!rendering) setCardExpanded(card, true);
   scheduleSave();
   return card;
@@ -724,6 +784,7 @@ function render(data) {
   (Array.isArray(data.groups) ? data.groups : []).forEach(group => addGroup(group));
   refreshNumbers();
   updateAllGroupSelects();
+  updateSceneSelectors();
   refreshCalculatedStandings();
   applyMatchFilters(true);
   rendering = false;
@@ -871,7 +932,10 @@ updatedAtInput.addEventListener("input", scheduleSave);
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });
-[autoRotateScenesInput, showTickerInput, showGoalAlertInput, enableGoalSoundInput].forEach(input => {
+[autoRotateScenesInput, showTickerInput, showGoalAlertInput, enableGoalSoundInput, includeMatchScenesInput, includeGroupScenesInput, includeTickerSceneInput].forEach(input => {
+  input.addEventListener("change", scheduleSave);
+});
+[sceneModeInput, selectedMatchSceneInput, selectedGroupSceneInput].forEach(input => {
   input.addEventListener("change", scheduleSave);
 });
 autoPublishToggle.addEventListener("change", () => {

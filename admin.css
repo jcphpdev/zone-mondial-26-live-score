@@ -972,6 +972,10 @@ a {
   gap: 16px;
 }
 
+.full-setting {
+  grid-column: 1 / -1;
+}
+
 .unit-field {
   display: grid;
   grid-template-columns: 120px auto;

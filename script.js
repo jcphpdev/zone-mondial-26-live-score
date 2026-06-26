@@ -1,8 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-9";
-import { flagUrl } from "./team-utils.js?v=20260626-9";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-10";
+import { flagUrl } from "./team-utils.js?v=20260626-10";
 
 const JSON_REFRESH_INTERVAL = 30_000;
 const SCENE_EXIT_DURATION = 260;
@@ -21,7 +21,10 @@ const DEFAULT_SETTINGS = {
   selected_group_id: "",
   include_match_scenes: true,
   include_group_scenes: true,
-  include_ticker_scene: false
+  include_ticker_scene: false,
+  match_background_url: "assets/bg-scoreboard-16-9-v2.png",
+  standings_background_url: "assets/bg-scoreboard-16-9-v2.png",
+  ticker_background_url: "assets/bg-scoreboard-16-9-v2.png"
 };
 
 const elements = {
@@ -91,8 +94,25 @@ function normalizeSettings(settings = {}) {
     selected_group_id: value(settings.selected_group_id),
     include_match_scenes: settings.include_match_scenes !== false,
     include_group_scenes: settings.include_group_scenes !== false,
-    include_ticker_scene: settings.include_ticker_scene === true
+    include_ticker_scene: settings.include_ticker_scene === true,
+    match_background_url: value(settings.match_background_url, DEFAULT_SETTINGS.match_background_url),
+    standings_background_url: value(settings.standings_background_url, DEFAULT_SETTINGS.standings_background_url),
+    ticker_background_url: value(settings.ticker_background_url, DEFAULT_SETTINGS.ticker_background_url)
   };
+}
+
+function cssUrl(url) {
+  return `url("${value(url).replaceAll("\\", "/").replaceAll('"', "%22")}")`;
+}
+
+function sceneBackgroundUrl(type) {
+  if (type === "group") return currentSettings.standings_background_url;
+  if (type === "ticker") return currentSettings.ticker_background_url;
+  return currentSettings.match_background_url;
+}
+
+function applySceneBackground(type) {
+  document.documentElement.style.setProperty("--scene-bg", cssUrl(sceneBackgroundUrl(type)));
 }
 
 function escapeHtml(input) {
@@ -455,6 +475,7 @@ function renderScene() {
   if (!scenes.length) {
     elements.scoreboard.classList.remove("show-standings", "show-live-updates", "scene-group", "scene-live-updates");
     elements.scoreboard.classList.add("scene-match");
+    applySceneBackground("match");
     elements.matchInfo.textContent = "Aucun contenu publié";
     return;
   }
@@ -465,6 +486,7 @@ function renderScene() {
     elements.scoreboard.classList.toggle("scene-group", scene.type === "group");
     elements.scoreboard.classList.toggle("scene-live-updates", scene.type === "ticker");
     elements.scoreboard.classList.toggle("scene-match", scene.type === "match");
+    applySceneBackground(scene.type);
     if (scene.type === "group") renderGroup(scene.data);
     else if (scene.type === "ticker") renderLiveUpdates(scene.data);
     else renderMatch(scene.data);

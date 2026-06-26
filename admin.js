@@ -7,8 +7,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import { get, getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-8";
-import { flagUrl } from "./team-utils.js?v=20260626-8";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-10";
+import { flagUrl } from "./team-utils.js?v=20260626-10";
 
 window.addEventListener("error", event => {
   console.error(event.error || event.message);
@@ -53,6 +53,9 @@ const selectedGroupSceneInput = document.getElementById("selectedGroupScene");
 const includeMatchScenesInput = document.getElementById("includeMatchScenes");
 const includeGroupScenesInput = document.getElementById("includeGroupScenes");
 const includeTickerSceneInput = document.getElementById("includeTickerScene");
+const matchBackgroundUrlInput = document.getElementById("matchBackgroundUrl");
+const standingsBackgroundUrlInput = document.getElementById("standingsBackgroundUrl");
+const tickerBackgroundUrlInput = document.getElementById("tickerBackgroundUrl");
 
 let draftTimer;
 let autoPublishTimer;
@@ -83,7 +86,10 @@ const DEFAULT_SETTINGS = {
   selected_group_id: "",
   include_match_scenes: true,
   include_group_scenes: true,
-  include_ticker_scene: false
+  include_ticker_scene: false,
+  match_background_url: "assets/bg-scoreboard-16-9-v2.png",
+  standings_background_url: "assets/bg-scoreboard-16-9-v2.png",
+  ticker_background_url: "assets/bg-scoreboard-16-9-v2.png"
 };
 
 function escapeHtml(value) {
@@ -119,7 +125,10 @@ function readSettings() {
     selected_group_id: selectedGroupSceneInput.value,
     include_match_scenes: includeMatchScenesInput.checked,
     include_group_scenes: includeGroupScenesInput.checked,
-    include_ticker_scene: includeTickerSceneInput.checked
+    include_ticker_scene: includeTickerSceneInput.checked,
+    match_background_url: matchBackgroundUrlInput.value.trim() || DEFAULT_SETTINGS.match_background_url,
+    standings_background_url: standingsBackgroundUrlInput.value.trim() || DEFAULT_SETTINGS.standings_background_url,
+    ticker_background_url: tickerBackgroundUrlInput.value.trim() || DEFAULT_SETTINGS.ticker_background_url
   };
 }
 
@@ -137,6 +146,9 @@ function fillSettings(settings = {}) {
   includeMatchScenesInput.checked = merged.include_match_scenes !== false;
   includeGroupScenesInput.checked = merged.include_group_scenes !== false;
   includeTickerSceneInput.checked = merged.include_ticker_scene === true;
+  matchBackgroundUrlInput.value = text(merged.match_background_url, DEFAULT_SETTINGS.match_background_url);
+  standingsBackgroundUrlInput.value = text(merged.standings_background_url, DEFAULT_SETTINGS.standings_background_url);
+  tickerBackgroundUrlInput.value = text(merged.ticker_background_url, DEFAULT_SETTINGS.ticker_background_url);
 }
 
 function formatCasablancaDate() {
@@ -929,6 +941,10 @@ document.getElementById("firebaseLogoutButton").addEventListener("click", () => 
 publishButton.addEventListener("click", () => publishToFirebase(false));
 updatedAtInput.addEventListener("input", scheduleSave);
 [scoreSceneDurationInput, standingsSceneDurationInput].forEach(input => {
+  input.addEventListener("input", scheduleSave);
+  input.addEventListener("change", scheduleSave);
+});
+[matchBackgroundUrlInput, standingsBackgroundUrlInput, tickerBackgroundUrlInput].forEach(input => {
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });

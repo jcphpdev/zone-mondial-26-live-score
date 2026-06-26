@@ -6,7 +6,7 @@
   --zm-navy: #2a398d;
   --zm-white: #fff;
   --shadow: 0 8px 28px rgba(0, 0, 0, 0.62);
-  --scene-bg: url("assets/bg-scoreboard-16-9-v2.png");
+  --scene-bg: url("assets/bg-scene-match.png");
 }
 
 * {

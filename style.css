@@ -455,13 +455,15 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.58);
   border-radius: 18px;
   background:
-    linear-gradient(100deg, rgba(230, 29, 37, 0.86), rgba(42, 57, 141, 0.94) 42%, rgba(5, 13, 48, 0.92)),
-    rgba(5, 13, 48, 0.92);
+    linear-gradient(100deg, rgba(230, 29, 37, 0.92), rgba(42, 57, 141, 0.97) 42%, rgba(5, 13, 48, 0.96)),
+    rgba(5, 13, 48, 0.96);
   box-shadow:
     0 18px 52px rgba(0, 0, 0, 0.58),
     inset 0 1px 0 rgba(255, 255, 255, 0.24),
     inset 0 -12px 28px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(2px);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
   transform: translateX(-50%) translateY(18px) scale(0.97);
 }
 
@@ -542,7 +544,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-shadow: 0 11px 28px rgba(0, 0, 0, 0.78);
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.9);
   text-transform: uppercase;
 }
 
@@ -558,13 +560,13 @@ body {
   font-weight: 900;
   letter-spacing: 0.07em;
   text-align: center;
-  text-shadow: 0 10px 24px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 4px 9px rgba(0, 0, 0, 0.86);
 }
 
 .goal-alert.goal-away {
   background:
-    linear-gradient(100deg, rgba(60, 172, 59, 0.82), rgba(42, 57, 141, 0.94) 46%, rgba(5, 13, 48, 0.92)),
-    rgba(5, 13, 48, 0.92);
+    linear-gradient(100deg, rgba(60, 172, 59, 0.9), rgba(42, 57, 141, 0.97) 46%, rgba(5, 13, 48, 0.96)),
+    rgba(5, 13, 48, 0.96);
 }
 
 .goal-alert.is-visible {
@@ -685,33 +687,33 @@ body {
 }
 
 @keyframes goal-strap {
-  0% { opacity: 0; transform: translateX(-50%) translateY(20px) scale(0.96); filter: blur(8px); }
-  10% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.018); filter: blur(0); }
+  0% { opacity: 0; transform: translateX(-50%) translateY(16px) scale(0.985); }
+  10% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.01); }
   18% { transform: translateX(-50%) translateY(0) scale(1); }
   82% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(12px) scale(0.985); filter: blur(6px); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.992); }
 }
 
 @keyframes goal-badge {
-  0% { opacity: 0; transform: translateX(-16px) scale(0.9); filter: blur(8px); }
-  14% { opacity: 1; transform: translateX(0) scale(1.04); filter: blur(0); }
+  0% { opacity: 0; transform: translateX(-14px) scale(0.96); }
+  14% { opacity: 1; transform: translateX(0) scale(1.025); }
   24%, 82% { opacity: 1; transform: translateX(0) scale(1); }
-  100% { opacity: 0; transform: translateX(-8px) scale(0.98); filter: blur(4px); }
+  100% { opacity: 0; transform: translateX(-8px) scale(0.992); }
 }
 
 @keyframes goal-text-in {
-  0% { opacity: 0; transform: translateX(18px); filter: blur(7px); }
+  0% { opacity: 0; transform: translateX(16px); }
   16% { opacity: 0; }
-  30%, 82% { opacity: 1; transform: translateX(0); filter: blur(0); }
-  100% { opacity: 0; transform: translateX(8px); filter: blur(4px); }
+  30%, 82% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(8px); }
 }
 
 @keyframes goal-score-in {
-  0% { opacity: 0; transform: translateX(14px) scale(0.9); filter: blur(7px); }
+  0% { opacity: 0; transform: translateX(12px) scale(0.96); }
   18% { opacity: 0; }
-  32% { opacity: 1; transform: translateX(0) scale(1.05); filter: blur(0); }
+  32% { opacity: 1; transform: translateX(0) scale(1.035); }
   42%, 82% { opacity: 1; transform: translateX(0) scale(1); }
-  100% { opacity: 0; transform: translateX(8px) scale(0.98); filter: blur(4px); }
+  100% { opacity: 0; transform: translateX(8px) scale(0.992); }
 }
 
 @keyframes goal-flare {

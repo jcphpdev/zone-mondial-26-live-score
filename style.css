@@ -509,10 +509,10 @@ body {
 .scoreboard.is-entering.scene-live-updates .live-update-row:nth-child(6) { animation-delay: 0.40s; }
 
 .match-header {
-  top: 10.2%;
-  left: 28.8%;
-  width: 42.5%;
-  height: 9.2%;
+  top: 10.9%;
+  left: 26.7%;
+  width: 46.6%;
+  height: 9.3%;
   gap: 1.6vw;
   text-align: center;
   font-family: "Barlow Condensed", Arial, sans-serif;
@@ -545,26 +545,27 @@ body {
 }
 
 .team-panel {
-  top: 29.2%;
-  width: 29.5%;
-  height: 38.5%;
+  top: 25.2%;
+  width: 27.4%;
+  height: 35.4%;
   flex-direction: column;
-  gap: 2.2vh;
-  padding: 3vh 3vw;
+  gap: 1.55vh;
+  padding: 2.2vh 2.2vw 2.8vh;
   text-align: center;
+  justify-content: center;
 }
 
 .team-home {
-  left: 3.6%;
+  left: 5.55%;
 }
 
 .team-away {
-  right: 3.6%;
+  right: 5.55%;
 }
 
 .flag {
-  width: clamp(118px, 10.5vw, 202px);
-  height: clamp(76px, 6.8vw, 131px);
+  width: clamp(104px, 9.6vw, 184px);
+  height: clamp(68px, 6.2vw, 119px);
   object-fit: cover;
   border: 3px solid rgba(255, 255, 255, 0.82);
   border-radius: 8px;
@@ -580,9 +581,9 @@ body {
   max-width: 100%;
   margin: 0;
   font-family: "Barlow Condensed", Arial, sans-serif;
-  font-size: clamp(36px, 4.4vw, 86px);
+  font-size: clamp(32px, 3.85vw, 74px);
   font-weight: 900;
-  line-height: 0.92;
+  line-height: 0.9;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   text-wrap: balance;
@@ -590,10 +591,10 @@ body {
 }
 
 .score-panel {
-  top: 29.2%;
+  top: 26.2%;
   left: 34.4%;
   width: 31.2%;
-  height: 38.5%;
+  height: 34.7%;
   flex-direction: column;
 }
 
@@ -603,7 +604,7 @@ body {
   justify-content: center;
   gap: 0.18em;
   font-family: "Barlow Condensed", Arial, sans-serif;
-  font-size: clamp(120px, 13vw, 255px);
+  font-size: clamp(110px, 12.5vw, 240px);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   line-height: 0.75;
@@ -619,7 +620,7 @@ body {
 }
 
 .minute {
-  margin-top: 2.5vh;
+  margin-top: 1.6vh;
   padding: 0.3em 0.9em;
   color: #fff;
   background: linear-gradient(90deg, var(--zm-red), #b70b17);
@@ -637,20 +638,21 @@ body {
 }
 
 .match-footer {
-  left: 18.7%;
-  bottom: 6.8%;
-  width: 62.8%;
-  height: 17.7%;
+  top: 66.2%;
+  left: 25.7%;
+  bottom: auto;
+  width: 48.6%;
+  height: 11.9%;
   flex-direction: column;
-  gap: 1.4vh;
-  padding: 2vh 4vw;
+  gap: 1vh;
+  padding: 1.4vh 3vw;
   text-align: center;
 }
 
 .match-footer p {
   margin: 0;
   font-family: "Barlow Condensed", Arial, sans-serif;
-  font-size: clamp(24px, 2.55vw, 50px);
+  font-size: clamp(20px, 2.15vw, 42px);
   font-weight: 700;
   line-height: 1.08;
   letter-spacing: 0.025em;

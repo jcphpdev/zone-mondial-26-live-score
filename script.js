@@ -1,8 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-11";
-import { flagUrl } from "./team-utils.js?v=20260626-11";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-14";
+import { flagUrl } from "./team-utils.js?v=20260626-14";
 
 const JSON_REFRESH_INTERVAL = 30_000;
 const SCENE_EXIT_DURATION = 260;
@@ -23,7 +23,7 @@ const DEFAULT_SETTINGS = {
   include_group_scenes: true,
   include_ticker_scene: false,
   match_background_url: "assets/bg-scene-match.png",
-  standings_background_url: "assets/bg-scoreboard-16-9-v2.png",
+  standings_background_url: "assets/bg-scene-standings.png",
   ticker_background_url: "assets/bg-scoreboard-16-9-v2.png"
 };
 

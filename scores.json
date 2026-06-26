@@ -14,7 +14,7 @@
     "include_group_scenes": true,
     "include_ticker_scene": false,
     "match_background_url": "assets/bg-scene-match.png",
-    "standings_background_url": "assets/bg-scoreboard-16-9-v2.png",
+    "standings_background_url": "assets/bg-scene-standings.png",
     "ticker_background_url": "assets/bg-scoreboard-16-9-v2.png"
   },
   "matches": [],

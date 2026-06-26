@@ -1,8 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-4";
-import { flagUrl } from "./team-utils.js?v=20260626-4";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-5";
+import { flagUrl } from "./team-utils.js?v=20260626-5";
 
 const ROTATION_INTERVAL = 10_000;
 const JSON_REFRESH_INTERVAL = 30_000;
@@ -30,6 +30,7 @@ const elements = {
   goalAlert: document.getElementById("goalAlert"),
   goalTeam: document.getElementById("goalTeam"),
   goalScoreLine: document.getElementById("goalScoreLine"),
+  tickerTrack: document.getElementById("tickerTrack"),
   soundUnlock: document.getElementById("soundUnlock"),
   connectionState: document.getElementById("connectionState")
 };
@@ -66,6 +67,17 @@ function isFinished(match) {
   const values = ["FT", "FIN", "TERMINÉ", "TERMINE"];
   return values.includes(value(match.minute).trim().toUpperCase())
     || values.includes(value(match.status).trim().toUpperCase());
+}
+
+function isUpcoming(match) {
+  const status = value(match.status).trim().toUpperCase();
+  const minute = value(match.minute).trim().toUpperCase();
+  return ["À VENIR", "A VENIR", "AVENIR", "PROGRAMMÉ", "PROGRAMME"].includes(status)
+    || ["À VENIR", "A VENIR", "AVENIR"].includes(minute);
+}
+
+function isLive(match) {
+  return !isUpcoming(match) && !isFinished(match);
 }
 
 function matchKey(match) {
@@ -223,6 +235,67 @@ function renderPagination() {
     .join("");
 }
 
+function groupLabel(match, groups) {
+  const groupId = inferGroupId(match, groups);
+  const group = groups.find(item => item.id === groupId);
+  if (group?.name) return group.name;
+  if (match.phase === "group") return value(match.group_id, "Phase de groupes");
+  return value(match.round, match.phase === "knockout" ? "Élimination directe" : "");
+}
+
+function kickoffLabel(match) {
+  if (!match.kickoff) return "";
+  const date = new Date(match.kickoff);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function tickerMessage(match, groups) {
+  const home = value(match.home, "Équipe 1");
+  const away = value(match.away, "Équipe 2");
+  const score = `${scoreNumber(match.home_score)} - ${scoreNumber(match.away_score)}`;
+  const label = groupLabel(match, groups);
+
+  if (isFinished(match)) {
+    return `<strong>Terminé</strong> ${escapeHtml(label)} — ${escapeHtml(home)} ${score} ${escapeHtml(away)}`;
+  }
+
+  if (isUpcoming(match)) {
+    const kickoff = kickoffLabel(match);
+    return `<strong>À venir</strong> ${escapeHtml(label)} — ${escapeHtml(home)} - ${escapeHtml(away)}${kickoff ? ` • ${escapeHtml(kickoff)}` : ""}`;
+  }
+
+  return `<strong>En direct</strong> ${escapeHtml(label)} — ${escapeHtml(home)} ${score} ${escapeHtml(away)} • ${escapeHtml(value(match.minute, value(match.status, "LIVE")))}`;
+}
+
+function renderTicker(matches, groups) {
+  if (!elements.tickerTrack) return;
+
+  const orderedMatches = [...matches].sort((left, right) => {
+    const statusRank = match => isLive(match) ? 0 : isUpcoming(match) ? 1 : 2;
+    const rankDiff = statusRank(left) - statusRank(right);
+    if (rankDiff) return rankDiff;
+    return value(left.kickoff).localeCompare(value(right.kickoff));
+  });
+
+  const messages = orderedMatches
+    .slice(0, 14)
+    .map(match => tickerMessage(match, groups));
+
+  if (!messages.length) {
+    messages.push("<strong>Zone Mondial 26</strong> Aucun match publié pour le moment");
+  }
+
+  const content = messages.map(message => `<span class="ticker__item">${message}</span>`).join("");
+  elements.tickerTrack.innerHTML = `${content}${content}`;
+  elements.tickerTrack.style.setProperty("--ticker-duration", `${Math.max(24, messages.length * 7)}s`);
+}
+
 function animate() {
   elements.scoreboard.classList.remove("is-changing", "is-entering", "is-leaving");
   void elements.scoreboard.offsetWidth;
@@ -321,6 +394,7 @@ function applyData(data) {
   const allGroups = Array.isArray(data?.groups) ? data.groups : [];
   const publishedMatches = allMatches.filter(match => match.published !== false);
   const goalEvents = detectGoalEvents(publishedMatches);
+  renderTicker(publishedMatches, allGroups);
   const publishedGroupsById = new Map(
     allGroups
       .filter(group => group.published !== false)

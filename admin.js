@@ -46,6 +46,7 @@ const standingsSceneDurationInput = document.getElementById("standingsSceneDurat
 const autoRotateScenesInput = document.getElementById("autoRotateScenes");
 const showTickerInput = document.getElementById("showTicker");
 const showGoalAlertInput = document.getElementById("showGoalAlert");
+const autoStartMatchesInput = document.getElementById("autoStartMatches");
 const enableGoalSoundInput = document.getElementById("enableGoalSound");
 const sceneModeInput = document.getElementById("sceneMode");
 const selectedMatchSceneInput = document.getElementById("selectedMatchScene");
@@ -80,6 +81,7 @@ const DEFAULT_SETTINGS = {
   auto_rotate: true,
   show_ticker: true,
   show_goal_alert: true,
+  auto_start_matches: true,
   enable_goal_sound: true,
   scene_mode: "auto",
   selected_match_id: "",
@@ -119,6 +121,7 @@ function readSettings() {
     auto_rotate: autoRotateScenesInput.checked,
     show_ticker: showTickerInput.checked,
     show_goal_alert: showGoalAlertInput.checked,
+    auto_start_matches: autoStartMatchesInput.checked,
     enable_goal_sound: enableGoalSoundInput.checked,
     scene_mode: sceneModeInput.value || "auto",
     selected_match_id: selectedMatchSceneInput.value,
@@ -139,6 +142,7 @@ function fillSettings(settings = {}) {
   autoRotateScenesInput.checked = merged.auto_rotate !== false;
   showTickerInput.checked = merged.show_ticker !== false;
   showGoalAlertInput.checked = merged.show_goal_alert !== false;
+  autoStartMatchesInput.checked = merged.auto_start_matches !== false;
   enableGoalSoundInput.checked = merged.enable_goal_sound !== false;
   sceneModeInput.value = ["auto", "match", "group", "ticker"].includes(merged.scene_mode) ? merged.scene_mode : "auto";
   selectedMatchSceneInput.dataset.selectedValue = text(merged.selected_match_id);
@@ -948,7 +952,7 @@ updatedAtInput.addEventListener("input", scheduleSave);
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });
-[autoRotateScenesInput, showTickerInput, showGoalAlertInput, enableGoalSoundInput, includeMatchScenesInput, includeGroupScenesInput, includeTickerSceneInput].forEach(input => {
+[autoRotateScenesInput, showTickerInput, showGoalAlertInput, autoStartMatchesInput, enableGoalSoundInput, includeMatchScenesInput, includeGroupScenesInput, includeTickerSceneInput].forEach(input => {
   input.addEventListener("change", scheduleSave);
 });
 [sceneModeInput, selectedMatchSceneInput, selectedGroupSceneInput].forEach(input => {

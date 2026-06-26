@@ -1013,6 +1013,21 @@ body {
     rgba(5, 13, 48, 0.96);
 }
 
+.goal-alert.kickoff-alert {
+  background:
+    linear-gradient(100deg, rgba(42, 57, 141, 0.96), rgba(5, 13, 48, 0.97) 48%, rgba(60, 172, 59, 0.82)),
+    rgba(5, 13, 48, 0.96);
+}
+
+.goal-alert.kickoff-alert .goal-alert__label {
+  min-width: 15.2vw;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent),
+    linear-gradient(90deg, var(--zm-navy), var(--zm-green));
+  font-size: clamp(24px, 2.25vw, 46px);
+  letter-spacing: 0.08em;
+}
+
 .goal-alert.is-visible {
   animation: goal-strap 4.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

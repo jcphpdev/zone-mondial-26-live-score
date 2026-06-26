@@ -6,6 +6,7 @@
     "auto_rotate": true,
     "show_ticker": true,
     "show_goal_alert": true,
+    "auto_start_matches": true,
     "enable_goal_sound": true,
     "scene_mode": "auto",
     "selected_match_id": "",

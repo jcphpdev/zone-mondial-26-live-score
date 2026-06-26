@@ -957,6 +957,66 @@ a {
   accent-color: var(--green);
 }
 
+.settings-panel {
+  padding: 26px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--blue);
+  border-radius: 14px;
+  box-shadow: 0 12px 35px rgba(16, 27, 79, 0.08);
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.unit-field {
+  display: grid;
+  grid-template-columns: 120px auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.unit-field span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.setting-switch {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 16px;
+  background: #f7f8fb;
+  border: 1px solid #e1e4ed;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.setting-switch input {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--green);
+}
+
+.setting-switch strong {
+  display: block;
+  color: var(--navy);
+  font-weight: 900;
+}
+
+.setting-switch small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
 .export-panel {
   display: flex;
   align-items: center;
@@ -1037,6 +1097,10 @@ a {
 
   .token-row {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
   }
 
   .token-field {

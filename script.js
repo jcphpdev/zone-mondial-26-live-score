@@ -1,15 +1,22 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-6";
-import { flagUrl } from "./team-utils.js?v=20260626-6";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-7";
+import { flagUrl } from "./team-utils.js?v=20260626-7";
 
-const ROTATION_INTERVAL = 10_000;
 const JSON_REFRESH_INTERVAL = 30_000;
 const SCENE_EXIT_DURATION = 260;
 const SCENE_ENTER_DURATION = 620;
 const GOAL_ALERT_DURATION = 4_200;
 const params = new URLSearchParams(window.location.search);
+const DEFAULT_SETTINGS = {
+  score_scene_duration: 10,
+  standings_scene_duration: 8,
+  auto_rotate: true,
+  show_ticker: true,
+  show_goal_alert: true,
+  enable_goal_sound: true
+};
 
 const elements = {
   scoreboard: document.querySelector(".scoreboard"),
@@ -27,6 +34,7 @@ const elements = {
   groupName: document.getElementById("groupName"),
   groupSubtitle: document.getElementById("groupSubtitle"),
   standingsRows: document.getElementById("standingsRows"),
+  ticker: document.querySelector(".ticker"),
   goalAlert: document.getElementById("goalAlert"),
   goalTeam: document.getElementById("goalTeam"),
   goalScoreLine: document.getElementById("goalScoreLine"),
@@ -41,10 +49,12 @@ let jsonFallbackTimer;
 let sceneRenderToken = 0;
 let hasRenderedScene = false;
 let goalAlertTimer;
+let rotationTimer;
 let previousScoreByMatch = new Map();
 let scoreBaselineReady = false;
 let audioContext;
 let soundUnlocked = false;
+let currentSettings = { ...DEFAULT_SETTINGS };
 
 const value = (input, fallback = "") =>
   input === undefined || input === null ? fallback : String(input);
@@ -53,6 +63,23 @@ const scoreNumber = input => {
   const parsed = Number.parseInt(value(input, "0"), 10);
   return Number.isFinite(parsed) ? parsed : 0;
 };
+
+function boundedNumber(input, fallback, min, max) {
+  const parsed = Number.parseInt(input, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
+}
+
+function normalizeSettings(settings = {}) {
+  return {
+    score_scene_duration: boundedNumber(settings.score_scene_duration, DEFAULT_SETTINGS.score_scene_duration, 3, 60),
+    standings_scene_duration: boundedNumber(settings.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
+    auto_rotate: settings.auto_rotate !== false,
+    show_ticker: settings.show_ticker !== false,
+    show_goal_alert: settings.show_goal_alert !== false,
+    enable_goal_sound: settings.enable_goal_sound !== false
+  };
+}
 
 function escapeHtml(input) {
   return value(input)
@@ -147,11 +174,12 @@ function detectGoalEvents(matches) {
 }
 
 function shouldShowSoundUnlock() {
+  if (!currentSettings.enable_goal_sound) return false;
   return params.get("sound") === "unlock" || params.get("debug") === "1";
 }
 
 async function unlockSound() {
-  if (params.get("sound") === "0") return false;
+  if (params.get("sound") === "0" || !currentSettings.enable_goal_sound) return false;
 
   try {
     audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
@@ -166,7 +194,7 @@ async function unlockSound() {
 }
 
 async function playGoalSound() {
-  if (params.get("sound") === "0") return;
+  if (params.get("sound") === "0" || !currentSettings.enable_goal_sound) return;
 
   try {
     const unlocked = soundUnlocked || await unlockSound();
@@ -206,6 +234,7 @@ async function playGoalSound() {
 
 function triggerGoalAlert(event) {
   if (!event) return;
+  if (!currentSettings.show_goal_alert) return;
 
   elements.goalTeam.textContent = event.team;
   elements.goalScoreLine.textContent = `${event.score.home} - ${event.score.away}`;
@@ -275,6 +304,8 @@ function tickerMessage(match, groups) {
 
 function renderTicker(matches, groups) {
   if (!elements.tickerTrack) return;
+  elements.ticker.hidden = !currentSettings.show_ticker;
+  if (!currentSettings.show_ticker) return;
 
   const orderedMatches = [...matches].sort((left, right) => {
     const statusRank = match => isLive(match) ? 0 : isUpcoming(match) ? 1 : 2;
@@ -359,6 +390,7 @@ function renderGroup(group) {
 }
 
 function renderScene() {
+  clearTimeout(rotationTimer);
   const token = ++sceneRenderToken;
   if (!scenes.length) {
     elements.scoreboard.classList.remove("show-standings", "scene-group");
@@ -377,6 +409,7 @@ function renderScene() {
     elements.scoreboard.classList.remove("is-leaving");
     animate();
     hasRenderedScene = true;
+    scheduleRotation();
   };
 
   if (!hasRenderedScene) {
@@ -390,6 +423,8 @@ function renderScene() {
 }
 
 function applyData(data) {
+  currentSettings = normalizeSettings(data?.settings);
+  elements.soundUnlock.hidden = !shouldShowSoundUnlock() || soundUnlocked;
   const allMatches = Array.isArray(data?.matches) ? data.matches : [];
   const allGroups = Array.isArray(data?.groups) ? data.groups : [];
   const publishedMatches = allMatches.filter(match => match.published !== false);
@@ -440,7 +475,7 @@ function applyData(data) {
   elements.connectionState.hidden = true;
   renderScene();
 
-  if (goalEvents.length) {
+  if (goalEvents.length && currentSettings.show_goal_alert) {
     window.setTimeout(() => triggerGoalAlert(goalEvents[0]), SCENE_EXIT_DURATION + 180);
   }
 }
@@ -480,9 +515,22 @@ function startRealtime() {
 }
 
 function rotateScene() {
-  if (scenes.length < 2) return;
+  if (!currentSettings.auto_rotate || scenes.length < 2) return;
   activeScene = (activeScene + 1) % scenes.length;
   renderScene();
+}
+
+function sceneDuration(scene) {
+  const seconds = scene?.type === "group"
+    ? currentSettings.standings_scene_duration
+    : currentSettings.score_scene_duration;
+  return seconds * 1000;
+}
+
+function scheduleRotation() {
+  clearTimeout(rotationTimer);
+  if (!currentSettings.auto_rotate || scenes.length < 2) return;
+  rotationTimer = window.setTimeout(rotateScene, sceneDuration(scenes[activeScene]));
 }
 
 startRealtime();
@@ -490,4 +538,3 @@ if (elements.soundUnlock) {
   elements.soundUnlock.hidden = !shouldShowSoundUnlock();
   elements.soundUnlock.addEventListener("click", unlockSound);
 }
-setInterval(rotateScene, ROTATION_INTERVAL);

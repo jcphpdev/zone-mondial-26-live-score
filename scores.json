@@ -1,5 +1,13 @@
 {
   "updated_at": "2026-06-24 18:10",
+  "settings": {
+    "score_scene_duration": 10,
+    "standings_scene_duration": 8,
+    "auto_rotate": true,
+    "show_ticker": true,
+    "show_goal_alert": true,
+    "enable_goal_sound": true
+  },
   "matches": [
     {
       "published": true,

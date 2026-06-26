@@ -61,6 +61,9 @@
       <button class="section-tab" data-section-target="connectionSection" type="button">
         Publication
       </button>
+      <button class="section-tab" data-section-target="settingsSection" type="button">
+        Paramètres live
+      </button>
     </nav>
 
     <section id="matchesSection" class="admin-section active">
@@ -180,6 +183,67 @@
         <span>Publication automatique en temps réel</span>
       </label>
     </section>
+    </section>
+
+    <section id="settingsSection" class="admin-section">
+      <section class="toolbar standings-toolbar">
+        <div>
+          <h2>Paramètres de l’overlay</h2>
+          <p>Contrôlez la rotation des scènes, le ticker et les alertes de but sans modifier le code.</p>
+        </div>
+      </section>
+
+      <section class="settings-panel">
+        <div class="settings-grid">
+          <div class="field">
+            <label for="scoreSceneDuration">Durée score / match</label>
+            <div class="unit-field">
+              <input id="scoreSceneDuration" type="number" min="3" max="60" step="1" value="10">
+              <span>secondes</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="standingsSceneDuration">Durée classement</label>
+            <div class="unit-field">
+              <input id="standingsSceneDuration" type="number" min="3" max="60" step="1" value="8">
+              <span>secondes</span>
+            </div>
+          </div>
+
+          <label class="setting-switch">
+            <input id="autoRotateScenes" type="checkbox" checked>
+            <span>
+              <strong>Rotation automatique</strong>
+              <small>Fait défiler les matchs et classements publiés.</small>
+            </span>
+          </label>
+
+          <label class="setting-switch">
+            <input id="showTicker" type="checkbox" checked>
+            <span>
+              <strong>Ticker inférieur</strong>
+              <small>Affiche le bandeau dynamique des matchs publiés.</small>
+            </span>
+          </label>
+
+          <label class="setting-switch">
+            <input id="showGoalAlert" type="checkbox" checked>
+            <span>
+              <strong>Alerte visuelle de but</strong>
+              <small>Affiche le bandeau BUT quand un score augmente.</small>
+            </span>
+          </label>
+
+          <label class="setting-switch">
+            <input id="enableGoalSound" type="checkbox" checked>
+            <span>
+              <strong>Son de but</strong>
+              <small>Nécessite parfois « Activer le son » dans OBS.</small>
+            </span>
+          </label>
+        </div>
+      </section>
     </section>
 
     <section class="export-panel">
@@ -414,6 +478,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260625-4"></script>
+  <script type="module" src="admin.js?v=20260626-7"></script>
 </body>
 </html>

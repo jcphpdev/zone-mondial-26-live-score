@@ -7,8 +7,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import { get, getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260625-4";
-import { flagUrl } from "./team-utils.js?v=20260625-4";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-7";
+import { flagUrl } from "./team-utils.js?v=20260626-7";
 
 window.addEventListener("error", event => {
   console.error(event.error || event.message);
@@ -41,6 +41,12 @@ const matchGroupFilter = document.getElementById("matchGroupFilter");
 const showUnpublishedMatches = document.getElementById("showUnpublishedMatches");
 const matchResultsInfo = document.getElementById("matchResultsInfo");
 const loadMoreMatches = document.getElementById("loadMoreMatches");
+const scoreSceneDurationInput = document.getElementById("scoreSceneDuration");
+const standingsSceneDurationInput = document.getElementById("standingsSceneDuration");
+const autoRotateScenesInput = document.getElementById("autoRotateScenes");
+const showTickerInput = document.getElementById("showTicker");
+const showGoalAlertInput = document.getElementById("showGoalAlert");
+const enableGoalSoundInput = document.getElementById("enableGoalSound");
 
 let draftTimer;
 let autoPublishTimer;
@@ -59,6 +65,15 @@ if (firebaseConfigured) {
 const text = (value, fallback = "") =>
   value === undefined || value === null ? fallback : String(value);
 
+const DEFAULT_SETTINGS = {
+  score_scene_duration: 10,
+  standings_scene_duration: 8,
+  auto_rotate: true,
+  show_ticker: true,
+  show_goal_alert: true,
+  enable_goal_sound: true
+};
+
 function escapeHtml(value) {
   return text(value)
     .replaceAll("&", "&amp;")
@@ -71,6 +86,33 @@ function escapeHtml(value) {
 function number(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function boundedNumber(value, fallback, min, max) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
+}
+
+function readSettings() {
+  return {
+    score_scene_duration: boundedNumber(scoreSceneDurationInput.value, DEFAULT_SETTINGS.score_scene_duration, 3, 60),
+    standings_scene_duration: boundedNumber(standingsSceneDurationInput.value, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
+    auto_rotate: autoRotateScenesInput.checked,
+    show_ticker: showTickerInput.checked,
+    show_goal_alert: showGoalAlertInput.checked,
+    enable_goal_sound: enableGoalSoundInput.checked
+  };
+}
+
+function fillSettings(settings = {}) {
+  const merged = { ...DEFAULT_SETTINGS, ...settings };
+  scoreSceneDurationInput.value = boundedNumber(merged.score_scene_duration, DEFAULT_SETTINGS.score_scene_duration, 3, 60);
+  standingsSceneDurationInput.value = boundedNumber(merged.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60);
+  autoRotateScenesInput.checked = merged.auto_rotate !== false;
+  showTickerInput.checked = merged.show_ticker !== false;
+  showGoalAlertInput.checked = merged.show_goal_alert !== false;
+  enableGoalSoundInput.checked = merged.enable_goal_sound !== false;
 }
 
 function formatCasablancaDate() {
@@ -175,6 +217,7 @@ function buildData() {
   const groups = [...groupsEditor.querySelectorAll(".group-editor")].map(readGroup);
   return {
     updated_at: updatedAtInput.value.trim() || formatCasablancaDate(),
+    settings: readSettings(),
     matches,
     groups: groups.map(group => ({
       ...group,
@@ -675,6 +718,7 @@ function render(data) {
   editor.innerHTML = "";
   groupsEditor.innerHTML = "";
   updatedAtInput.value = text(data.updated_at, formatCasablancaDate());
+  fillSettings(data.settings);
   const sourceMatches = Array.isArray(data.matches) && data.matches.length ? data.matches : [emptyMatch()];
   sourceMatches.forEach(match => addMatch(match, null, false));
   (Array.isArray(data.groups) ? data.groups : []).forEach(group => addGroup(group));
@@ -823,6 +867,13 @@ document.getElementById("firebaseLoginButton").addEventListener("click", loginTo
 document.getElementById("firebaseLogoutButton").addEventListener("click", () => signOut(firebaseAuth));
 publishButton.addEventListener("click", () => publishToFirebase(false));
 updatedAtInput.addEventListener("input", scheduleSave);
+[scoreSceneDurationInput, standingsSceneDurationInput].forEach(input => {
+  input.addEventListener("input", scheduleSave);
+  input.addEventListener("change", scheduleSave);
+});
+[autoRotateScenesInput, showTickerInput, showGoalAlertInput, enableGoalSoundInput].forEach(input => {
+  input.addEventListener("change", scheduleSave);
+});
 autoPublishToggle.addEventListener("change", () => {
   if (autoPublishToggle.checked && !currentUser) {
     autoPublishToggle.checked = false;

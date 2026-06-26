@@ -1,11 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260625-4";
-import { flagUrl } from "./team-utils.js?v=20260625-4";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-1";
+import { flagUrl } from "./team-utils.js?v=20260626-1";
 
 const ROTATION_INTERVAL = 10_000;
 const JSON_REFRESH_INTERVAL = 30_000;
+const SCENE_EXIT_DURATION = 260;
+const SCENE_ENTER_DURATION = 620;
 
 const elements = {
   scoreboard: document.querySelector(".scoreboard"),
@@ -29,6 +31,8 @@ const elements = {
 let scenes = [];
 let activeScene = 0;
 let jsonFallbackTimer;
+let sceneRenderToken = 0;
+let hasRenderedScene = false;
 
 const value = (input, fallback = "") =>
   input === undefined || input === null ? fallback : String(input);
@@ -55,9 +59,12 @@ function renderPagination() {
 }
 
 function animate() {
-  elements.scoreboard.classList.remove("is-changing");
+  elements.scoreboard.classList.remove("is-changing", "is-entering", "is-leaving");
   void elements.scoreboard.offsetWidth;
-  elements.scoreboard.classList.add("is-changing");
+  elements.scoreboard.classList.add("is-changing", "is-entering");
+  window.setTimeout(() => {
+    elements.scoreboard.classList.remove("is-changing", "is-entering");
+  }, SCENE_ENTER_DURATION);
 }
 
 function renderMatch(match) {
@@ -114,15 +121,34 @@ function renderGroup(group) {
 }
 
 function renderScene() {
+  const token = ++sceneRenderToken;
   if (!scenes.length) {
-    elements.scoreboard.classList.remove("show-standings");
+    elements.scoreboard.classList.remove("show-standings", "scene-group");
+    elements.scoreboard.classList.add("scene-match");
     elements.matchInfo.textContent = "Aucun contenu publié";
     return;
   }
-  const scene = scenes[activeScene];
-  scene.type === "group" ? renderGroup(scene.data) : renderMatch(scene.data);
-  renderPagination();
-  animate();
+
+  const renderCurrentScene = () => {
+    if (token !== sceneRenderToken) return;
+    const scene = scenes[activeScene];
+    elements.scoreboard.classList.toggle("scene-group", scene.type === "group");
+    elements.scoreboard.classList.toggle("scene-match", scene.type !== "group");
+    scene.type === "group" ? renderGroup(scene.data) : renderMatch(scene.data);
+    renderPagination();
+    elements.scoreboard.classList.remove("is-leaving");
+    animate();
+    hasRenderedScene = true;
+  };
+
+  if (!hasRenderedScene) {
+    renderCurrentScene();
+    return;
+  }
+
+  elements.scoreboard.classList.remove("is-changing", "is-entering");
+  elements.scoreboard.classList.add("is-leaving");
+  window.setTimeout(renderCurrentScene, SCENE_EXIT_DURATION);
 }
 
 function applyData(data) {

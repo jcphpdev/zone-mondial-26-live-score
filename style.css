@@ -602,7 +602,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.18em;
+  gap: 0.28em;
   font-family: "Barlow Condensed", Arial, sans-serif;
   font-size: clamp(110px, 12.5vw, 240px);
   font-weight: 900;
@@ -613,10 +613,7 @@ body {
 }
 
 .score-separator {
-  position: relative;
-  top: -0.05em;
-  color: var(--zm-red);
-  font-size: 0.54em;
+  display: none;
 }
 
 .minute {

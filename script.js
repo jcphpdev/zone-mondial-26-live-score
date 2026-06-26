@@ -1,13 +1,14 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-1";
-import { flagUrl } from "./team-utils.js?v=20260626-1";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-2";
+import { flagUrl } from "./team-utils.js?v=20260626-2";
 
 const ROTATION_INTERVAL = 10_000;
 const JSON_REFRESH_INTERVAL = 30_000;
 const SCENE_EXIT_DURATION = 260;
 const SCENE_ENTER_DURATION = 620;
+const GOAL_ALERT_DURATION = 4_200;
 
 const elements = {
   scoreboard: document.querySelector(".scoreboard"),
@@ -25,6 +26,9 @@ const elements = {
   groupName: document.getElementById("groupName"),
   groupSubtitle: document.getElementById("groupSubtitle"),
   standingsRows: document.getElementById("standingsRows"),
+  goalAlert: document.getElementById("goalAlert"),
+  goalTeam: document.getElementById("goalTeam"),
+  goalScoreLine: document.getElementById("goalScoreLine"),
   connectionState: document.getElementById("connectionState")
 };
 
@@ -33,9 +37,18 @@ let activeScene = 0;
 let jsonFallbackTimer;
 let sceneRenderToken = 0;
 let hasRenderedScene = false;
+let goalAlertTimer;
+let previousScoreByMatch = new Map();
+let scoreBaselineReady = false;
+let audioContext;
 
 const value = (input, fallback = "") =>
   input === undefined || input === null ? fallback : String(input);
+
+const scoreNumber = input => {
+  const parsed = Number.parseInt(value(input, "0"), 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
 
 function escapeHtml(input) {
   return value(input)
@@ -50,6 +63,132 @@ function isFinished(match) {
   const values = ["FT", "FIN", "TERMINÉ", "TERMINE"];
   return values.includes(value(match.minute).trim().toUpperCase())
     || values.includes(value(match.status).trim().toUpperCase());
+}
+
+function matchKey(match) {
+  return value(
+    match.id,
+    [
+      match.kickoff,
+      match.phase,
+      match.group_id,
+      match.home_code,
+      match.home,
+      match.away_code,
+      match.away
+    ].map(part => value(part).trim().toLowerCase()).join("|")
+  );
+}
+
+function matchScore(match) {
+  return {
+    home: scoreNumber(match.home_score),
+    away: scoreNumber(match.away_score)
+  };
+}
+
+function detectGoalEvents(matches) {
+  const nextScores = new Map();
+  const events = [];
+
+  matches.forEach(match => {
+    const key = matchKey(match);
+    const current = matchScore(match);
+    nextScores.set(key, current);
+
+    if (!scoreBaselineReady) return;
+
+    const previous = previousScoreByMatch.get(key);
+    if (!previous) return;
+
+    const homeDelta = current.home - previous.home;
+    const awayDelta = current.away - previous.away;
+    if (homeDelta <= 0 && awayDelta <= 0) return;
+
+    if (homeDelta > 0) {
+      events.push({
+        key,
+        match,
+        side: "home",
+        team: value(match.home, "Équipe 1"),
+        score: current
+      });
+    }
+
+    if (awayDelta > 0) {
+      events.push({
+        key,
+        match,
+        side: "away",
+        team: value(match.away, "Équipe 2"),
+        score: current
+      });
+    }
+  });
+
+  previousScoreByMatch = nextScores;
+  scoreBaselineReady = true;
+  return events;
+}
+
+function playGoalSound() {
+  if (new URLSearchParams(window.location.search).get("sound") === "0") return;
+
+  try {
+    audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+    audioContext.resume?.();
+    const now = audioContext.currentTime;
+    const master = audioContext.createGain();
+    master.gain.setValueAtTime(0.0001, now);
+    master.gain.exponentialRampToValueAtTime(0.18, now + 0.025);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 1.18);
+    master.connect(audioContext.destination);
+
+    [
+      { frequency: 196, start: 0, duration: 0.16 },
+      { frequency: 392, start: 0.08, duration: 0.24 },
+      { frequency: 587.33, start: 0.18, duration: 0.42 }
+    ].forEach(tone => {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = "sawtooth";
+      oscillator.frequency.setValueAtTime(tone.frequency, now + tone.start);
+      oscillator.frequency.exponentialRampToValueAtTime(tone.frequency * 1.08, now + tone.start + tone.duration);
+      gain.gain.setValueAtTime(0.0001, now + tone.start);
+      gain.gain.exponentialRampToValueAtTime(0.35, now + tone.start + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + tone.start + tone.duration);
+      oscillator.connect(gain);
+      gain.connect(master);
+      oscillator.start(now + tone.start);
+      oscillator.stop(now + tone.start + tone.duration + 0.04);
+    });
+  } catch {
+    // Certains navigateurs bloquent le son sans interaction utilisateur.
+    // L'animation visuelle reste active dans tous les cas.
+  }
+}
+
+function triggerGoalAlert(event) {
+  if (!event) return;
+
+  elements.goalTeam.textContent = event.team;
+  elements.goalScoreLine.textContent = `${event.score.home} - ${event.score.away}`;
+  elements.goalAlert.classList.remove("is-visible", "goal-home", "goal-away");
+  elements.goalAlert.classList.add(event.side === "home" ? "goal-home" : "goal-away");
+  elements.goalAlert.setAttribute("aria-hidden", "false");
+  void elements.goalAlert.offsetWidth;
+  elements.goalAlert.classList.add("is-visible");
+  elements.scoreboard.classList.remove("goal-flash");
+  void elements.scoreboard.offsetWidth;
+  elements.scoreboard.classList.add("goal-flash");
+  playGoalSound();
+
+  window.clearTimeout(goalAlertTimer);
+  goalAlertTimer = window.setTimeout(() => {
+    elements.goalAlert.classList.remove("is-visible", "goal-home", "goal-away");
+    elements.goalAlert.setAttribute("aria-hidden", "true");
+    elements.scoreboard.classList.remove("goal-flash");
+  }, GOAL_ALERT_DURATION);
 }
 
 function renderPagination() {
@@ -155,6 +294,7 @@ function applyData(data) {
   const allMatches = Array.isArray(data?.matches) ? data.matches : [];
   const allGroups = Array.isArray(data?.groups) ? data.groups : [];
   const publishedMatches = allMatches.filter(match => match.published !== false);
+  const goalEvents = detectGoalEvents(publishedMatches);
   const publishedGroupsById = new Map(
     allGroups
       .filter(group => group.published !== false)
@@ -189,11 +329,20 @@ function applyData(data) {
   if (requestedScene === "group") {
     activeScene = scenes.findIndex(scene => scene.type === "group");
     if (activeScene < 0) activeScene = 0;
+  } else if (goalEvents.length) {
+    const goalSceneIndex = scenes.findIndex(scene =>
+      scene.type === "match" && matchKey(scene.data) === goalEvents[0].key
+    );
+    if (goalSceneIndex >= 0) activeScene = goalSceneIndex;
   } else {
     activeScene = Math.min(activeScene, Math.max(scenes.length - 1, 0));
   }
   elements.connectionState.hidden = true;
   renderScene();
+
+  if (goalEvents.length) {
+    window.setTimeout(() => triggerGoalAlert(goalEvents[0]), SCENE_EXIT_DURATION + 180);
+  }
 }
 
 async function loadJsonFallback() {

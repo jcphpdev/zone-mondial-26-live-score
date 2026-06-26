@@ -1,8 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-5";
-import { flagUrl } from "./team-utils.js?v=20260626-5";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-6";
+import { flagUrl } from "./team-utils.js?v=20260626-6";
 
 const ROTATION_INTERVAL = 10_000;
 const JSON_REFRESH_INTERVAL = 30_000;

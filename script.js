@@ -1,14 +1,15 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, onValue, ref } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { firebaseConfig, firebaseConfigured } from "./firebase-config.js";
-import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-2";
-import { flagUrl } from "./team-utils.js?v=20260626-2";
+import { calculateStandings, inferGroupId } from "./standings-engine.js?v=20260626-3";
+import { flagUrl } from "./team-utils.js?v=20260626-3";
 
 const ROTATION_INTERVAL = 10_000;
 const JSON_REFRESH_INTERVAL = 30_000;
 const SCENE_EXIT_DURATION = 260;
 const SCENE_ENTER_DURATION = 620;
 const GOAL_ALERT_DURATION = 4_200;
+const params = new URLSearchParams(window.location.search);
 
 const elements = {
   scoreboard: document.querySelector(".scoreboard"),
@@ -29,6 +30,7 @@ const elements = {
   goalAlert: document.getElementById("goalAlert"),
   goalTeam: document.getElementById("goalTeam"),
   goalScoreLine: document.getElementById("goalScoreLine"),
+  soundUnlock: document.getElementById("soundUnlock"),
   connectionState: document.getElementById("connectionState")
 };
 
@@ -41,6 +43,7 @@ let goalAlertTimer;
 let previousScoreByMatch = new Map();
 let scoreBaselineReady = false;
 let audioContext;
+let soundUnlocked = false;
 
 const value = (input, fallback = "") =>
   input === undefined || input === null ? fallback : String(input);
@@ -131,12 +134,32 @@ function detectGoalEvents(matches) {
   return events;
 }
 
-function playGoalSound() {
-  if (new URLSearchParams(window.location.search).get("sound") === "0") return;
+function shouldShowSoundUnlock() {
+  return params.get("sound") === "unlock" || params.get("debug") === "1";
+}
+
+async function unlockSound() {
+  if (params.get("sound") === "0") return false;
 
   try {
     audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
-    audioContext.resume?.();
+    await audioContext.resume?.();
+    soundUnlocked = audioContext.state === "running";
+    elements.soundUnlock.hidden = !shouldShowSoundUnlock() || soundUnlocked;
+    return soundUnlocked;
+  } catch {
+    elements.soundUnlock.hidden = !shouldShowSoundUnlock();
+    return false;
+  }
+}
+
+async function playGoalSound() {
+  if (params.get("sound") === "0") return;
+
+  try {
+    const unlocked = soundUnlocked || await unlockSound();
+    if (!unlocked) return;
+
     const now = audioContext.currentTime;
     const master = audioContext.createGain();
     master.gain.setValueAtTime(0.0001, now);
@@ -165,6 +188,7 @@ function playGoalSound() {
   } catch {
     // Certains navigateurs bloquent le son sans interaction utilisateur.
     // L'animation visuelle reste active dans tous les cas.
+    elements.soundUnlock.hidden = !shouldShowSoundUnlock();
   }
 }
 
@@ -175,6 +199,8 @@ function triggerGoalAlert(event) {
   elements.goalScoreLine.textContent = `${event.score.home} - ${event.score.away}`;
   elements.goalAlert.classList.remove("is-visible", "goal-home", "goal-away");
   elements.goalAlert.classList.add(event.side === "home" ? "goal-home" : "goal-away");
+  elements.scoreboard.classList.toggle("goal-home", event.side === "home");
+  elements.scoreboard.classList.toggle("goal-away", event.side === "away");
   elements.goalAlert.setAttribute("aria-hidden", "false");
   void elements.goalAlert.offsetWidth;
   elements.goalAlert.classList.add("is-visible");
@@ -187,7 +213,7 @@ function triggerGoalAlert(event) {
   goalAlertTimer = window.setTimeout(() => {
     elements.goalAlert.classList.remove("is-visible", "goal-home", "goal-away");
     elements.goalAlert.setAttribute("aria-hidden", "true");
-    elements.scoreboard.classList.remove("goal-flash");
+    elements.scoreboard.classList.remove("goal-flash", "goal-home", "goal-away");
   }, GOAL_ALERT_DURATION);
 }
 
@@ -364,7 +390,7 @@ function startJsonFallback() {
 }
 
 function startRealtime() {
-  if (new URLSearchParams(window.location.search).get("source") === "json") {
+  if (params.get("source") === "json") {
     startJsonFallback();
     return;
   }
@@ -386,4 +412,8 @@ function rotateScene() {
 }
 
 startRealtime();
+if (elements.soundUnlock) {
+  elements.soundUnlock.hidden = !shouldShowSoundUnlock();
+  elements.soundUnlock.addEventListener("click", unlockSound);
+}
 setInterval(rotateScene, ROTATION_INTERVAL);

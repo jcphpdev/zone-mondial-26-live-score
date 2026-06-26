@@ -56,16 +56,22 @@
 
     <aside id="goalAlert" class="goal-alert" aria-live="assertive" aria-hidden="true">
       <div class="goal-alert__flare"></div>
-      <div class="goal-alert__label">BUT !</div>
-      <div id="goalTeam" class="goal-alert__team">Équipe</div>
-      <div id="goalScoreLine" class="goal-alert__score">0 - 0</div>
+      <div class="goal-alert__label">BUT</div>
+      <div class="goal-alert__content">
+        <span id="goalTeam" class="goal-alert__team">Équipe</span>
+        <span id="goalScoreLine" class="goal-alert__score">0 - 0</span>
+      </div>
     </aside>
+
+    <button id="soundUnlock" class="sound-unlock" type="button" hidden>
+      Activer le son
+    </button>
   </main>
 
   <div id="connectionState" class="connection-state" hidden>
     Mise à jour des scores…
   </div>
 
-  <script type="module" src="script.js?v=20260626-2"></script>
+  <script type="module" src="script.js?v=20260626-3"></script>
 </body>
 </html>

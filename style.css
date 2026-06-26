@@ -35,6 +35,109 @@ body {
   isolation: isolate;
 }
 
+.scene-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.74;
+  transition:
+    opacity 0.55s ease,
+    background 0.55s ease,
+    filter 0.55s ease;
+}
+
+.scene-ambient::before,
+.scene-ambient::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.scene-ambient::before {
+  opacity: 0.72;
+  mix-blend-mode: screen;
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+
+.scene-ambient::after {
+  opacity: 0.46;
+  mix-blend-mode: soft-light;
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+
+.scoreboard.scene-match .scene-ambient {
+  background:
+    radial-gradient(circle at 20% 42%, rgba(230, 29, 37, 0.2), transparent 24%),
+    radial-gradient(circle at 80% 42%, rgba(60, 172, 59, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(2, 8, 23, 0.02), rgba(2, 8, 23, 0.18));
+}
+
+.scoreboard.scene-match .scene-ambient::before {
+  background:
+    linear-gradient(103deg, transparent 24%, rgba(255, 255, 255, 0.08) 45%, transparent 58%),
+    repeating-linear-gradient(90deg, transparent 0 92px, rgba(255, 255, 255, 0.035) 93px 94px);
+  transform: translateX(-1.5%);
+}
+
+.scoreboard.scene-match .scene-ambient::after {
+  background:
+    radial-gradient(ellipse at 50% 86%, rgba(60, 172, 59, 0.2), transparent 31%),
+    linear-gradient(90deg, rgba(230, 29, 37, 0.08), transparent 48%, rgba(60, 172, 59, 0.08));
+}
+
+.scoreboard.scene-group .scene-ambient {
+  opacity: 0.86;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(42, 57, 141, 0.3), transparent 32%),
+    radial-gradient(circle at 18% 58%, rgba(255, 255, 255, 0.07), transparent 20%),
+    linear-gradient(180deg, rgba(3, 9, 34, 0.08), rgba(3, 9, 34, 0.3));
+}
+
+.scoreboard.scene-group .scene-ambient::before {
+  opacity: 0.54;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent),
+    repeating-linear-gradient(0deg, transparent 0 44px, rgba(255, 255, 255, 0.035) 45px 46px),
+    repeating-linear-gradient(90deg, transparent 0 78px, rgba(255, 255, 255, 0.03) 79px 80px);
+}
+
+.scoreboard.scene-group .scene-ambient::after {
+  opacity: 0.62;
+  background:
+    linear-gradient(90deg, rgba(42, 57, 141, 0.2), transparent 34%, rgba(60, 172, 59, 0.09)),
+    radial-gradient(ellipse at 50% 35%, rgba(255, 255, 255, 0.09), transparent 34%);
+}
+
+.scoreboard.scene-live-updates .scene-ambient {
+  opacity: 0.9;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(230, 29, 37, 0.12), transparent 25%),
+    radial-gradient(circle at 50% 66%, rgba(60, 172, 59, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(2, 8, 23, 0.06), rgba(2, 8, 23, 0.28));
+}
+
+.scoreboard.scene-live-updates .scene-ambient::before {
+  opacity: 0.58;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 2px 7px),
+    linear-gradient(90deg, transparent 8%, rgba(255, 255, 255, 0.08) 50%, transparent 92%);
+}
+
+.scoreboard.scene-live-updates .scene-ambient::after {
+  opacity: 0.64;
+  background:
+    linear-gradient(115deg, transparent 24%, rgba(230, 29, 37, 0.14) 38%, transparent 52%),
+    linear-gradient(245deg, transparent 24%, rgba(60, 172, 59, 0.12) 42%, transparent 58%);
+  animation: ambient-live-sweep 8s linear infinite;
+}
+
+.scoreboard.goal-flash .scene-ambient {
+  opacity: 1;
+  filter: saturate(1.24) brightness(1.08);
+}
+
 .scoreboard::before,
 .scoreboard::after {
   position: absolute;
@@ -935,6 +1038,12 @@ body {
   0% { opacity: 0; transform: translateX(48%) scaleY(0.65); }
   36% { opacity: 0.72; }
   100% { opacity: 0; transform: translateX(-34%) scaleY(0.92); }
+}
+
+@keyframes ambient-live-sweep {
+  0% { transform: translateX(-2%); }
+  50% { transform: translateX(2%); }
+  100% { transform: translateX(-2%); }
 }
 
 @keyframes live-pulse {

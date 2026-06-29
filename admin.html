@@ -202,6 +202,7 @@
               <option value="match">Forcer un match</option>
               <option value="group">Forcer un classement</option>
               <option value="ticker">Forcer la scène ticker</option>
+              <option value="video">Forcer la scène vidéos 9:16</option>
             </select>
           </div>
 
@@ -231,6 +232,14 @@
             <label for="standingsSceneDuration">Durée classement</label>
             <div class="unit-field">
               <input id="standingsSceneDuration" type="number" min="3" max="60" step="1" value="8">
+              <span>secondes</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="videoSceneDuration">Durée scène vidéos</label>
+            <div class="unit-field">
+              <input id="videoSceneDuration" type="number" min="5" max="180" step="5" value="15">
               <span>secondes</span>
             </div>
           </div>
@@ -297,6 +306,19 @@
               <small>Affiche périodiquement un écran résumé des infos live.</small>
             </span>
           </label>
+
+          <label class="setting-switch">
+            <input id="includeVideoScene" type="checkbox">
+            <span>
+              <strong>Inclure la scène vidéos 9:16</strong>
+              <small>Affiche les live updates avec une playlist verticale à côté.</small>
+            </span>
+          </label>
+
+          <div class="field full-setting">
+            <label for="videoPlaylistUrls">Playlist vidéos 9:16</label>
+            <textarea id="videoPlaylistUrls" rows="5" placeholder="Une URL vidéo directe par ligne, exemple : assets/videos/clip-1.mp4"></textarea>
+          </div>
 
           <label class="setting-switch">
             <input id="showTicker" type="checkbox" checked>
@@ -565,6 +587,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260629-02"></script>
+  <script type="module" src="admin.js?v=20260629-03"></script>
 </body>
 </html>

@@ -43,6 +43,7 @@ const matchResultsInfo = document.getElementById("matchResultsInfo");
 const loadMoreMatches = document.getElementById("loadMoreMatches");
 const scoreSceneDurationInput = document.getElementById("scoreSceneDuration");
 const standingsSceneDurationInput = document.getElementById("standingsSceneDuration");
+const videoSceneDurationInput = document.getElementById("videoSceneDuration");
 const scoreSceneBeforeMinutesInput = document.getElementById("scoreSceneBeforeMinutes");
 const scoreSceneAfterMinutesInput = document.getElementById("scoreSceneAfterMinutes");
 const autoRotateScenesInput = document.getElementById("autoRotateScenes");
@@ -56,9 +57,11 @@ const selectedGroupSceneInput = document.getElementById("selectedGroupScene");
 const includeMatchScenesInput = document.getElementById("includeMatchScenes");
 const includeGroupScenesInput = document.getElementById("includeGroupScenes");
 const includeTickerSceneInput = document.getElementById("includeTickerScene");
+const includeVideoSceneInput = document.getElementById("includeVideoScene");
 const matchBackgroundUrlInput = document.getElementById("matchBackgroundUrl");
 const standingsBackgroundUrlInput = document.getElementById("standingsBackgroundUrl");
 const tickerBackgroundUrlInput = document.getElementById("tickerBackgroundUrl");
+const videoPlaylistUrlsInput = document.getElementById("videoPlaylistUrls");
 
 let draftTimer;
 let autoPublishTimer;
@@ -80,6 +83,7 @@ const text = (value, fallback = "") =>
 const DEFAULT_SETTINGS = {
   score_scene_duration: 10,
   standings_scene_duration: 8,
+  video_scene_duration: 15,
   score_scene_before_minutes: 30,
   score_scene_after_minutes: 30,
   auto_rotate: true,
@@ -93,6 +97,8 @@ const DEFAULT_SETTINGS = {
   include_match_scenes: true,
   include_group_scenes: true,
   include_ticker_scene: false,
+  include_video_scene: false,
+  video_playlist_urls: "",
   match_background_url: "assets/bg-scene-match.png",
   standings_background_url: "assets/bg-scene-standings.png",
   ticker_background_url: "assets/bg-scene-live-updates.png"
@@ -127,6 +133,7 @@ function readSettings() {
   return {
     score_scene_duration: boundedNumber(scoreSceneDurationInput.value, DEFAULT_SETTINGS.score_scene_duration, 3, 60),
     standings_scene_duration: boundedNumber(standingsSceneDurationInput.value, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
+    video_scene_duration: boundedNumber(videoSceneDurationInput.value, DEFAULT_SETTINGS.video_scene_duration, 5, 180),
     score_scene_before_minutes: boundedNumber(scoreSceneBeforeMinutesInput.value, DEFAULT_SETTINGS.score_scene_before_minutes, 0, 240),
     score_scene_after_minutes: boundedNumber(scoreSceneAfterMinutesInput.value, DEFAULT_SETTINGS.score_scene_after_minutes, 0, 240),
     auto_rotate: autoRotateScenesInput.checked,
@@ -140,6 +147,8 @@ function readSettings() {
     include_match_scenes: includeMatchScenesInput.checked,
     include_group_scenes: includeGroupScenesInput.checked,
     include_ticker_scene: includeTickerSceneInput.checked,
+    include_video_scene: includeVideoSceneInput.checked,
+    video_playlist_urls: videoPlaylistUrlsInput.value.trim(),
     match_background_url: sceneBackgroundSetting(matchBackgroundUrlInput.value, DEFAULT_SETTINGS.match_background_url),
     standings_background_url: sceneBackgroundSetting(standingsBackgroundUrlInput.value, DEFAULT_SETTINGS.standings_background_url),
     ticker_background_url: sceneBackgroundSetting(tickerBackgroundUrlInput.value, DEFAULT_SETTINGS.ticker_background_url)
@@ -155,6 +164,7 @@ function fillSettings(settings = {}) {
   const merged = { ...DEFAULT_SETTINGS, ...settings };
   scoreSceneDurationInput.value = boundedNumber(merged.score_scene_duration, DEFAULT_SETTINGS.score_scene_duration, 3, 60);
   standingsSceneDurationInput.value = boundedNumber(merged.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60);
+  videoSceneDurationInput.value = boundedNumber(merged.video_scene_duration, DEFAULT_SETTINGS.video_scene_duration, 5, 180);
   scoreSceneBeforeMinutesInput.value = boundedNumber(merged.score_scene_before_minutes, DEFAULT_SETTINGS.score_scene_before_minutes, 0, 240);
   scoreSceneAfterMinutesInput.value = boundedNumber(merged.score_scene_after_minutes, DEFAULT_SETTINGS.score_scene_after_minutes, 0, 240);
   autoRotateScenesInput.checked = merged.auto_rotate !== false;
@@ -162,12 +172,16 @@ function fillSettings(settings = {}) {
   showGoalAlertInput.checked = merged.show_goal_alert !== false;
   autoStartMatchesInput.checked = merged.auto_start_matches !== false;
   enableGoalSoundInput.checked = merged.enable_goal_sound !== false;
-  sceneModeInput.value = ["auto", "match", "group", "ticker"].includes(merged.scene_mode) ? merged.scene_mode : "auto";
+  sceneModeInput.value = ["auto", "match", "group", "ticker", "video"].includes(merged.scene_mode) ? merged.scene_mode : "auto";
   selectedMatchSceneInput.dataset.selectedValue = text(merged.selected_match_id);
   selectedGroupSceneInput.dataset.selectedValue = text(merged.selected_group_id);
   includeMatchScenesInput.checked = merged.include_match_scenes !== false;
   includeGroupScenesInput.checked = merged.include_group_scenes !== false;
   includeTickerSceneInput.checked = merged.include_ticker_scene === true;
+  includeVideoSceneInput.checked = merged.include_video_scene === true;
+  videoPlaylistUrlsInput.value = Array.isArray(merged.video_playlist_urls)
+    ? merged.video_playlist_urls.join("\n")
+    : text(merged.video_playlist_urls);
   matchBackgroundUrlInput.value = sceneBackgroundSetting(merged.match_background_url, DEFAULT_SETTINGS.match_background_url);
   standingsBackgroundUrlInput.value = sceneBackgroundSetting(merged.standings_background_url, DEFAULT_SETTINGS.standings_background_url);
   tickerBackgroundUrlInput.value = sceneBackgroundSetting(merged.ticker_background_url, DEFAULT_SETTINGS.ticker_background_url);
@@ -962,7 +976,7 @@ document.getElementById("firebaseLoginButton").addEventListener("click", loginTo
 document.getElementById("firebaseLogoutButton").addEventListener("click", () => signOut(firebaseAuth));
 publishButton.addEventListener("click", () => publishToFirebase(false));
 updatedAtInput.addEventListener("input", scheduleSave);
-[scoreSceneDurationInput, standingsSceneDurationInput, scoreSceneBeforeMinutesInput, scoreSceneAfterMinutesInput].forEach(input => {
+[scoreSceneDurationInput, standingsSceneDurationInput, videoSceneDurationInput, scoreSceneBeforeMinutesInput, scoreSceneAfterMinutesInput].forEach(input => {
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });
@@ -970,7 +984,9 @@ updatedAtInput.addEventListener("input", scheduleSave);
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });
-[autoRotateScenesInput, showTickerInput, showGoalAlertInput, autoStartMatchesInput, enableGoalSoundInput, includeMatchScenesInput, includeGroupScenesInput, includeTickerSceneInput].forEach(input => {
+videoPlaylistUrlsInput.addEventListener("input", scheduleSave);
+videoPlaylistUrlsInput.addEventListener("change", scheduleSave);
+[autoRotateScenesInput, showTickerInput, showGoalAlertInput, autoStartMatchesInput, enableGoalSoundInput, includeMatchScenesInput, includeGroupScenesInput, includeTickerSceneInput, includeVideoSceneInput].forEach(input => {
   input.addEventListener("change", scheduleSave);
 });
 [sceneModeInput, selectedMatchSceneInput, selectedGroupSceneInput].forEach(input => {

@@ -14,6 +14,7 @@ const params = new URLSearchParams(window.location.search);
 const DEFAULT_SETTINGS = {
   score_scene_duration: 10,
   standings_scene_duration: 8,
+  video_scene_duration: 15,
   score_scene_before_minutes: 30,
   score_scene_after_minutes: 30,
   auto_rotate: true,
@@ -27,6 +28,8 @@ const DEFAULT_SETTINGS = {
   include_match_scenes: true,
   include_group_scenes: true,
   include_ticker_scene: false,
+  include_video_scene: false,
+  video_playlist_urls: "",
   match_background_url: "assets/bg-scene-match.png",
   standings_background_url: "assets/bg-scene-standings.png",
   ticker_background_url: "assets/bg-scene-live-updates.png"
@@ -55,6 +58,10 @@ const elements = {
   standingsRows: document.getElementById("standingsRows"),
   liveUpdatesView: document.getElementById("liveUpdatesView"),
   liveUpdatesRows: document.getElementById("liveUpdatesRows"),
+  videoUpdatesView: document.getElementById("videoUpdatesView"),
+  videoUpdatesRows: document.getElementById("videoUpdatesRows"),
+  playlistVideo: document.getElementById("playlistVideo"),
+  playlistEmpty: document.getElementById("playlistEmpty"),
   ticker: document.querySelector(".ticker"),
   goalAlert: document.getElementById("goalAlert"),
   goalLabel: document.querySelector(".goal-alert__label"),
@@ -79,6 +86,8 @@ let previousAutoLiveByMatch = new Map();
 let autoLiveBaselineReady = false;
 let kickoffAlertShown = new Set();
 let latestData;
+let currentVideoPlaylist = [];
+let currentVideoIndex = 0;
 let audioContext;
 let soundUnlocked = false;
 let currentSettings = { ...DEFAULT_SETTINGS };
@@ -101,6 +110,7 @@ function normalizeSettings(settings = {}) {
   return {
     score_scene_duration: boundedNumber(settings.score_scene_duration, DEFAULT_SETTINGS.score_scene_duration, 3, 60),
     standings_scene_duration: boundedNumber(settings.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
+    video_scene_duration: boundedNumber(settings.video_scene_duration, DEFAULT_SETTINGS.video_scene_duration, 5, 180),
     score_scene_before_minutes: boundedNumber(settings.score_scene_before_minutes, DEFAULT_SETTINGS.score_scene_before_minutes, 0, 240),
     score_scene_after_minutes: boundedNumber(settings.score_scene_after_minutes, DEFAULT_SETTINGS.score_scene_after_minutes, 0, 240),
     auto_rotate: settings.auto_rotate !== false,
@@ -108,12 +118,14 @@ function normalizeSettings(settings = {}) {
     show_goal_alert: settings.show_goal_alert !== false,
     enable_goal_sound: settings.enable_goal_sound !== false,
     auto_start_matches: settings.auto_start_matches !== false,
-    scene_mode: ["auto", "match", "group", "ticker"].includes(settings.scene_mode) ? settings.scene_mode : "auto",
+    scene_mode: ["auto", "match", "group", "ticker", "video"].includes(settings.scene_mode) ? settings.scene_mode : "auto",
     selected_match_id: value(settings.selected_match_id),
     selected_group_id: value(settings.selected_group_id),
     include_match_scenes: settings.include_match_scenes !== false,
     include_group_scenes: settings.include_group_scenes !== false,
     include_ticker_scene: settings.include_ticker_scene === true,
+    include_video_scene: settings.include_video_scene === true,
+    video_playlist_urls: settings.video_playlist_urls ?? "",
     match_background_url: sceneBackgroundSetting(settings.match_background_url, DEFAULT_SETTINGS.match_background_url),
     standings_background_url: sceneBackgroundSetting(settings.standings_background_url, DEFAULT_SETTINGS.standings_background_url),
     ticker_background_url: sceneBackgroundSetting(settings.ticker_background_url, DEFAULT_SETTINGS.ticker_background_url)
@@ -132,6 +144,7 @@ function cssUrl(url) {
 function sceneBackgroundUrl(type) {
   if (type === "group") return currentSettings.standings_background_url;
   if (type === "ticker") return currentSettings.ticker_background_url;
+  if (type === "video") return currentSettings.ticker_background_url;
   return currentSettings.match_background_url;
 }
 
@@ -505,6 +518,52 @@ function liveUpdateRows(matches, groups) {
   });
 }
 
+function playlistUrls(input) {
+  const raw = Array.isArray(input) ? input.join("\n") : value(input);
+  return raw
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith("#"));
+}
+
+function playPlaylistVideo(index = currentVideoIndex) {
+  if (!elements.playlistVideo) return;
+  if (!currentVideoPlaylist.length) {
+    elements.playlistVideo.removeAttribute("src");
+    elements.playlistVideo.load();
+    elements.playlistVideo.hidden = true;
+    elements.playlistEmpty.hidden = false;
+    return;
+  }
+
+  currentVideoIndex = ((index % currentVideoPlaylist.length) + currentVideoPlaylist.length) % currentVideoPlaylist.length;
+  const nextSrc = currentVideoPlaylist[currentVideoIndex];
+  elements.playlistEmpty.hidden = true;
+  elements.playlistVideo.hidden = false;
+  elements.playlistVideo.loop = currentVideoPlaylist.length === 1;
+
+  if (elements.playlistVideo.getAttribute("src") !== nextSrc) {
+    elements.playlistVideo.src = nextSrc;
+    elements.playlistVideo.load();
+  }
+
+  elements.playlistVideo.play().catch(() => {
+    // L’autoplay est généralement autorisé car la vidéo est muette.
+    // Si le navigateur bloque quand même, l’image restera disponible.
+  });
+}
+
+function syncVideoPlaylist(input) {
+  const nextPlaylist = playlistUrls(input);
+  const unchanged = nextPlaylist.length === currentVideoPlaylist.length
+    && nextPlaylist.every((url, index) => url === currentVideoPlaylist[index]);
+
+  if (unchanged) return;
+  currentVideoPlaylist = nextPlaylist;
+  currentVideoIndex = 0;
+  playPlaylistVideo(0);
+}
+
 function renderTicker(matches, groups) {
   if (!elements.tickerTrack) return;
   elements.ticker.hidden = !currentSettings.show_ticker;
@@ -532,6 +591,7 @@ function renderTicker(matches, groups) {
 
 function renderLiveUpdates(data) {
   elements.scoreboard.classList.remove("show-standings");
+  elements.scoreboard.classList.remove("show-video-updates");
   elements.scoreboard.classList.add("show-live-updates");
   elements.competition.textContent = "ZONE MONDIAL 26";
   elements.status.textContent = "LIVE UPDATES";
@@ -551,6 +611,29 @@ function renderLiveUpdates(data) {
     : `<div class="live-update-empty">Aucun match publié pour le moment</div>`;
 }
 
+function renderVideoUpdates(data) {
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates");
+  elements.scoreboard.classList.add("show-video-updates");
+  elements.competition.textContent = "ZONE MONDIAL 26";
+  elements.status.textContent = "VIDÉOS LIVE";
+
+  const rows = Array.isArray(data.rows) ? data.rows.slice(0, 5) : [];
+  elements.videoUpdatesRows.innerHTML = rows.length
+    ? rows.map(row => `
+        <div class="live-update-row">
+          <span class="live-update-status">${escapeHtml(row.status)}</span>
+          <span class="live-update-group">${escapeHtml(row.group)}</span>
+          <strong>${escapeHtml(row.home)}</strong>
+          <span class="live-update-score">${escapeHtml(row.score)}</span>
+          <strong>${escapeHtml(row.away)}</strong>
+          <span class="live-update-minute">${escapeHtml(row.minute)}</span>
+        </div>
+      `).join("")
+    : `<div class="live-update-empty">Aucun match publié pour le moment</div>`;
+
+  playPlaylistVideo();
+}
+
 function animate() {
   elements.scoreboard.classList.remove("is-changing", "is-entering", "is-leaving");
   void elements.scoreboard.offsetWidth;
@@ -561,7 +644,7 @@ function animate() {
 }
 
 function renderMatch(match) {
-  elements.scoreboard.classList.remove("show-standings", "show-live-updates");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates");
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = displayStatus(match);
   elements.homeFlag.src = flagUrl(match.home_code, match.home);
@@ -584,7 +667,7 @@ function renderMatch(match) {
 }
 
 function renderGroup(group) {
-  elements.scoreboard.classList.remove("show-live-updates");
+  elements.scoreboard.classList.remove("show-live-updates", "show-video-updates");
   elements.scoreboard.classList.add("show-standings");
   elements.competition.textContent = value(group.subtitle, "COUPE DU MONDE 2026");
   elements.status.textContent = "CLASSEMENT";
@@ -619,7 +702,7 @@ function renderScene(options = {}) {
   if (shouldAnimate) clearTimeout(rotationTimer);
   const token = ++sceneRenderToken;
   if (!scenes.length) {
-    elements.scoreboard.classList.remove("show-standings", "show-live-updates", "scene-group", "scene-live-updates");
+    elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "scene-group", "scene-live-updates", "scene-video-updates");
     elements.scoreboard.classList.add("scene-match");
     applySceneBackground("match");
     elements.matchInfo.textContent = "Aucun contenu publié";
@@ -631,10 +714,12 @@ function renderScene(options = {}) {
     const scene = scenes[activeScene];
     elements.scoreboard.classList.toggle("scene-group", scene.type === "group");
     elements.scoreboard.classList.toggle("scene-live-updates", scene.type === "ticker");
+    elements.scoreboard.classList.toggle("scene-video-updates", scene.type === "video");
     elements.scoreboard.classList.toggle("scene-match", scene.type === "match");
     applySceneBackground(scene.type);
     if (scene.type === "group") renderGroup(scene.data);
     else if (scene.type === "ticker") renderLiveUpdates(scene.data);
+    else if (scene.type === "video") renderVideoUpdates(scene.data);
     else renderMatch(scene.data);
     renderPagination();
     elements.scoreboard.classList.remove("is-leaving");
@@ -666,6 +751,7 @@ function applyData(data, options = {}) {
   const allGroups = Array.isArray(data?.groups) ? data.groups : [];
   const effectiveMatches = allMatches.map(match => withAutoMatchState(match));
   const publishedMatches = effectiveMatches.filter(match => match.published !== false);
+  syncVideoPlaylist(currentSettings.video_playlist_urls);
   const goalEvents = detectGoalEvents(publishedMatches);
   const kickoffEvents = detectKickoffEvents(publishedMatches);
   renderTicker(publishedMatches, allGroups);
@@ -706,6 +792,11 @@ function applyData(data, options = {}) {
     id: "ticker",
     data: { rows: liveUpdateRows(publishedMatches, allGroups) }
   };
+  const videoScene = {
+    type: "video",
+    id: "video",
+    data: { rows: liveUpdateRows(publishedMatches, allGroups) }
+  };
 
   if (currentSettings.scene_mode === "match") {
     scenes = [
@@ -717,11 +808,14 @@ function applyData(data, options = {}) {
     ].filter(Boolean);
   } else if (currentSettings.scene_mode === "ticker") {
     scenes = [tickerScene];
+  } else if (currentSettings.scene_mode === "video") {
+    scenes = [videoScene];
   } else {
     scenes = [
       ...(currentSettings.include_match_scenes ? matchScenes : []),
       ...(currentSettings.include_group_scenes ? groupScenes : []),
-      ...(currentSettings.include_ticker_scene ? [tickerScene] : [])
+      ...(currentSettings.include_ticker_scene ? [tickerScene] : []),
+      ...(currentSettings.include_video_scene ? [videoScene] : [])
     ];
     if (!scenes.length) scenes = matchScenes.length ? matchScenes : [tickerScene];
   }
@@ -729,6 +823,9 @@ function applyData(data, options = {}) {
   const requestedScene = new URLSearchParams(window.location.search).get("scene");
   if (requestedScene === "ticker") {
     activeScene = scenes.findIndex(scene => scene.type === "ticker");
+    if (activeScene < 0) activeScene = 0;
+  } else if (requestedScene === "video") {
+    activeScene = scenes.findIndex(scene => scene.type === "video");
     if (activeScene < 0) activeScene = 0;
   } else if (requestedScene === "group") {
     activeScene = scenes.findIndex(scene => scene.type === "group");
@@ -793,7 +890,9 @@ function rotateScene() {
 function sceneDuration(scene) {
   const seconds = scene?.type === "group"
     ? currentSettings.standings_scene_duration
-    : currentSettings.score_scene_duration;
+    : scene?.type === "video"
+      ? currentSettings.video_scene_duration
+      : currentSettings.score_scene_duration;
   return seconds * 1000;
 }
 
@@ -812,6 +911,12 @@ function startAutoClock() {
 
 startRealtime();
 startAutoClock();
+if (elements.playlistVideo) {
+  elements.playlistVideo.addEventListener("ended", () => playPlaylistVideo(currentVideoIndex + 1));
+  elements.playlistVideo.addEventListener("error", () => {
+    if (currentVideoPlaylist.length > 1) playPlaylistVideo(currentVideoIndex + 1);
+  });
+}
 if (elements.soundUnlock) {
   elements.soundUnlock.hidden = !shouldShowSoundUnlock();
   elements.soundUnlock.addEventListener("click", unlockSound);

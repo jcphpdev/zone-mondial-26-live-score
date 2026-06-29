@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zone Mondial 26 — Live Scores</title>
-  <link rel="stylesheet" href="style.css?v=20260629-01">
+  <link rel="stylesheet" href="style.css?v=20260629-03">
 </head>
 <body>
   <main class="scoreboard" aria-live="polite">
@@ -57,6 +57,20 @@
       <div id="liveUpdatesRows" class="live-updates-rows"></div>
     </section>
 
+    <section id="videoUpdatesView" class="video-updates-view">
+      <div class="video-updates-main">
+        <div class="live-updates-title">
+          <span>LIVE UPDATES</span>
+          <small>Zone Mondial 26</small>
+        </div>
+        <div id="videoUpdatesRows" class="live-updates-rows"></div>
+      </div>
+      <aside class="vertical-video-frame">
+        <video id="playlistVideo" muted playsinline autoplay></video>
+        <div id="playlistEmpty" class="playlist-empty">Playlist vidéo vide</div>
+      </aside>
+    </section>
+
     <footer class="match-footer">
       <p id="matchInfo">Chargement des informations du match…</p>
       <div id="pagination" class="pagination" aria-hidden="true"></div>
@@ -91,6 +105,6 @@
     Mise à jour des scores…
   </div>
 
-  <script type="module" src="script.js?v=20260629-02"></script>
+  <script type="module" src="script.js?v=20260629-03"></script>
 </body>
 </html>

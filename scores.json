@@ -18,6 +18,7 @@
     "include_group_scenes": true,
     "include_ticker_scene": false,
     "include_video_scene": false,
+    "enable_video_sound": true,
     "video_playlist_urls": "",
     "match_background_url": "assets/bg-scene-match.png",
     "standings_background_url": "assets/bg-scene-standings.png",

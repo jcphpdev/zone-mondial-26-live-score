@@ -437,6 +437,11 @@ body {
   background: #020817;
 }
 
+.vertical-video-frame video[hidden],
+.playlist-empty[hidden] {
+  display: none;
+}
+
 .playlist-empty {
   position: absolute;
   inset: 0;

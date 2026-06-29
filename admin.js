@@ -58,6 +58,7 @@ const includeMatchScenesInput = document.getElementById("includeMatchScenes");
 const includeGroupScenesInput = document.getElementById("includeGroupScenes");
 const includeTickerSceneInput = document.getElementById("includeTickerScene");
 const includeVideoSceneInput = document.getElementById("includeVideoScene");
+const enableVideoSoundInput = document.getElementById("enableVideoSound");
 const matchBackgroundUrlInput = document.getElementById("matchBackgroundUrl");
 const standingsBackgroundUrlInput = document.getElementById("standingsBackgroundUrl");
 const tickerBackgroundUrlInput = document.getElementById("tickerBackgroundUrl");
@@ -98,6 +99,7 @@ const DEFAULT_SETTINGS = {
   include_group_scenes: true,
   include_ticker_scene: false,
   include_video_scene: false,
+  enable_video_sound: true,
   video_playlist_urls: "",
   match_background_url: "assets/bg-scene-match.png",
   standings_background_url: "assets/bg-scene-standings.png",
@@ -148,6 +150,7 @@ function readSettings() {
     include_group_scenes: includeGroupScenesInput.checked,
     include_ticker_scene: includeTickerSceneInput.checked,
     include_video_scene: includeVideoSceneInput.checked,
+    enable_video_sound: enableVideoSoundInput.checked,
     video_playlist_urls: videoPlaylistUrlsInput.value.trim(),
     match_background_url: sceneBackgroundSetting(matchBackgroundUrlInput.value, DEFAULT_SETTINGS.match_background_url),
     standings_background_url: sceneBackgroundSetting(standingsBackgroundUrlInput.value, DEFAULT_SETTINGS.standings_background_url),
@@ -179,6 +182,7 @@ function fillSettings(settings = {}) {
   includeGroupScenesInput.checked = merged.include_group_scenes !== false;
   includeTickerSceneInput.checked = merged.include_ticker_scene === true;
   includeVideoSceneInput.checked = merged.include_video_scene === true;
+  enableVideoSoundInput.checked = merged.enable_video_sound !== false;
   videoPlaylistUrlsInput.value = Array.isArray(merged.video_playlist_urls)
     ? merged.video_playlist_urls.join("\n")
     : text(merged.video_playlist_urls);
@@ -986,7 +990,7 @@ updatedAtInput.addEventListener("input", scheduleSave);
 });
 videoPlaylistUrlsInput.addEventListener("input", scheduleSave);
 videoPlaylistUrlsInput.addEventListener("change", scheduleSave);
-[autoRotateScenesInput, showTickerInput, showGoalAlertInput, autoStartMatchesInput, enableGoalSoundInput, includeMatchScenesInput, includeGroupScenesInput, includeTickerSceneInput, includeVideoSceneInput].forEach(input => {
+[autoRotateScenesInput, showTickerInput, showGoalAlertInput, autoStartMatchesInput, enableGoalSoundInput, includeMatchScenesInput, includeGroupScenesInput, includeTickerSceneInput, includeVideoSceneInput, enableVideoSoundInput].forEach(input => {
   input.addEventListener("change", scheduleSave);
 });
 [sceneModeInput, selectedMatchSceneInput, selectedGroupSceneInput].forEach(input => {

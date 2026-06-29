@@ -29,6 +29,7 @@ const DEFAULT_SETTINGS = {
   include_group_scenes: true,
   include_ticker_scene: false,
   include_video_scene: false,
+  enable_video_sound: true,
   video_playlist_urls: "",
   match_background_url: "assets/bg-scene-match.png",
   standings_background_url: "assets/bg-scene-standings.png",
@@ -88,6 +89,7 @@ let kickoffAlertShown = new Set();
 let latestData;
 let currentVideoPlaylist = [];
 let currentVideoIndex = 0;
+let videoPlaybackBlocked = false;
 let audioContext;
 let soundUnlocked = false;
 let currentSettings = { ...DEFAULT_SETTINGS };
@@ -125,6 +127,7 @@ function normalizeSettings(settings = {}) {
     include_group_scenes: settings.include_group_scenes !== false,
     include_ticker_scene: settings.include_ticker_scene === true,
     include_video_scene: settings.include_video_scene === true,
+    enable_video_sound: settings.enable_video_sound !== false,
     video_playlist_urls: settings.video_playlist_urls ?? "",
     match_background_url: sceneBackgroundSetting(settings.match_background_url, DEFAULT_SETTINGS.match_background_url),
     standings_background_url: sceneBackgroundSetting(settings.standings_background_url, DEFAULT_SETTINGS.standings_background_url),
@@ -360,7 +363,8 @@ function detectKickoffEvents(matches) {
 }
 
 function shouldShowSoundUnlock() {
-  if (!currentSettings.enable_goal_sound) return false;
+  if (!currentSettings.enable_goal_sound && !currentSettings.enable_video_sound) return false;
+  if (videoPlaybackBlocked) return true;
   return params.get("sound") === "unlock" || params.get("debug") === "1";
 }
 
@@ -371,6 +375,8 @@ async function unlockSound() {
     audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
     await audioContext.resume?.();
     soundUnlocked = audioContext.state === "running";
+    videoPlaybackBlocked = false;
+    playPlaylistVideo();
     elements.soundUnlock.hidden = !shouldShowSoundUnlock() || soundUnlocked;
     return soundUnlocked;
   } catch {
@@ -541,15 +547,24 @@ function playPlaylistVideo(index = currentVideoIndex) {
   elements.playlistEmpty.hidden = true;
   elements.playlistVideo.hidden = false;
   elements.playlistVideo.loop = currentVideoPlaylist.length === 1;
+  elements.playlistVideo.muted = currentSettings.enable_video_sound === false;
+  elements.playlistVideo.volume = currentSettings.enable_video_sound === false ? 0 : 1;
 
   if (elements.playlistVideo.getAttribute("src") !== nextSrc) {
     elements.playlistVideo.src = nextSrc;
     elements.playlistVideo.load();
   }
 
-  elements.playlistVideo.play().catch(() => {
-    // L’autoplay est généralement autorisé car la vidéo est muette.
-    // Si le navigateur bloque quand même, l’image restera disponible.
+  elements.playlistVideo.play().then(() => {
+    videoPlaybackBlocked = false;
+    elements.soundUnlock.hidden = !shouldShowSoundUnlock() || soundUnlocked;
+  }).catch(() => {
+    videoPlaybackBlocked = currentSettings.enable_video_sound !== false;
+    elements.soundUnlock.hidden = !shouldShowSoundUnlock();
+    if (currentSettings.enable_video_sound !== false) {
+      elements.playlistVideo.muted = true;
+      elements.playlistVideo.play().catch(() => {});
+    }
   });
 }
 

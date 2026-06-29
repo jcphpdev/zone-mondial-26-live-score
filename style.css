@@ -676,17 +676,18 @@ body {
 
 .score-panel {
   top: 26.2%;
-  left: 34.4%;
-  width: 31.2%;
-  height: 34.7%;
+  left: 34.15%;
+  width: 31.7%;
+  height: 31.8%;
   flex-direction: column;
+  justify-content: center;
 }
 
 .score {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.28em;
+  gap: 0.44em;
   font-family: "Barlow Condensed", Arial, sans-serif;
   font-size: clamp(110px, 12.5vw, 240px);
   font-weight: 900;
@@ -714,30 +715,40 @@ body {
   letter-spacing: 0.08em;
 }
 
+.minute[hidden] {
+  display: none;
+}
+
 .minute.is-finished {
   background: linear-gradient(90deg, var(--zm-navy), #121d62);
 }
 
 .match-footer {
-  top: 66.2%;
-  left: 25.7%;
+  top: 66.6%;
+  left: 26.05%;
   bottom: auto;
-  width: 48.6%;
-  height: 11.9%;
+  width: 47.9%;
+  height: 10.8%;
   flex-direction: column;
-  gap: 1vh;
-  padding: 1.4vh 3vw;
+  justify-content: center;
+  gap: 0.7vh;
+  padding: 1.05vh 3.1vw;
   text-align: center;
+  overflow: hidden;
 }
 
 .match-footer p {
   margin: 0;
   font-family: "Barlow Condensed", Arial, sans-serif;
-  font-size: clamp(20px, 2.15vw, 42px);
+  font-size: clamp(17px, 1.78vw, 34px);
   font-weight: 700;
-  line-height: 1.08;
+  line-height: 1.03;
   letter-spacing: 0.025em;
   text-shadow: var(--shadow);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .pagination {
@@ -761,15 +772,15 @@ body {
 
 .official-logo {
   position: absolute;
-  right: 2.3%;
-  bottom: 2.2%;
-  width: 12.1vw;
-  height: 12.1vw;
-  max-width: 232px;
-  max-height: 232px;
-  min-width: 116px;
-  min-height: 116px;
-  object-fit: cover;
+  right: 3.05%;
+  bottom: 4.3%;
+  width: 9.45vw;
+  height: 9.45vw;
+  max-width: 182px;
+  max-height: 182px;
+  min-width: 96px;
+  min-height: 96px;
+  object-fit: contain;
   border-radius: 50%;
   filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.7));
 }

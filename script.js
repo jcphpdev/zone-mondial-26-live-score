@@ -150,6 +150,12 @@ function isFinished(match) {
     || values.includes(value(match.status).trim().toUpperCase());
 }
 
+function isHalfTime(match) {
+  const values = ["HT", "MT", "MI-TEMPS", "MI TEMPS", "PAUSE"];
+  return values.includes(value(match.minute).trim().toUpperCase())
+    || values.includes(value(match.status).trim().toUpperCase());
+}
+
 function isUpcoming(match) {
   const status = value(match.status).trim().toUpperCase();
   const minute = value(match.minute).trim().toUpperCase();
@@ -158,7 +164,20 @@ function isUpcoming(match) {
 }
 
 function isLive(match) {
-  return !isUpcoming(match) && !isFinished(match);
+  return !isUpcoming(match) && !isHalfTime(match) && !isFinished(match);
+}
+
+function displayStatus(match) {
+  if (isFinished(match)) return "TERMINÉ";
+  if (isHalfTime(match)) return "MI-TEMPS";
+  if (isUpcoming(match)) return "À VENIR";
+  return value(match.status, "EN DIRECT");
+}
+
+function shouldShowMatchMinute(match) {
+  if (isUpcoming(match) || isHalfTime(match) || isFinished(match)) return false;
+  const minute = value(match.minute).trim();
+  return Boolean(minute) && !["EN DIRECT", "LIVE"].includes(minute.toUpperCase());
 }
 
 function kickoffTime(match) {
@@ -506,17 +525,17 @@ function animate() {
 
 function renderMatch(match) {
   elements.scoreboard.classList.remove("show-standings", "show-live-updates");
-  const finished = isFinished(match);
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
-  elements.status.textContent = finished ? "TERMINÉ" : value(match.status, "EN DIRECT");
+  elements.status.textContent = displayStatus(match);
   elements.homeFlag.src = flagUrl(match.home_code, match.home);
   elements.homeName.textContent = value(match.home, "Équipe 1");
   elements.homeScore.textContent = value(match.home_score, "0");
   elements.awayScore.textContent = value(match.away_score, "0");
   elements.awayFlag.src = flagUrl(match.away_code, match.away);
   elements.awayName.textContent = value(match.away, "Équipe 2");
-  elements.minute.textContent = finished ? "TERMINÉ" : value(match.minute, "EN DIRECT");
-  elements.minute.classList.toggle("is-finished", finished);
+  elements.minute.textContent = value(match.minute);
+  elements.minute.hidden = !shouldShowMatchMinute(match);
+  elements.minute.classList.toggle("is-finished", isFinished(match));
   elements.matchInfo.textContent = value(
     match.info || match.scorers || match.venue || (
       match.kickoff

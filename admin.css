@@ -1021,6 +1021,110 @@ a {
   line-height: 1.35;
 }
 
+.control-room-panel {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  color: #fff;
+  background:
+    radial-gradient(circle at top right, rgba(60, 172, 59, 0.22), transparent 28rem),
+    radial-gradient(circle at bottom left, rgba(230, 29, 37, 0.24), transparent 26rem),
+    linear-gradient(135deg, #071037, #101b4f 58%, #17256a);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-left: 5px solid var(--red);
+  border-radius: 16px;
+  box-shadow: 0 18px 45px rgba(7, 16, 55, 0.22);
+}
+
+.control-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.control-status-card,
+.control-block {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 13px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.control-status-card {
+  padding: 18px;
+}
+
+.control-status-card span,
+.control-block h3 {
+  color: #bfc6e5;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.control-status-card strong {
+  display: block;
+  margin-top: 8px;
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  font-size: 30px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.control-status-card small,
+.control-hint {
+  display: block;
+  margin-top: 7px;
+  color: #c9cee4;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.control-room-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 14px;
+}
+
+.control-block {
+  padding: 18px;
+}
+
+.control-block h3 {
+  margin: 0 0 14px;
+}
+
+.control-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.control-actions .button {
+  flex: 1 1 135px;
+}
+
+.compact-settings {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.control-room-panel .field label {
+  color: #c9cee4;
+}
+
+.control-room-panel .field select {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.control-room-panel .field select option {
+  color: var(--ink);
+}
+
 .export-panel {
   display: flex;
   align-items: center;
@@ -1104,6 +1208,11 @@ a {
   }
 
   .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .control-status-grid,
+  .control-room-grid {
     grid-template-columns: 1fr;
   }
 

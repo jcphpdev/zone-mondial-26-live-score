@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Administration des scores — Zone Mondial 26</title>
-  <link rel="stylesheet" href="admin.css?v=20260626-12">
+  <link rel="stylesheet" href="admin.css?v=20260629-05">
 </head>
 <body>
   <header class="admin-header">
@@ -57,6 +57,9 @@
       </button>
       <button class="section-tab" data-section-target="groupsSection" type="button">
         Groupes
+      </button>
+      <button class="section-tab" data-section-target="controlRoomSection" type="button">
+        Régie live
       </button>
       <button class="section-tab" data-section-target="connectionSection" type="button">
         Publication
@@ -129,6 +132,81 @@
     </section>
 
     <section id="groupsEditor" class="matches-editor groups-editor"></section>
+    </section>
+
+    <section id="controlRoomSection" class="admin-section">
+      <section class="toolbar standings-toolbar">
+        <div>
+          <p class="eyebrow">RÉGIE OBS</p>
+          <h2>Contrôle du live</h2>
+          <p>Pilotez rapidement la scène affichée sans fouiller dans les paramètres.</p>
+        </div>
+        <a class="button secondary" href="index.html" target="_blank" rel="noopener">
+          Ouvrir l’overlay
+        </a>
+      </section>
+
+      <section class="control-room-panel">
+        <div class="control-status-grid">
+          <article class="control-status-card">
+            <span>Scène active</span>
+            <strong id="controlCurrentScene">Automatique</strong>
+            <small id="controlCurrentTarget">Rotation selon les paramètres</small>
+          </article>
+          <article class="control-status-card">
+            <span>Publication</span>
+            <strong id="controlPublishState">Manuelle</strong>
+            <small id="controlFirebaseState">Firebase non connecté</small>
+          </article>
+          <article class="control-status-card">
+            <span>Dernière MAJ</span>
+            <strong id="controlUpdatedAt">—</strong>
+            <small>Données prêtes pour l’overlay</small>
+          </article>
+        </div>
+
+        <div class="control-room-grid">
+          <section class="control-block">
+            <h3>Forcer une scène</h3>
+            <div class="control-actions">
+              <button class="button primary" data-control-scene="auto" type="button">Retour auto</button>
+              <button class="button secondary" data-control-scene="match" type="button">Score match</button>
+              <button class="button secondary" data-control-scene="group" type="button">Classement</button>
+              <button class="button secondary" data-control-scene="ticker" type="button">Live updates</button>
+              <button class="button secondary" data-control-scene="video" type="button">Vidéos 9:16</button>
+            </div>
+            <p class="control-hint">Les boutons modifient le mode d’affichage et publient si la publication automatique est active.</p>
+          </section>
+
+          <section class="control-block">
+            <h3>Cible de scène</h3>
+            <div class="settings-grid compact-settings">
+              <div class="field">
+                <label for="controlMatchScene">Match à afficher</label>
+                <select id="controlMatchScene">
+                  <option value="">Premier match publié</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="controlGroupScene">Classement à afficher</label>
+                <select id="controlGroupScene">
+                  <option value="">Premier classement disponible</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section class="control-block">
+            <h3>Actions live</h3>
+            <div class="control-actions">
+              <button id="controlPublishButton" class="button publish" type="button">Publier maintenant</button>
+              <button id="controlAutoRotateButton" class="button secondary" type="button">Rotation ON/OFF</button>
+              <button id="controlAutoPublishButton" class="button secondary" type="button">Auto-publication ON/OFF</button>
+            </div>
+            <p class="control-hint">Pour publier, vous devez être connecté à Firebase dans l’onglet Publication.</p>
+          </section>
+        </div>
+      </section>
     </section>
 
     <section id="connectionSection" class="admin-section">
@@ -595,6 +673,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260629-04"></script>
+  <script type="module" src="admin.js?v=20260629-05"></script>
 </body>
 </html>

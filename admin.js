@@ -63,6 +63,16 @@ const matchBackgroundUrlInput = document.getElementById("matchBackgroundUrl");
 const standingsBackgroundUrlInput = document.getElementById("standingsBackgroundUrl");
 const tickerBackgroundUrlInput = document.getElementById("tickerBackgroundUrl");
 const videoPlaylistUrlsInput = document.getElementById("videoPlaylistUrls");
+const controlCurrentScene = document.getElementById("controlCurrentScene");
+const controlCurrentTarget = document.getElementById("controlCurrentTarget");
+const controlPublishState = document.getElementById("controlPublishState");
+const controlFirebaseState = document.getElementById("controlFirebaseState");
+const controlUpdatedAt = document.getElementById("controlUpdatedAt");
+const controlMatchSceneInput = document.getElementById("controlMatchScene");
+const controlGroupSceneInput = document.getElementById("controlGroupScene");
+const controlPublishButton = document.getElementById("controlPublishButton");
+const controlAutoRotateButton = document.getElementById("controlAutoRotateButton");
+const controlAutoPublishButton = document.getElementById("controlAutoPublishButton");
 
 let draftTimer;
 let autoPublishTimer;
@@ -189,6 +199,7 @@ function fillSettings(settings = {}) {
   matchBackgroundUrlInput.value = sceneBackgroundSetting(merged.match_background_url, DEFAULT_SETTINGS.match_background_url);
   standingsBackgroundUrlInput.value = sceneBackgroundSetting(merged.standings_background_url, DEFAULT_SETTINGS.standings_background_url);
   tickerBackgroundUrlInput.value = sceneBackgroundSetting(merged.ticker_background_url, DEFAULT_SETTINGS.ticker_background_url);
+  syncControlRoom();
 }
 
 function formatCasablancaDate() {
@@ -217,6 +228,7 @@ function setFirebaseState(connected, label = "") {
   firebaseState.classList.toggle("online", connected);
   firebaseState.classList.toggle("offline", !connected);
   firebaseState.textContent = label || (connected ? "Connecté" : "Non connecté");
+  syncControlRoom();
 }
 
 function emptyMatch() {
@@ -427,6 +439,70 @@ function updateSceneSelectors() {
     ? selectedGroup
     : "";
   selectedGroupSceneInput.dataset.selectedValue = selectedGroupSceneInput.value;
+  syncControlRoom();
+}
+
+function sceneModeLabel(mode) {
+  return {
+    auto: "Automatique",
+    match: "Score match",
+    group: "Classement",
+    ticker: "Live updates",
+    video: "Vidéos 9:16"
+  }[mode] || "Automatique";
+}
+
+function selectedOptionLabel(select, fallback) {
+  return select?.selectedOptions?.[0]?.textContent?.trim() || fallback;
+}
+
+function mirrorSelectOptions(source, target) {
+  if (!source || !target) return;
+  const selected = target.value || source.value;
+  target.innerHTML = source.innerHTML;
+  target.value = [...target.options].some(option => option.value === selected) ? selected : source.value;
+}
+
+function syncControlRoom() {
+  if (!controlCurrentScene) return;
+  mirrorSelectOptions(selectedMatchSceneInput, controlMatchSceneInput);
+  mirrorSelectOptions(selectedGroupSceneInput, controlGroupSceneInput);
+  if (controlMatchSceneInput) controlMatchSceneInput.value = selectedMatchSceneInput.value;
+  if (controlGroupSceneInput) controlGroupSceneInput.value = selectedGroupSceneInput.value;
+
+  const mode = sceneModeInput.value || "auto";
+  controlCurrentScene.textContent = sceneModeLabel(mode);
+  controlCurrentTarget.textContent = mode === "match"
+    ? selectedOptionLabel(selectedMatchSceneInput, "Premier match publié")
+    : mode === "group"
+      ? selectedOptionLabel(selectedGroupSceneInput, "Premier classement disponible")
+      : mode === "auto"
+        ? "Rotation selon les paramètres"
+        : "Scène plein écran";
+  controlPublishState.textContent = autoPublishToggle.checked ? "Automatique" : "Manuelle";
+  controlFirebaseState.textContent = currentUser ? `Connecté : ${currentUser.email || ""}` : "Firebase non connecté";
+  controlUpdatedAt.textContent = updatedAtInput.value || "—";
+  controlAutoRotateButton.textContent = autoRotateScenesInput.checked ? "Rotation activée" : "Rotation désactivée";
+  controlAutoPublishButton.textContent = autoPublishToggle.checked ? "Auto-publication activée" : "Auto-publication désactivée";
+
+  document.querySelectorAll("[data-control-scene]").forEach(button => {
+    button.classList.toggle("primary", button.dataset.controlScene === mode);
+    button.classList.toggle("secondary", button.dataset.controlScene !== mode);
+  });
+}
+
+function publishOrSaveFromControl() {
+  scheduleSave();
+  if (autoPublishToggle.checked && currentUser) publishToFirebase(true);
+}
+
+function setControlScene(mode) {
+  sceneModeInput.value = mode;
+  if (mode === "ticker") includeTickerSceneInput.checked = true;
+  if (mode === "video") includeVideoSceneInput.checked = true;
+  syncControlRoom();
+  publishOrSaveFromControl();
+  showNotice(`Scène ${sceneModeLabel(mode).toLowerCase()} sélectionnée.`);
 }
 
 function setCardExpanded(card, expanded) {
@@ -964,6 +1040,7 @@ loadMoreMatches.addEventListener("click", () => {
 });
 document.getElementById("setNowButton").addEventListener("click", () => {
   updatedAtInput.value = formatCasablancaDate();
+  syncControlRoom();
   scheduleSave();
 });
 document.getElementById("reloadButton").addEventListener("click", () => {
@@ -979,7 +1056,10 @@ document.getElementById("copyButton").addEventListener("click", async () => {
 document.getElementById("firebaseLoginButton").addEventListener("click", loginToFirebase);
 document.getElementById("firebaseLogoutButton").addEventListener("click", () => signOut(firebaseAuth));
 publishButton.addEventListener("click", () => publishToFirebase(false));
-updatedAtInput.addEventListener("input", scheduleSave);
+updatedAtInput.addEventListener("input", () => {
+  syncControlRoom();
+  scheduleSave();
+});
 [scoreSceneDurationInput, standingsSceneDurationInput, videoSceneDurationInput, scoreSceneBeforeMinutesInput, scoreSceneAfterMinutesInput].forEach(input => {
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
@@ -994,16 +1074,48 @@ videoPlaylistUrlsInput.addEventListener("change", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });
 [sceneModeInput, selectedMatchSceneInput, selectedGroupSceneInput].forEach(input => {
-  input.addEventListener("change", scheduleSave);
+  input.addEventListener("change", () => {
+    syncControlRoom();
+    scheduleSave();
+  });
 });
 autoPublishToggle.addEventListener("change", () => {
   if (autoPublishToggle.checked && !currentUser) {
     autoPublishToggle.checked = false;
     showNotice("Connectez-vous avant d’activer la publication automatique.", true);
   } else if (autoPublishToggle.checked) publishToFirebase(true);
+  syncControlRoom();
 });
 firebasePasswordInput.addEventListener("keydown", event => {
   if (event.key === "Enter") loginToFirebase();
+});
+
+document.querySelectorAll("[data-control-scene]").forEach(button => {
+  button.addEventListener("click", () => setControlScene(button.dataset.controlScene));
+});
+controlMatchSceneInput?.addEventListener("change", () => {
+  selectedMatchSceneInput.value = controlMatchSceneInput.value;
+  selectedMatchSceneInput.dataset.selectedValue = controlMatchSceneInput.value;
+  if (sceneModeInput.value === "auto") sceneModeInput.value = "match";
+  syncControlRoom();
+  publishOrSaveFromControl();
+});
+controlGroupSceneInput?.addEventListener("change", () => {
+  selectedGroupSceneInput.value = controlGroupSceneInput.value;
+  selectedGroupSceneInput.dataset.selectedValue = controlGroupSceneInput.value;
+  if (sceneModeInput.value === "auto") sceneModeInput.value = "group";
+  syncControlRoom();
+  publishOrSaveFromControl();
+});
+controlPublishButton?.addEventListener("click", () => publishToFirebase(false));
+controlAutoRotateButton?.addEventListener("click", () => {
+  autoRotateScenesInput.checked = !autoRotateScenesInput.checked;
+  syncControlRoom();
+  publishOrSaveFromControl();
+});
+controlAutoPublishButton?.addEventListener("click", () => {
+  autoPublishToggle.checked = !autoPublishToggle.checked;
+  autoPublishToggle.dispatchEvent(new Event("change"));
 });
 
 document.querySelectorAll(".section-tab").forEach(button => {

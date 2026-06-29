@@ -235,6 +235,22 @@
             </div>
           </div>
 
+          <div class="field">
+            <label for="scoreSceneBeforeMinutes">Afficher score avant match</label>
+            <div class="unit-field">
+              <input id="scoreSceneBeforeMinutes" type="number" min="0" max="240" step="5" value="30">
+              <span>minutes</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="scoreSceneAfterMinutes">Masquer score après match</label>
+            <div class="unit-field">
+              <input id="scoreSceneAfterMinutes" type="number" min="0" max="240" step="5" value="30">
+              <span>minutes</span>
+            </div>
+          </div>
+
           <div class="field full-setting">
             <label for="matchBackgroundUrl">Background score / match</label>
             <input id="matchBackgroundUrl" type="text" placeholder="assets/bg-scene-match.png">
@@ -549,6 +565,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260626-18"></script>
+  <script type="module" src="admin.js?v=20260629-02"></script>
 </body>
 </html>

@@ -43,6 +43,8 @@ const matchResultsInfo = document.getElementById("matchResultsInfo");
 const loadMoreMatches = document.getElementById("loadMoreMatches");
 const scoreSceneDurationInput = document.getElementById("scoreSceneDuration");
 const standingsSceneDurationInput = document.getElementById("standingsSceneDuration");
+const scoreSceneBeforeMinutesInput = document.getElementById("scoreSceneBeforeMinutes");
+const scoreSceneAfterMinutesInput = document.getElementById("scoreSceneAfterMinutes");
 const autoRotateScenesInput = document.getElementById("autoRotateScenes");
 const showTickerInput = document.getElementById("showTicker");
 const showGoalAlertInput = document.getElementById("showGoalAlert");
@@ -78,6 +80,8 @@ const text = (value, fallback = "") =>
 const DEFAULT_SETTINGS = {
   score_scene_duration: 10,
   standings_scene_duration: 8,
+  score_scene_before_minutes: 30,
+  score_scene_after_minutes: 30,
   auto_rotate: true,
   show_ticker: true,
   show_goal_alert: true,
@@ -123,6 +127,8 @@ function readSettings() {
   return {
     score_scene_duration: boundedNumber(scoreSceneDurationInput.value, DEFAULT_SETTINGS.score_scene_duration, 3, 60),
     standings_scene_duration: boundedNumber(standingsSceneDurationInput.value, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
+    score_scene_before_minutes: boundedNumber(scoreSceneBeforeMinutesInput.value, DEFAULT_SETTINGS.score_scene_before_minutes, 0, 240),
+    score_scene_after_minutes: boundedNumber(scoreSceneAfterMinutesInput.value, DEFAULT_SETTINGS.score_scene_after_minutes, 0, 240),
     auto_rotate: autoRotateScenesInput.checked,
     show_ticker: showTickerInput.checked,
     show_goal_alert: showGoalAlertInput.checked,
@@ -149,6 +155,8 @@ function fillSettings(settings = {}) {
   const merged = { ...DEFAULT_SETTINGS, ...settings };
   scoreSceneDurationInput.value = boundedNumber(merged.score_scene_duration, DEFAULT_SETTINGS.score_scene_duration, 3, 60);
   standingsSceneDurationInput.value = boundedNumber(merged.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60);
+  scoreSceneBeforeMinutesInput.value = boundedNumber(merged.score_scene_before_minutes, DEFAULT_SETTINGS.score_scene_before_minutes, 0, 240);
+  scoreSceneAfterMinutesInput.value = boundedNumber(merged.score_scene_after_minutes, DEFAULT_SETTINGS.score_scene_after_minutes, 0, 240);
   autoRotateScenesInput.checked = merged.auto_rotate !== false;
   showTickerInput.checked = merged.show_ticker !== false;
   showGoalAlertInput.checked = merged.show_goal_alert !== false;
@@ -954,7 +962,7 @@ document.getElementById("firebaseLoginButton").addEventListener("click", loginTo
 document.getElementById("firebaseLogoutButton").addEventListener("click", () => signOut(firebaseAuth));
 publishButton.addEventListener("click", () => publishToFirebase(false));
 updatedAtInput.addEventListener("input", scheduleSave);
-[scoreSceneDurationInput, standingsSceneDurationInput].forEach(input => {
+[scoreSceneDurationInput, standingsSceneDurationInput, scoreSceneBeforeMinutesInput, scoreSceneAfterMinutesInput].forEach(input => {
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });

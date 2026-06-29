@@ -14,6 +14,8 @@ const params = new URLSearchParams(window.location.search);
 const DEFAULT_SETTINGS = {
   score_scene_duration: 10,
   standings_scene_duration: 8,
+  score_scene_before_minutes: 30,
+  score_scene_after_minutes: 30,
   auto_rotate: true,
   show_ticker: true,
   show_goal_alert: true,
@@ -99,6 +101,8 @@ function normalizeSettings(settings = {}) {
   return {
     score_scene_duration: boundedNumber(settings.score_scene_duration, DEFAULT_SETTINGS.score_scene_duration, 3, 60),
     standings_scene_duration: boundedNumber(settings.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
+    score_scene_before_minutes: boundedNumber(settings.score_scene_before_minutes, DEFAULT_SETTINGS.score_scene_before_minutes, 0, 240),
+    score_scene_after_minutes: boundedNumber(settings.score_scene_after_minutes, DEFAULT_SETTINGS.score_scene_after_minutes, 0, 240),
     auto_rotate: settings.auto_rotate !== false,
     show_ticker: settings.show_ticker !== false,
     show_goal_alert: settings.show_goal_alert !== false,
@@ -185,6 +189,39 @@ function kickoffTime(match) {
   const date = new Date(match.kickoff);
   const time = date.getTime();
   return Number.isNaN(time) ? null : time;
+}
+
+function finishedTime(match) {
+  if (match?.finished_at) {
+    const explicitEnd = new Date(match.finished_at).getTime();
+    if (!Number.isNaN(explicitEnd)) return explicitEnd;
+  }
+
+  const kickoffMs = kickoffTime(match);
+  if (!kickoffMs) return null;
+
+  const estimatedDurationMinutes = match.phase === "knockout" ? 150 : 120;
+  return kickoffMs + estimatedDurationMinutes * 60_000;
+}
+
+function isVisibleInScoreScenes(match, now = Date.now()) {
+  const kickoffMs = kickoffTime(match);
+
+  if (isFinished(match)) {
+    const finishedMs = finishedTime(match);
+    if (!finishedMs) return false;
+    return now <= finishedMs + currentSettings.score_scene_after_minutes * 60_000;
+  }
+
+  if (isLive(match) || isHalfTime(match)) return true;
+
+  if (isUpcoming(match)) {
+    if (!kickoffMs) return false;
+    const beforeWindowMs = currentSettings.score_scene_before_minutes * 60_000;
+    return kickoffMs >= now && kickoffMs - now <= beforeWindowMs;
+  }
+
+  return true;
 }
 
 function autoMinute(kickoffMs, now = Date.now()) {
@@ -639,7 +676,8 @@ function applyData(data, options = {}) {
   );
   const displayedGroupIds = new Set();
 
-  const matchScenes = publishedMatches.map(match => ({ type: "match", id: match.id, data: match }));
+  const scoreSceneMatches = publishedMatches.filter(match => isVisibleInScoreScenes(match));
+  const matchScenes = scoreSceneMatches.map(match => ({ type: "match", id: match.id, data: match }));
   const groupScenes = [];
   publishedMatches.forEach(match => {
 

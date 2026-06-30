@@ -19,6 +19,7 @@ window.addEventListener("unhandledrejection", event => {
 
 const DRAFT_KEY = "zone-mondial-26-live-data-draft";
 const AUTO_PUBLISH_DELAY = 650;
+const WORLD_CUP_API_BASE_URL = "https://worldcup26.ir";
 
 const editor = document.getElementById("matchesEditor");
 const groupsEditor = document.getElementById("groupsEditor");
@@ -73,6 +74,11 @@ const controlGroupSceneInput = document.getElementById("controlGroupScene");
 const controlPublishButton = document.getElementById("controlPublishButton");
 const controlAutoRotateButton = document.getElementById("controlAutoRotateButton");
 const controlAutoPublishButton = document.getElementById("controlAutoPublishButton");
+const apiTestButton = document.getElementById("apiTestButton");
+const apiLoadGamesButton = document.getElementById("apiLoadGamesButton");
+const apiApplyScoresButton = document.getElementById("apiApplyScoresButton");
+const apiSyncStatus = document.getElementById("apiSyncStatus");
+const apiSyncPreview = document.getElementById("apiSyncPreview");
 
 let draftTimer;
 let autoPublishTimer;
@@ -81,6 +87,7 @@ let rendering = false;
 let firebaseAuth;
 let firebaseDatabase;
 let visibleMatchLimit = 30;
+let apiGames = [];
 
 if (firebaseConfigured) {
   const app = initializeApp(firebaseConfig);
@@ -248,7 +255,9 @@ function emptyMatch() {
     away_score: 0,
     minute: "0'",
     status: "À venir",
-    info: ""
+    info: "",
+    external_api: "worldcup2026",
+    external_match_id: ""
   };
 }
 
@@ -272,8 +281,10 @@ function readMatch(card) {
   card.querySelectorAll("[data-field]").forEach(input => {
     const key = input.dataset.field;
     if (input.type === "checkbox") match[key] = input.checked;
+    else if (key === "external_match_id") match[key] = (input.value || input.dataset.selectedValue || "").trim();
     else match[key] = key.endsWith("_score") ? number(input.value) : input.value.trim();
   });
+  match.external_api = match.external_match_id ? (match.external_api || "worldcup2026") : "";
   return match;
 }
 
@@ -505,6 +516,165 @@ function setControlScene(mode) {
   showNotice(`Scène ${sceneModeLabel(mode).toLowerCase()} sélectionnée.`);
 }
 
+function apiValue(value, fallback = "") {
+  if (value === undefined || value === null || value === "null") return fallback;
+  return String(value);
+}
+
+function apiScore(value) {
+  const parsed = Number.parseInt(apiValue(value, "0"), 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function apiTeamName(game, side) {
+  return apiValue(game[`${side}_team_name_en`])
+    || apiValue(game[`${side}_team_label`])
+    || `Équipe ${side === "home" ? "1" : "2"}`;
+}
+
+function apiStatus(game) {
+  const elapsed = apiValue(game.time_elapsed).toLowerCase();
+  const finished = apiValue(game.finished).toUpperCase() === "TRUE";
+  if (finished || elapsed === "finished") return "Terminé";
+  if (["notstarted", "not_started", "scheduled"].includes(elapsed)) return "À venir";
+  if (["halftime", "half-time", "ht"].includes(elapsed)) return "Mi-temps";
+  if (["postponed", "delayed"].includes(elapsed)) return "Reporté";
+  return "En direct";
+}
+
+function apiMinute(game) {
+  const elapsed = apiValue(game.time_elapsed).toLowerCase();
+  if (apiStatus(game) === "Terminé") return "FT";
+  if (apiStatus(game) === "À venir") return "";
+  if (apiStatus(game) === "Mi-temps") return "45'";
+  const numeric = Number.parseInt(elapsed, 10);
+  return Number.isFinite(numeric) ? `${numeric}'` : elapsed || "0'";
+}
+
+function apiGameLabel(game) {
+  const score = `${apiScore(game.home_score)}-${apiScore(game.away_score)}`;
+  const stage = apiValue(game.type, "match").toUpperCase();
+  const group = apiValue(game.group);
+  const date = apiValue(game.local_date);
+  return `#${apiValue(game.id)} • ${group || stage} • ${apiTeamName(game, "home")} ${score} ${apiTeamName(game, "away")} • ${apiStatus(game)}${date ? ` • ${date}` : ""}`;
+}
+
+function setApiStatus(message, isError = false) {
+  if (!apiSyncStatus) return;
+  apiSyncStatus.textContent = message;
+  apiSyncStatus.classList.toggle("error", isError);
+}
+
+function populateApiMatchSelects() {
+  const options = `<option value="">Non lié à l’API</option>` + apiGames
+    .map(game => `<option value="${escapeHtml(apiValue(game.id))}">${escapeHtml(apiGameLabel(game))}</option>`)
+    .join("");
+  editor.querySelectorAll("[data-api-link-select]").forEach(select => {
+    const selected = select.value || select.dataset.selectedValue || "";
+    select.innerHTML = options;
+    select.value = [...select.options].some(option => option.value === selected) ? selected : "";
+    select.dataset.selectedValue = select.value;
+  });
+}
+
+async function fetchApiGames() {
+  const response = await fetch(`${WORLD_CUP_API_BASE_URL}/get/games`, { cache: "no-store" });
+  if (!response.ok) throw new Error(`API indisponible (${response.status})`);
+  const payload = await response.json();
+  const games = Array.isArray(payload?.games) ? payload.games : [];
+  if (!games.length) throw new Error("Aucun match reçu depuis l’API.");
+  apiGames = games.sort((a, b) => Number(apiValue(a.id, 0)) - Number(apiValue(b.id, 0)));
+  populateApiMatchSelects();
+  return apiGames;
+}
+
+function linkedApiDiffs() {
+  const gameById = new Map(apiGames.map(game => [apiValue(game.id), game]));
+  return [...editor.querySelectorAll(".match-editor")].map(card => {
+    const match = readMatch(card);
+    const game = gameById.get(text(match.external_match_id));
+    if (!game) return null;
+    const next = {
+      home_score: apiScore(game.home_score),
+      away_score: apiScore(game.away_score),
+      status: apiStatus(game),
+      minute: apiMinute(game)
+    };
+    const changed = match.home_score !== next.home_score
+      || match.away_score !== next.away_score
+      || match.status !== next.status
+      || text(match.minute) !== next.minute;
+    return { card, match, game, next, changed };
+  }).filter(Boolean);
+}
+
+function renderApiPreview() {
+  if (!apiSyncPreview) return;
+  const diffs = linkedApiDiffs();
+  apiSyncPreview.hidden = !diffs.length;
+  apiSyncPreview.innerHTML = diffs.length
+    ? diffs.slice(0, 12).map(item => `
+      <div class="api-sync-row ${item.changed ? "has-change" : ""}">
+        <strong>${escapeHtml(item.match.home || apiTeamName(item.game, "home"))} - ${escapeHtml(item.match.away || apiTeamName(item.game, "away"))}</strong>
+        <span>${escapeHtml(item.match.home_score)}-${escapeHtml(item.match.away_score)} / ${escapeHtml(item.match.status)} → ${escapeHtml(item.next.home_score)}-${escapeHtml(item.next.away_score)} / ${escapeHtml(item.next.status)}</span>
+      </div>
+    `).join("")
+    : "";
+}
+
+async function testApiConnection() {
+  apiTestButton.disabled = true;
+  setApiStatus("Test de connexion API…");
+  try {
+    const games = await fetchApiGames();
+    setApiStatus(`API OK : ${games.length} matchs reçus.`);
+    renderApiPreview();
+    showNotice("Connexion API World Cup 2026 réussie.");
+  } catch (error) {
+    setApiStatus(firebaseErrorMessage(error), true);
+    showNotice(firebaseErrorMessage(error), true);
+  } finally {
+    apiTestButton.disabled = false;
+  }
+}
+
+async function loadApiGames() {
+  apiLoadGamesButton.disabled = true;
+  setApiStatus("Chargement des matchs API…");
+  try {
+    const games = await fetchApiGames();
+    setApiStatus(`${games.length} matchs API chargés. Vous pouvez maintenant lier les matchs locaux.`);
+    renderApiPreview();
+  } catch (error) {
+    setApiStatus(firebaseErrorMessage(error), true);
+    showNotice(firebaseErrorMessage(error), true);
+  } finally {
+    apiLoadGamesButton.disabled = false;
+  }
+}
+
+async function applyLinkedApiScores() {
+  if (!apiGames.length) {
+    await loadApiGames();
+    if (!apiGames.length) return;
+  }
+  const diffs = linkedApiDiffs();
+  let updated = 0;
+  diffs.forEach(item => {
+    if (!item.changed) return;
+    item.card.querySelector('[data-field="home_score"]').value = item.next.home_score;
+    item.card.querySelector('[data-field="away_score"]').value = item.next.away_score;
+    item.card.querySelector('[data-field="status"]').value = item.next.status;
+    item.card.querySelector('[data-field="minute"]').value = item.next.minute;
+    updateMatchSummary(item.card);
+    updated++;
+  });
+  refreshCalculatedStandings();
+  renderApiPreview();
+  scheduleSave();
+  showNotice(updated ? `${updated} match${updated > 1 ? "s" : ""} synchronisé${updated > 1 ? "s" : ""} depuis l’API.` : "Aucun score lié à mettre à jour.");
+}
+
 function setCardExpanded(card, expanded) {
   card.classList.toggle("is-collapsed", !expanded);
   card.querySelector(".summary-toggle").setAttribute("aria-expanded", String(expanded));
@@ -534,12 +704,17 @@ function fillMatch(card, match, index) {
     if (key === "status") {
       fallback = ["FT", "FIN"].includes(text(match.minute).toUpperCase()) ? "Terminé" : "À venir";
     }
+    if (key === "external_api") fallback = "worldcup2026";
     if (key === "group_id") {
       populateGroupSelect(input, match[key] || "");
+    } else if (key === "external_match_id") {
+      input.dataset.selectedValue = text(match[key], fallback);
+      input.value = text(match[key], fallback);
     } else {
       input.value = text(match[key], fallback);
     }
   });
+  if (apiGames.length) populateApiMatchSelects();
   ["home", "away"].forEach(side => {
     const code = card.querySelector(`[data-field="${side}_code"]`).value.trim().toLowerCase();
     const name = card.querySelector(`[data-field="${side}"]`).value;
@@ -696,6 +871,11 @@ function bindMatch(card) {
   });
   card.addEventListener("change", event => {
     if (event.target.matches('[data-field="published"]')) updateMatchAppearance(card);
+    if (event.target.matches("[data-api-link-select]")) {
+      event.target.dataset.selectedValue = event.target.value;
+      card.querySelector('[data-field="external_api"]').value = event.target.value ? "worldcup2026" : "";
+      renderApiPreview();
+    }
     if (event.target.matches('[data-field="phase"], [data-field="group_id"]')) {
       updatePhaseFields(card);
       clearInvalidSelectedTeam(card, "home");
@@ -1117,6 +1297,9 @@ controlAutoPublishButton?.addEventListener("click", () => {
   autoPublishToggle.checked = !autoPublishToggle.checked;
   autoPublishToggle.dispatchEvent(new Event("change"));
 });
+apiTestButton?.addEventListener("click", testApiConnection);
+apiLoadGamesButton?.addEventListener("click", loadApiGames);
+apiApplyScoresButton?.addEventListener("click", applyLinkedApiScores);
 
 document.querySelectorAll(".section-tab").forEach(button => {
   button.addEventListener("click", () => {

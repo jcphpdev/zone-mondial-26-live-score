@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Administration des scores — Zone Mondial 26</title>
-  <link rel="stylesheet" href="admin.css?v=20260629-05">
+  <link rel="stylesheet" href="admin.css?v=20260630-01">
 </head>
 <body>
   <header class="admin-header">
@@ -206,6 +206,23 @@
             <p class="control-hint">Pour publier, vous devez être connecté à Firebase dans l’onglet Publication.</p>
           </section>
         </div>
+
+        <section class="api-sync-panel">
+          <div>
+            <h3>Synchronisation API World Cup 2026</h3>
+            <p>
+              Récupère les scores depuis <code>worldcup26.ir</code> puis met à jour uniquement score, statut et minute
+              des matchs liés par ID API.
+            </p>
+          </div>
+          <div class="api-sync-actions">
+            <button id="apiTestButton" class="button secondary" type="button">Tester API</button>
+            <button id="apiLoadGamesButton" class="button secondary" type="button">Charger les matchs API</button>
+            <button id="apiApplyScoresButton" class="button publish" type="button">Synchroniser les scores liés</button>
+          </div>
+          <div id="apiSyncStatus" class="api-sync-status">API non chargée.</div>
+          <div id="apiSyncPreview" class="api-sync-preview" hidden></div>
+        </section>
       </section>
     </section>
 
@@ -595,6 +612,14 @@
           <label>Information affichée en bas</label>
           <input data-field="info" type="text" placeholder="Buteurs, stade ou message">
         </div>
+        <div class="field api-link-field">
+          <label>ID match API</label>
+          <select data-field="external_match_id" data-api-link-select>
+            <option value="">Non lié à l’API</option>
+          </select>
+          <input data-field="external_api" type="hidden" value="worldcup2026">
+          <small>Chargez les matchs API dans “Régie live”, puis liez chaque match une seule fois.</small>
+        </div>
       </div>
       </div>
     </article>
@@ -673,6 +698,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260629-05"></script>
+  <script type="module" src="admin.js?v=20260630-01"></script>
 </body>
 </html>

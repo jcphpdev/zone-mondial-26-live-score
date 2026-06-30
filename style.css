@@ -783,6 +783,33 @@ body {
   text-shadow: var(--shadow);
 }
 
+.qualified-badge {
+  position: absolute;
+  top: 8.5%;
+  right: 9%;
+  z-index: 2;
+  padding: 0.28em 0.8em;
+  color: #fff;
+  background: linear-gradient(90deg, var(--zm-green), #198b30);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35), 0 0 24px rgba(60, 172, 59, 0.28);
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  font-size: clamp(15px, 1.25vw, 24px);
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.team-away .qualified-badge {
+  right: auto;
+  left: 9%;
+}
+
+.qualified-badge[hidden] {
+  display: none;
+}
+
 .score-panel {
   top: 26.2%;
   left: 34.15%;
@@ -808,6 +835,29 @@ body {
 
 .score-separator {
   display: none;
+}
+
+.penalty-score {
+  margin-top: 1.05vh;
+  padding: 0.24em 0.86em;
+  color: #fff;
+  background: linear-gradient(90deg, rgba(230, 29, 37, 0.92), rgba(42, 57, 141, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  font-size: clamp(20px, 1.8vw, 35px);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.penalty-score[hidden] {
+  display: none;
+}
+
+.scoreboard.has-penalties .score {
+  transform: translateY(-0.8vh);
 }
 
 .minute {

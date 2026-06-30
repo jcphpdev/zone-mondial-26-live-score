@@ -47,10 +47,13 @@ const elements = {
   status: document.getElementById("status"),
   homeFlag: document.getElementById("homeFlag"),
   homeName: document.getElementById("homeName"),
+  homeQualifiedBadge: document.getElementById("homeQualifiedBadge"),
   homeScore: document.getElementById("homeScore"),
   awayScore: document.getElementById("awayScore"),
+  penaltyScore: document.getElementById("penaltyScore"),
   awayFlag: document.getElementById("awayFlag"),
   awayName: document.getElementById("awayName"),
+  awayQualifiedBadge: document.getElementById("awayQualifiedBadge"),
   minute: document.getElementById("minute"),
   matchInfo: document.getElementById("matchInfo"),
   pagination: document.getElementById("pagination"),
@@ -198,6 +201,51 @@ function shouldShowMatchMinute(match) {
   if (isUpcoming(match) || isHalfTime(match) || isFinished(match)) return false;
   const minute = value(match.minute).trim();
   return Boolean(minute) && !["EN DIRECT", "LIVE"].includes(minute.toUpperCase());
+}
+
+function isKnockoutMatch(match) {
+  if (match.phase === "group") return false;
+  if (match.phase === "knockout") return true;
+  return !["group", ""].includes(value(match.type || match.round || match.phase).toLowerCase());
+}
+
+function hasPenaltyShootout(match) {
+  return isKnockoutMatch(match)
+    && scoreNumber(match.home_score) === scoreNumber(match.away_score)
+    && (scoreNumber(match.home_penalty_score) > 0 || scoreNumber(match.away_penalty_score) > 0);
+}
+
+function winnerSide(match) {
+  const homeScore = scoreNumber(match.home_score);
+  const awayScore = scoreNumber(match.away_score);
+  if (homeScore > awayScore) return "home";
+  if (awayScore > homeScore) return "away";
+  if (!hasPenaltyShootout(match)) return "";
+  const homePens = scoreNumber(match.home_penalty_score);
+  const awayPens = scoreNumber(match.away_penalty_score);
+  if (homePens > awayPens) return "home";
+  if (awayPens > homePens) return "away";
+  return "";
+}
+
+function qualifiedTeamName(match) {
+  const side = winnerSide(match);
+  return side === "home"
+    ? value(match.home, "Équipe 1")
+    : side === "away"
+      ? value(match.away, "Équipe 2")
+      : "";
+}
+
+function shouldShowQualifiedBadge(match) {
+  return isFinished(match) && isKnockoutMatch(match) && Boolean(winnerSide(match));
+}
+
+function scoreWithPenalties(match) {
+  const base = `${scoreNumber(match.home_score)} - ${scoreNumber(match.away_score)}`;
+  return hasPenaltyShootout(match)
+    ? `${base} (TAB ${scoreNumber(match.home_penalty_score)}-${scoreNumber(match.away_penalty_score)})`
+    : base;
 }
 
 function kickoffTime(match) {
@@ -485,11 +533,12 @@ function kickoffLabel(match) {
 function tickerMessage(match, groups) {
   const home = value(match.home, "Équipe 1");
   const away = value(match.away, "Équipe 2");
-  const score = `${scoreNumber(match.home_score)} - ${scoreNumber(match.away_score)}`;
+  const score = scoreWithPenalties(match);
   const label = groupLabel(match, groups);
+  const qualified = qualifiedTeamName(match);
 
   if (isFinished(match)) {
-    return `<strong>Terminé</strong> ${escapeHtml(label)} — ${escapeHtml(home)} ${score} ${escapeHtml(away)}`;
+    return `<strong>Terminé</strong> ${escapeHtml(label)} — ${escapeHtml(home)} ${escapeHtml(score)} ${escapeHtml(away)}${qualified ? ` • ${escapeHtml(qualified)} qualifié` : ""}`;
   }
 
   if (isUpcoming(match)) {
@@ -512,14 +561,15 @@ function liveUpdateRows(matches, groups) {
     const status = isFinished(match) ? "Terminé" : isUpcoming(match) ? "À venir" : "En direct";
     const score = isUpcoming(match)
       ? kickoffLabel(match) || value(match.status, "À venir")
-      : `${scoreNumber(match.home_score)} - ${scoreNumber(match.away_score)}`;
+      : scoreWithPenalties(match);
+    const qualified = qualifiedTeamName(match);
     return {
       status,
       group: groupLabel(match, groups),
       home: value(match.home, "Équipe 1"),
       away: value(match.away, "Équipe 2"),
       score,
-      minute: isLive(match) ? value(match.minute, value(match.status, "LIVE")) : ""
+      minute: qualified ? `${qualified} qualifié` : isLive(match) ? value(match.minute, value(match.status, "LIVE")) : ""
     };
   });
 }
@@ -666,8 +716,16 @@ function renderMatch(match) {
   elements.homeName.textContent = value(match.home, "Équipe 1");
   elements.homeScore.textContent = value(match.home_score, "0");
   elements.awayScore.textContent = value(match.away_score, "0");
+  elements.penaltyScore.textContent = `TAB ${scoreNumber(match.home_penalty_score)} - ${scoreNumber(match.away_penalty_score)}`;
+  elements.penaltyScore.hidden = !hasPenaltyShootout(match);
   elements.awayFlag.src = flagUrl(match.away_code, match.away);
   elements.awayName.textContent = value(match.away, "Équipe 2");
+  const winner = shouldShowQualifiedBadge(match) ? winnerSide(match) : "";
+  elements.homeQualifiedBadge.hidden = winner !== "home";
+  elements.awayQualifiedBadge.hidden = winner !== "away";
+  elements.scoreboard.classList.toggle("has-penalties", hasPenaltyShootout(match));
+  elements.scoreboard.classList.toggle("winner-home", winner === "home");
+  elements.scoreboard.classList.toggle("winner-away", winner === "away");
   elements.minute.textContent = value(match.minute);
   elements.minute.hidden = !shouldShowMatchMinute(match);
   elements.minute.classList.toggle("is-finished", isFinished(match));

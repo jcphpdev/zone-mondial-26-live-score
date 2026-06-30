@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Administration des scores — Zone Mondial 26</title>
-  <link rel="stylesheet" href="admin.css?v=20260630-01">
+  <link rel="stylesheet" href="admin.css?v=20260630-02">
 </head>
 <body>
   <header class="admin-header">
@@ -211,7 +211,7 @@
           <div>
             <h3>Synchronisation API World Cup 2026</h3>
             <p>
-              Récupère les scores depuis <code>worldcup26.ir</code> puis met à jour uniquement score, statut et minute
+              Récupère les scores depuis <code>worldcup26.ir</code> puis met à jour score, statut, minute et tirs au but
               des matchs liés par ID API.
             </p>
           </div>
@@ -612,6 +612,14 @@
           <label>Information affichée en bas</label>
           <input data-field="info" type="text" placeholder="Buteurs, stade ou message">
         </div>
+        <div class="field">
+          <label>TAB équipe 1</label>
+          <input data-field="home_penalty_score" type="number" min="0" value="0">
+        </div>
+        <div class="field">
+          <label>TAB équipe 2</label>
+          <input data-field="away_penalty_score" type="number" min="0" value="0">
+        </div>
         <div class="field api-link-field">
           <label>ID match API</label>
           <select data-field="external_match_id" data-api-link-select>
@@ -619,6 +627,22 @@
           </select>
           <input data-field="external_api" type="hidden" value="worldcup2026">
           <small>Chargez les matchs API dans “Régie live”, puis liez chaque match une seule fois.</small>
+        </div>
+        <div class="field full-setting">
+          <label>Tireurs TAB réussis équipe 1</label>
+          <input data-field="home_penalty_scorers" type="text" placeholder="Nom 1, Nom 2…">
+        </div>
+        <div class="field full-setting">
+          <label>Tireurs TAB réussis équipe 2</label>
+          <input data-field="away_penalty_scorers" type="text" placeholder="Nom 1, Nom 2…">
+        </div>
+        <div class="field full-setting">
+          <label>Tireurs TAB ratés équipe 1</label>
+          <input data-field="home_penalty_misses" type="text" placeholder="Nom 1, Nom 2…">
+        </div>
+        <div class="field full-setting">
+          <label>Tireurs TAB ratés équipe 2</label>
+          <input data-field="away_penalty_misses" type="text" placeholder="Nom 1, Nom 2…">
         </div>
       </div>
       </div>
@@ -698,6 +722,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260630-01"></script>
+  <script type="module" src="admin.js?v=20260630-02"></script>
 </body>
 </html>

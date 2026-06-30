@@ -98,6 +98,13 @@ if (firebaseConfigured) {
 const text = (value, fallback = "") =>
   value === undefined || value === null ? fallback : String(value);
 
+const NUMERIC_MATCH_FIELDS = new Set([
+  "home_score",
+  "away_score",
+  "home_penalty_score",
+  "away_penalty_score"
+]);
+
 const DEFAULT_SETTINGS = {
   score_scene_duration: 10,
   standings_scene_duration: 8,
@@ -141,6 +148,8 @@ function number(value) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 }
+
+const scoreNumber = number;
 
 function boundedNumber(value, fallback, min, max) {
   const parsed = Number.parseInt(value, 10);
@@ -253,6 +262,12 @@ function emptyMatch() {
     away_code: "",
     home_score: 0,
     away_score: 0,
+    home_penalty_score: 0,
+    away_penalty_score: 0,
+    home_penalty_scorers: "",
+    away_penalty_scorers: "",
+    home_penalty_misses: "",
+    away_penalty_misses: "",
     minute: "0'",
     status: "À venir",
     info: "",
@@ -282,7 +297,7 @@ function readMatch(card) {
     const key = input.dataset.field;
     if (input.type === "checkbox") match[key] = input.checked;
     else if (key === "external_match_id") match[key] = (input.value || input.dataset.selectedValue || "").trim();
-    else match[key] = key.endsWith("_score") ? number(input.value) : input.value.trim();
+    else match[key] = NUMERIC_MATCH_FIELDS.has(key) ? number(input.value) : input.value.trim();
   });
   match.external_api = match.external_match_id ? (match.external_api || "worldcup2026") : "";
   return match;
@@ -551,8 +566,52 @@ function apiMinute(game) {
   return Number.isFinite(numeric) ? `${numeric}'` : elapsed || "0'";
 }
 
+function isKnockoutMatch(match) {
+  if (match.phase === "group") return false;
+  if (match.phase === "knockout") return true;
+  return !["group", ""].includes(text(match.type || match.round || match.phase).toLowerCase());
+}
+
+function hasPenaltyShootout(match) {
+  return isKnockoutMatch(match)
+    && scoreNumber(match.home_score) === scoreNumber(match.away_score)
+    && (scoreNumber(match.home_penalty_score) > 0 || scoreNumber(match.away_penalty_score) > 0);
+}
+
+function winnerSide(match) {
+  const homeScore = scoreNumber(match.home_score);
+  const awayScore = scoreNumber(match.away_score);
+  if (homeScore > awayScore) return "home";
+  if (awayScore > homeScore) return "away";
+  if (!hasPenaltyShootout(match)) return "";
+  const homePens = scoreNumber(match.home_penalty_score);
+  const awayPens = scoreNumber(match.away_penalty_score);
+  if (homePens > awayPens) return "home";
+  if (awayPens > homePens) return "away";
+  return "";
+}
+
+function qualifiedTeamName(match) {
+  const side = winnerSide(match);
+  return side === "home" ? text(match.home) : side === "away" ? text(match.away) : "";
+}
+
+function scoreWithPenalties(match) {
+  const base = `${scoreNumber(match.home_score)}-${scoreNumber(match.away_score)}`;
+  return hasPenaltyShootout(match)
+    ? `${base} TAB ${scoreNumber(match.home_penalty_score)}-${scoreNumber(match.away_penalty_score)}`
+    : base;
+}
+
 function apiGameLabel(game) {
-  const score = `${apiScore(game.home_score)}-${apiScore(game.away_score)}`;
+  const score = scoreWithPenalties({
+    phase: game.type === "group" ? "group" : "knockout",
+    type: game.type,
+    home_score: apiScore(game.home_score),
+    away_score: apiScore(game.away_score),
+    home_penalty_score: apiScore(game.home_penalty_score),
+    away_penalty_score: apiScore(game.away_penalty_score)
+  });
   const stage = apiValue(game.type, "match").toUpperCase();
   const group = apiValue(game.group);
   const date = apiValue(game.local_date);
@@ -597,11 +656,23 @@ function linkedApiDiffs() {
     const next = {
       home_score: apiScore(game.home_score),
       away_score: apiScore(game.away_score),
+      home_penalty_score: apiScore(game.home_penalty_score),
+      away_penalty_score: apiScore(game.away_penalty_score),
+      home_penalty_scorers: apiValue(game.home_penalty_scorers),
+      away_penalty_scorers: apiValue(game.away_penalty_scorers),
+      home_penalty_misses: apiValue(game.home_penalty_misses),
+      away_penalty_misses: apiValue(game.away_penalty_misses),
       status: apiStatus(game),
       minute: apiMinute(game)
     };
     const changed = match.home_score !== next.home_score
       || match.away_score !== next.away_score
+      || scoreNumber(match.home_penalty_score) !== next.home_penalty_score
+      || scoreNumber(match.away_penalty_score) !== next.away_penalty_score
+      || text(match.home_penalty_scorers) !== next.home_penalty_scorers
+      || text(match.away_penalty_scorers) !== next.away_penalty_scorers
+      || text(match.home_penalty_misses) !== next.home_penalty_misses
+      || text(match.away_penalty_misses) !== next.away_penalty_misses
       || match.status !== next.status
       || text(match.minute) !== next.minute;
     return { card, match, game, next, changed };
@@ -613,12 +684,23 @@ function renderApiPreview() {
   const diffs = linkedApiDiffs();
   apiSyncPreview.hidden = !diffs.length;
   apiSyncPreview.innerHTML = diffs.length
-    ? diffs.slice(0, 12).map(item => `
+    ? diffs.slice(0, 12).map(item => {
+      const currentQualified = qualifiedTeamName(item.match);
+      const nextMatch = { ...item.match, ...item.next };
+      const nextQualified = qualifiedTeamName(nextMatch);
+      return `
       <div class="api-sync-row ${item.changed ? "has-change" : ""}">
         <strong>${escapeHtml(item.match.home || apiTeamName(item.game, "home"))} - ${escapeHtml(item.match.away || apiTeamName(item.game, "away"))}</strong>
-        <span>${escapeHtml(item.match.home_score)}-${escapeHtml(item.match.away_score)} / ${escapeHtml(item.match.status)} → ${escapeHtml(item.next.home_score)}-${escapeHtml(item.next.away_score)} / ${escapeHtml(item.next.status)}</span>
+        <span>
+          ${escapeHtml(scoreWithPenalties(item.match))} / ${escapeHtml(item.match.status)}
+          ${currentQualified ? ` / ${escapeHtml(currentQualified)} qualifié` : ""}
+          →
+          ${escapeHtml(scoreWithPenalties(nextMatch))} / ${escapeHtml(item.next.status)}
+          ${nextQualified ? ` / ${escapeHtml(nextQualified)} qualifié` : ""}
+        </span>
       </div>
-    `).join("")
+    `;
+    }).join("")
     : "";
 }
 
@@ -664,6 +746,12 @@ async function applyLinkedApiScores() {
     if (!item.changed) return;
     item.card.querySelector('[data-field="home_score"]').value = item.next.home_score;
     item.card.querySelector('[data-field="away_score"]').value = item.next.away_score;
+    item.card.querySelector('[data-field="home_penalty_score"]').value = item.next.home_penalty_score;
+    item.card.querySelector('[data-field="away_penalty_score"]').value = item.next.away_penalty_score;
+    item.card.querySelector('[data-field="home_penalty_scorers"]').value = item.next.home_penalty_scorers;
+    item.card.querySelector('[data-field="away_penalty_scorers"]').value = item.next.away_penalty_scorers;
+    item.card.querySelector('[data-field="home_penalty_misses"]').value = item.next.home_penalty_misses;
+    item.card.querySelector('[data-field="away_penalty_misses"]').value = item.next.away_penalty_misses;
     item.card.querySelector('[data-field="status"]').value = item.next.status;
     item.card.querySelector('[data-field="minute"]').value = item.next.minute;
     updateMatchSummary(item.card);

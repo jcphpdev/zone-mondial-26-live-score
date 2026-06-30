@@ -77,8 +77,15 @@ const controlAutoPublishButton = document.getElementById("controlAutoPublishButt
 const apiTestButton = document.getElementById("apiTestButton");
 const apiLoadGamesButton = document.getElementById("apiLoadGamesButton");
 const apiApplyScoresButton = document.getElementById("apiApplyScoresButton");
+const apiAutoSyncToggle = document.getElementById("apiAutoSyncToggle");
+const apiAutoSyncIntervalInput = document.getElementById("apiAutoSyncInterval");
+const apiAutoSyncModeInput = document.getElementById("apiAutoSyncMode");
+const apiAutoOnlyPublishedInput = document.getElementById("apiAutoOnlyPublished");
+const apiAutoOnlyActiveInput = document.getElementById("apiAutoOnlyActive");
+const apiAutoPublishFirebaseInput = document.getElementById("apiAutoPublishFirebase");
 const apiSyncStatus = document.getElementById("apiSyncStatus");
 const apiSyncPreview = document.getElementById("apiSyncPreview");
+const apiSyncLogRows = document.getElementById("apiSyncLogRows");
 
 let draftTimer;
 let autoPublishTimer;
@@ -88,6 +95,9 @@ let firebaseAuth;
 let firebaseDatabase;
 let visibleMatchLimit = 30;
 let apiGames = [];
+let apiAutoSyncTimer;
+let apiAutoSyncRunning = false;
+let apiSyncLog = [];
 
 if (firebaseConfigured) {
   const app = initializeApp(firebaseConfig);
@@ -557,6 +567,12 @@ function apiStatus(game) {
   return "En direct";
 }
 
+function isFinished(match) {
+  const values = ["FT", "FIN", "TERMINÉ", "TERMINE"];
+  return values.includes(text(match.minute).trim().toUpperCase())
+    || values.includes(text(match.status).trim().toUpperCase());
+}
+
 function apiMinute(game) {
   const elapsed = apiValue(game.time_elapsed).toLowerCase();
   if (apiStatus(game) === "Terminé") return "FT";
@@ -704,6 +720,86 @@ function renderApiPreview() {
     : "";
 }
 
+function apiAutoSyncOptions() {
+  return {
+    intervalSeconds: boundedNumber(apiAutoSyncIntervalInput?.value, 30, 15, 120),
+    mode: apiAutoSyncModeInput?.value === "apply" ? "apply" : "detect",
+    onlyPublished: apiAutoOnlyPublishedInput?.checked !== false,
+    onlyActive: apiAutoOnlyActiveInput?.checked !== false,
+    publishFirebase: apiAutoPublishFirebaseInput?.checked !== false
+  };
+}
+
+function filteredApiDiffs(options = {}) {
+  return linkedApiDiffs().filter(item => {
+    if (options.onlyPublished && item.match.published === false) return false;
+    if (options.onlyActive && isFinished(item.match) && isFinished({ ...item.match, ...item.next })) {
+      const penaltyChanged = scoreNumber(item.match.home_penalty_score) !== item.next.home_penalty_score
+        || scoreNumber(item.match.away_penalty_score) !== item.next.away_penalty_score
+        || text(item.match.home_penalty_scorers) !== item.next.home_penalty_scorers
+        || text(item.match.away_penalty_scorers) !== item.next.away_penalty_scorers
+        || text(item.match.home_penalty_misses) !== item.next.home_penalty_misses
+        || text(item.match.away_penalty_misses) !== item.next.away_penalty_misses;
+      if (!penaltyChanged) return false;
+    }
+    return item.changed;
+  });
+}
+
+function apiChangeLabel(item) {
+  const nextMatch = { ...item.match, ...item.next };
+  const qualified = qualifiedTeamName(nextMatch);
+  return `${item.match.home || apiTeamName(item.game, "home")} - ${item.match.away || apiTeamName(item.game, "away")} : ${scoreWithPenalties(item.match)} → ${scoreWithPenalties(nextMatch)} / ${item.next.status}${qualified ? ` / ${qualified} qualifié` : ""}`;
+}
+
+function addApiLog(message, type = "info") {
+  const time = new Intl.DateTimeFormat("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).format(new Date());
+  apiSyncLog.unshift({ time, message, type });
+  apiSyncLog = apiSyncLog.slice(0, 30);
+  renderApiLog();
+}
+
+function renderApiLog() {
+  if (!apiSyncLogRows) return;
+  apiSyncLogRows.innerHTML = apiSyncLog.length
+    ? apiSyncLog.map(entry => `
+      <div class="api-sync-log-row ${entry.type}">
+        <span>${escapeHtml(entry.time)}</span>
+        <strong>${escapeHtml(entry.message)}</strong>
+      </div>
+    `).join("")
+    : `<div class="api-sync-log-empty">Aucun événement pour le moment.</div>`;
+}
+
+function applyApiDiffs(diffs, { log = true } = {}) {
+  let updated = 0;
+  diffs.forEach(item => {
+    item.card.querySelector('[data-field="home_score"]').value = item.next.home_score;
+    item.card.querySelector('[data-field="away_score"]').value = item.next.away_score;
+    item.card.querySelector('[data-field="home_penalty_score"]').value = item.next.home_penalty_score;
+    item.card.querySelector('[data-field="away_penalty_score"]').value = item.next.away_penalty_score;
+    item.card.querySelector('[data-field="home_penalty_scorers"]').value = item.next.home_penalty_scorers;
+    item.card.querySelector('[data-field="away_penalty_scorers"]').value = item.next.away_penalty_scorers;
+    item.card.querySelector('[data-field="home_penalty_misses"]').value = item.next.home_penalty_misses;
+    item.card.querySelector('[data-field="away_penalty_misses"]').value = item.next.away_penalty_misses;
+    item.card.querySelector('[data-field="status"]').value = item.next.status;
+    item.card.querySelector('[data-field="minute"]').value = item.next.minute;
+    updateMatchSummary(item.card);
+    if (log) addApiLog(apiChangeLabel(item), "applied");
+    updated++;
+  });
+  if (updated) {
+    refreshCalculatedStandings();
+    renderApiPreview();
+    scheduleSave();
+  }
+  return updated;
+}
+
 async function testApiConnection() {
   apiTestButton.disabled = true;
   setApiStatus("Test de connexion API…");
@@ -740,27 +836,62 @@ async function applyLinkedApiScores() {
     await loadApiGames();
     if (!apiGames.length) return;
   }
-  const diffs = linkedApiDiffs();
-  let updated = 0;
-  diffs.forEach(item => {
-    if (!item.changed) return;
-    item.card.querySelector('[data-field="home_score"]').value = item.next.home_score;
-    item.card.querySelector('[data-field="away_score"]').value = item.next.away_score;
-    item.card.querySelector('[data-field="home_penalty_score"]').value = item.next.home_penalty_score;
-    item.card.querySelector('[data-field="away_penalty_score"]').value = item.next.away_penalty_score;
-    item.card.querySelector('[data-field="home_penalty_scorers"]').value = item.next.home_penalty_scorers;
-    item.card.querySelector('[data-field="away_penalty_scorers"]').value = item.next.away_penalty_scorers;
-    item.card.querySelector('[data-field="home_penalty_misses"]').value = item.next.home_penalty_misses;
-    item.card.querySelector('[data-field="away_penalty_misses"]').value = item.next.away_penalty_misses;
-    item.card.querySelector('[data-field="status"]').value = item.next.status;
-    item.card.querySelector('[data-field="minute"]').value = item.next.minute;
-    updateMatchSummary(item.card);
-    updated++;
-  });
-  refreshCalculatedStandings();
-  renderApiPreview();
-  scheduleSave();
+  const updated = applyApiDiffs(filteredApiDiffs({
+    onlyPublished: false,
+    onlyActive: false
+  }));
   showNotice(updated ? `${updated} match${updated > 1 ? "s" : ""} synchronisé${updated > 1 ? "s" : ""} depuis l’API.` : "Aucun score lié à mettre à jour.");
+}
+
+function scheduleApiAutoSync(immediate = false) {
+  clearTimeout(apiAutoSyncTimer);
+  if (!apiAutoSyncToggle?.checked) return;
+  const delay = immediate ? 0 : apiAutoSyncOptions().intervalSeconds * 1000;
+  apiAutoSyncTimer = setTimeout(runApiAutoSync, delay);
+}
+
+function stopApiAutoSync(message = "Auto-sync API arrêtée.") {
+  clearTimeout(apiAutoSyncTimer);
+  apiAutoSyncTimer = null;
+  apiAutoSyncRunning = false;
+  if (apiAutoSyncToggle) apiAutoSyncToggle.checked = false;
+  setApiStatus(message);
+  addApiLog(message, "info");
+}
+
+async function runApiAutoSync() {
+  if (!apiAutoSyncToggle?.checked || apiAutoSyncRunning) return;
+  apiAutoSyncRunning = true;
+  const options = apiAutoSyncOptions();
+  try {
+    await fetchApiGames();
+    const diffs = filteredApiDiffs(options);
+    if (!diffs.length) {
+      setApiStatus(`Auto-sync actif : aucun changement détecté. Prochain contrôle dans ${options.intervalSeconds}s.`);
+      addApiLog("Aucun changement détecté.", "info");
+      return;
+    }
+
+    if (options.mode === "detect") {
+      renderApiPreview();
+      setApiStatus(`Auto-sync détection : ${diffs.length} changement${diffs.length > 1 ? "s" : ""} détecté${diffs.length > 1 ? "s" : ""}.`);
+      diffs.slice(0, 5).forEach(item => addApiLog(`Détecté — ${apiChangeLabel(item)}`, "detected"));
+      return;
+    }
+
+    const updated = applyApiDiffs(diffs);
+    setApiStatus(`Auto-sync appliqué : ${updated} match${updated > 1 ? "s" : ""} mis à jour.`);
+    if (updated && options.publishFirebase) {
+      if (currentUser) await publishToFirebase(true);
+      else addApiLog("Publication Firebase ignorée : non connecté.", "warning");
+    }
+  } catch (error) {
+    setApiStatus(firebaseErrorMessage(error), true);
+    addApiLog(`Erreur auto-sync : ${firebaseErrorMessage(error)}`, "error");
+  } finally {
+    apiAutoSyncRunning = false;
+    scheduleApiAutoSync(false);
+  }
 }
 
 function setCardExpanded(card, expanded) {
@@ -1388,6 +1519,28 @@ controlAutoPublishButton?.addEventListener("click", () => {
 apiTestButton?.addEventListener("click", testApiConnection);
 apiLoadGamesButton?.addEventListener("click", loadApiGames);
 apiApplyScoresButton?.addEventListener("click", applyLinkedApiScores);
+apiAutoSyncToggle?.addEventListener("change", () => {
+  if (apiAutoSyncToggle.checked) {
+    const options = apiAutoSyncOptions();
+    if (options.mode === "apply" && options.publishFirebase && !currentUser) {
+      showNotice("Auto-sync activé, mais connectez-vous à Firebase pour publier automatiquement.", true);
+    }
+    setApiStatus(`Auto-sync API activé : mode ${options.mode === "apply" ? "application" : "détection"}, toutes les ${options.intervalSeconds}s.`);
+    addApiLog("Auto-sync API activé.", "info");
+    scheduleApiAutoSync(true);
+  } else {
+    stopApiAutoSync();
+  }
+});
+[apiAutoSyncIntervalInput, apiAutoSyncModeInput, apiAutoOnlyPublishedInput, apiAutoOnlyActiveInput, apiAutoPublishFirebaseInput].forEach(input => {
+  input?.addEventListener("change", () => {
+    if (!apiAutoSyncToggle?.checked) return;
+    const options = apiAutoSyncOptions();
+    setApiStatus(`Auto-sync mis à jour : mode ${options.mode === "apply" ? "application" : "détection"}, toutes les ${options.intervalSeconds}s.`);
+    addApiLog("Paramètres auto-sync modifiés.", "info");
+    scheduleApiAutoSync(false);
+  });
+});
 
 document.querySelectorAll(".section-tab").forEach(button => {
   button.addEventListener("click", () => {

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Administration des scores — Zone Mondial 26</title>
-  <link rel="stylesheet" href="admin.css?v=20260630-02">
+  <link rel="stylesheet" href="admin.css?v=20260630-03">
 </head>
 <body>
   <header class="admin-header">
@@ -220,8 +220,46 @@
             <button id="apiLoadGamesButton" class="button secondary" type="button">Charger les matchs API</button>
             <button id="apiApplyScoresButton" class="button publish" type="button">Synchroniser les scores liés</button>
           </div>
+          <div class="api-auto-sync-box">
+            <label class="setting-switch api-auto-switch">
+              <input id="apiAutoSyncToggle" type="checkbox">
+              <span>
+                <strong>Auto-sync API</strong>
+                <small>Interroge automatiquement l’API pendant que cette page admin reste ouverte.</small>
+              </span>
+            </label>
+            <div class="settings-grid compact-settings api-auto-settings">
+              <div class="field">
+                <label for="apiAutoSyncInterval">Fréquence</label>
+                <select id="apiAutoSyncInterval">
+                  <option value="15">15 secondes</option>
+                  <option value="30" selected>30 secondes</option>
+                  <option value="60">60 secondes</option>
+                  <option value="120">120 secondes</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="apiAutoSyncMode">Mode</label>
+                <select id="apiAutoSyncMode">
+                  <option value="detect">Détection seule</option>
+                  <option value="apply">Appliquer automatiquement</option>
+                </select>
+              </div>
+            </div>
+            <div class="api-auto-options">
+              <label><input id="apiAutoOnlyPublished" type="checkbox" checked> Matchs publiés uniquement</label>
+              <label><input id="apiAutoOnlyActive" type="checkbox" checked> Matchs non terminés uniquement</label>
+              <label><input id="apiAutoPublishFirebase" type="checkbox" checked> Publier vers Firebase après application</label>
+            </div>
+          </div>
           <div id="apiSyncStatus" class="api-sync-status">API non chargée.</div>
           <div id="apiSyncPreview" class="api-sync-preview" hidden></div>
+          <div class="api-sync-log">
+            <h4>Journal auto-sync</h4>
+            <div id="apiSyncLogRows" class="api-sync-log-rows">
+              <div class="api-sync-log-empty">Aucun événement pour le moment.</div>
+            </div>
+          </div>
         </section>
       </section>
     </section>
@@ -722,6 +760,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260630-02"></script>
+  <script type="module" src="admin.js?v=20260630-03"></script>
 </body>
 </html>

@@ -1161,6 +1161,58 @@ a {
   gap: 10px;
 }
 
+.api-auto-sync-box {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 11px;
+}
+
+.api-auto-switch {
+  margin: 0;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.api-auto-switch strong {
+  color: #fff;
+}
+
+.api-auto-switch small {
+  color: #c9cee4;
+}
+
+.api-auto-settings {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.api-auto-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.api-auto-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  color: #dce2ff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.api-auto-options input {
+  accent-color: var(--green);
+}
+
 .api-sync-status {
   padding: 10px 12px;
   color: #dff6e4;
@@ -1200,6 +1252,70 @@ a {
   color: #fff;
   border-color: rgba(60, 172, 59, 0.45);
   box-shadow: inset 4px 0 0 var(--green);
+}
+
+.api-sync-log {
+  display: grid;
+  gap: 10px;
+}
+
+.api-sync-log h4 {
+  margin: 0;
+  color: #fff;
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  font-size: 20px;
+  text-transform: uppercase;
+}
+
+.api-sync-log-rows {
+  display: grid;
+  gap: 7px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.api-sync-log-row,
+.api-sync-log-empty {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px 11px;
+  color: #c9cee4;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.api-sync-log-row span {
+  color: #9ea8d2;
+  font-weight: 800;
+}
+
+.api-sync-log-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-sync-log-row.detected {
+  border-color: rgba(255, 210, 90, 0.42);
+  box-shadow: inset 4px 0 0 #ffd25a;
+}
+
+.api-sync-log-row.applied {
+  border-color: rgba(60, 172, 59, 0.42);
+  box-shadow: inset 4px 0 0 var(--green);
+}
+
+.api-sync-log-row.warning,
+.api-sync-log-row.error {
+  border-color: rgba(230, 29, 37, 0.42);
+  box-shadow: inset 4px 0 0 var(--red);
+}
+
+.api-sync-log-empty {
+  display: block;
 }
 
 .api-link-field {

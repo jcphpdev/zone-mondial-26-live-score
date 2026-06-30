@@ -56,11 +56,13 @@ const sceneModeInput = document.getElementById("sceneMode");
 const selectedMatchSceneInput = document.getElementById("selectedMatchScene");
 const selectedGroupSceneInput = document.getElementById("selectedGroupScene");
 const includeMatchScenesInput = document.getElementById("includeMatchScenes");
+const includeMatchVideoScenesInput = document.getElementById("includeMatchVideoScenes");
 const includeGroupScenesInput = document.getElementById("includeGroupScenes");
 const includeTickerSceneInput = document.getElementById("includeTickerScene");
 const includeVideoSceneInput = document.getElementById("includeVideoScene");
 const enableVideoSoundInput = document.getElementById("enableVideoSound");
 const matchBackgroundUrlInput = document.getElementById("matchBackgroundUrl");
+const matchVideoBackgroundUrlInput = document.getElementById("matchVideoBackgroundUrl");
 const standingsBackgroundUrlInput = document.getElementById("standingsBackgroundUrl");
 const tickerBackgroundUrlInput = document.getElementById("tickerBackgroundUrl");
 const videoPlaylistUrlsInput = document.getElementById("videoPlaylistUrls");
@@ -130,12 +132,14 @@ const DEFAULT_SETTINGS = {
   selected_match_id: "",
   selected_group_id: "",
   include_match_scenes: true,
+  include_match_video_scenes: false,
   include_group_scenes: true,
   include_ticker_scene: false,
   include_video_scene: false,
   enable_video_sound: true,
   video_playlist_urls: "",
   match_background_url: "assets/bg-scene-match.png",
+  match_video_background_url: "assets/bg-scene-match-video.png",
   standings_background_url: "assets/bg-scene-standings.png",
   ticker_background_url: "assets/bg-scene-live-updates.png"
 };
@@ -183,12 +187,14 @@ function readSettings() {
     selected_match_id: selectedMatchSceneInput.value,
     selected_group_id: selectedGroupSceneInput.value,
     include_match_scenes: includeMatchScenesInput.checked,
+    include_match_video_scenes: includeMatchVideoScenesInput.checked,
     include_group_scenes: includeGroupScenesInput.checked,
     include_ticker_scene: includeTickerSceneInput.checked,
     include_video_scene: includeVideoSceneInput.checked,
     enable_video_sound: enableVideoSoundInput.checked,
     video_playlist_urls: videoPlaylistUrlsInput.value.trim(),
     match_background_url: sceneBackgroundSetting(matchBackgroundUrlInput.value, DEFAULT_SETTINGS.match_background_url),
+    match_video_background_url: sceneBackgroundSetting(matchVideoBackgroundUrlInput.value, DEFAULT_SETTINGS.match_video_background_url),
     standings_background_url: sceneBackgroundSetting(standingsBackgroundUrlInput.value, DEFAULT_SETTINGS.standings_background_url),
     ticker_background_url: sceneBackgroundSetting(tickerBackgroundUrlInput.value, DEFAULT_SETTINGS.ticker_background_url)
   };
@@ -211,10 +217,11 @@ function fillSettings(settings = {}) {
   showGoalAlertInput.checked = merged.show_goal_alert !== false;
   autoStartMatchesInput.checked = merged.auto_start_matches !== false;
   enableGoalSoundInput.checked = merged.enable_goal_sound !== false;
-  sceneModeInput.value = ["auto", "match", "group", "ticker", "video"].includes(merged.scene_mode) ? merged.scene_mode : "auto";
+  sceneModeInput.value = ["auto", "match", "match-video", "group", "ticker", "video"].includes(merged.scene_mode) ? merged.scene_mode : "auto";
   selectedMatchSceneInput.dataset.selectedValue = text(merged.selected_match_id);
   selectedGroupSceneInput.dataset.selectedValue = text(merged.selected_group_id);
   includeMatchScenesInput.checked = merged.include_match_scenes !== false;
+  includeMatchVideoScenesInput.checked = merged.include_match_video_scenes === true;
   includeGroupScenesInput.checked = merged.include_group_scenes !== false;
   includeTickerSceneInput.checked = merged.include_ticker_scene === true;
   includeVideoSceneInput.checked = merged.include_video_scene === true;
@@ -223,6 +230,7 @@ function fillSettings(settings = {}) {
     ? merged.video_playlist_urls.join("\n")
     : text(merged.video_playlist_urls);
   matchBackgroundUrlInput.value = sceneBackgroundSetting(merged.match_background_url, DEFAULT_SETTINGS.match_background_url);
+  matchVideoBackgroundUrlInput.value = sceneBackgroundSetting(merged.match_video_background_url, DEFAULT_SETTINGS.match_video_background_url);
   standingsBackgroundUrlInput.value = sceneBackgroundSetting(merged.standings_background_url, DEFAULT_SETTINGS.standings_background_url);
   tickerBackgroundUrlInput.value = sceneBackgroundSetting(merged.ticker_background_url, DEFAULT_SETTINGS.ticker_background_url);
   syncControlRoom();
@@ -482,6 +490,7 @@ function sceneModeLabel(mode) {
   return {
     auto: "Automatique",
     match: "Score match",
+    "match-video": "Score + vidéos 9:16",
     group: "Classement",
     ticker: "Live updates",
     video: "Vidéos 9:16"
@@ -508,7 +517,7 @@ function syncControlRoom() {
 
   const mode = sceneModeInput.value || "auto";
   controlCurrentScene.textContent = sceneModeLabel(mode);
-  controlCurrentTarget.textContent = mode === "match"
+  controlCurrentTarget.textContent = ["match", "match-video"].includes(mode)
     ? selectedOptionLabel(selectedMatchSceneInput, "Premier match publié")
     : mode === "group"
       ? selectedOptionLabel(selectedGroupSceneInput, "Premier classement disponible")
@@ -536,6 +545,7 @@ function setControlScene(mode) {
   sceneModeInput.value = mode;
   if (mode === "ticker") includeTickerSceneInput.checked = true;
   if (mode === "video") includeVideoSceneInput.checked = true;
+  if (mode === "match-video") includeMatchVideoScenesInput.checked = true;
   syncControlRoom();
   publishOrSaveFromControl();
   showNotice(`Scène ${sceneModeLabel(mode).toLowerCase()} sélectionnée.`);
@@ -1463,13 +1473,13 @@ updatedAtInput.addEventListener("input", () => {
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });
-[matchBackgroundUrlInput, standingsBackgroundUrlInput, tickerBackgroundUrlInput].forEach(input => {
+[matchBackgroundUrlInput, matchVideoBackgroundUrlInput, standingsBackgroundUrlInput, tickerBackgroundUrlInput].forEach(input => {
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });
 videoPlaylistUrlsInput.addEventListener("input", scheduleSave);
 videoPlaylistUrlsInput.addEventListener("change", scheduleSave);
-[autoRotateScenesInput, showTickerInput, showGoalAlertInput, autoStartMatchesInput, enableGoalSoundInput, includeMatchScenesInput, includeGroupScenesInput, includeTickerSceneInput, includeVideoSceneInput, enableVideoSoundInput].forEach(input => {
+[autoRotateScenesInput, showTickerInput, showGoalAlertInput, autoStartMatchesInput, enableGoalSoundInput, includeMatchScenesInput, includeMatchVideoScenesInput, includeGroupScenesInput, includeTickerSceneInput, includeVideoSceneInput, enableVideoSoundInput].forEach(input => {
   input.addEventListener("change", scheduleSave);
 });
 [sceneModeInput, selectedMatchSceneInput, selectedGroupSceneInput].forEach(input => {

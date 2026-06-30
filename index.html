@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zone Mondial 26 — Live Scores</title>
-  <link rel="stylesheet" href="style.css?v=20260630-02">
+  <link rel="stylesheet" href="style.css?v=20260630-03">
 </head>
 <body>
   <main class="scoreboard" aria-live="polite">
@@ -36,6 +36,11 @@
       <img id="awayFlag" class="flag" alt="">
       <h1 id="awayName">Écosse</h1>
     </section>
+
+    <aside id="matchVideoFrame" class="match-video-frame" aria-label="Vidéo verticale du match">
+      <video id="matchPlaylistVideo" playsinline autoplay></video>
+      <div id="matchPlaylistEmpty" class="playlist-empty">Playlist vidéo vide</div>
+    </aside>
 
     <section id="standingsView" class="standings-view">
       <div class="standings-title">
@@ -108,6 +113,6 @@
     Mise à jour des scores…
   </div>
 
-  <script type="module" src="script.js?v=20260630-02"></script>
+  <script type="module" src="script.js?v=20260630-03"></script>
 </body>
 </html>

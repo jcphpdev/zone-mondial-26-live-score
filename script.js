@@ -26,12 +26,14 @@ const DEFAULT_SETTINGS = {
   selected_match_id: "",
   selected_group_id: "",
   include_match_scenes: true,
+  include_match_video_scenes: false,
   include_group_scenes: true,
   include_ticker_scene: false,
   include_video_scene: false,
   enable_video_sound: true,
   video_playlist_urls: "",
   match_background_url: "assets/bg-scene-match.png",
+  match_video_background_url: "assets/bg-scene-match-video.png",
   standings_background_url: "assets/bg-scene-standings.png",
   ticker_background_url: "assets/bg-scene-live-updates.png"
 };
@@ -54,6 +56,9 @@ const elements = {
   awayFlag: document.getElementById("awayFlag"),
   awayName: document.getElementById("awayName"),
   awayQualifiedBadge: document.getElementById("awayQualifiedBadge"),
+  matchVideoFrame: document.getElementById("matchVideoFrame"),
+  matchPlaylistVideo: document.getElementById("matchPlaylistVideo"),
+  matchPlaylistEmpty: document.getElementById("matchPlaylistEmpty"),
   minute: document.getElementById("minute"),
   matchInfo: document.getElementById("matchInfo"),
   pagination: document.getElementById("pagination"),
@@ -123,16 +128,18 @@ function normalizeSettings(settings = {}) {
     show_goal_alert: settings.show_goal_alert !== false,
     enable_goal_sound: settings.enable_goal_sound !== false,
     auto_start_matches: settings.auto_start_matches !== false,
-    scene_mode: ["auto", "match", "group", "ticker", "video"].includes(settings.scene_mode) ? settings.scene_mode : "auto",
+    scene_mode: ["auto", "match", "match-video", "group", "ticker", "video"].includes(settings.scene_mode) ? settings.scene_mode : "auto",
     selected_match_id: value(settings.selected_match_id),
     selected_group_id: value(settings.selected_group_id),
     include_match_scenes: settings.include_match_scenes !== false,
+    include_match_video_scenes: settings.include_match_video_scenes === true,
     include_group_scenes: settings.include_group_scenes !== false,
     include_ticker_scene: settings.include_ticker_scene === true,
     include_video_scene: settings.include_video_scene === true,
     enable_video_sound: settings.enable_video_sound !== false,
     video_playlist_urls: settings.video_playlist_urls ?? "",
     match_background_url: sceneBackgroundSetting(settings.match_background_url, DEFAULT_SETTINGS.match_background_url),
+    match_video_background_url: sceneBackgroundSetting(settings.match_video_background_url, DEFAULT_SETTINGS.match_video_background_url),
     standings_background_url: sceneBackgroundSetting(settings.standings_background_url, DEFAULT_SETTINGS.standings_background_url),
     ticker_background_url: sceneBackgroundSetting(settings.ticker_background_url, DEFAULT_SETTINGS.ticker_background_url)
   };
@@ -151,6 +158,7 @@ function sceneBackgroundUrl(type) {
   if (type === "group") return currentSettings.standings_background_url;
   if (type === "ticker") return currentSettings.ticker_background_url;
   if (type === "video") return currentSettings.ticker_background_url;
+  if (type === "match-video") return currentSettings.match_video_background_url;
   return currentSettings.match_background_url;
 }
 
@@ -417,12 +425,16 @@ function shouldShowSoundUnlock() {
 }
 
 async function unlockSound() {
-  if (params.get("sound") === "0" || !currentSettings.enable_goal_sound) return false;
+  if (params.get("sound") === "0" || (!currentSettings.enable_goal_sound && !currentSettings.enable_video_sound)) return false;
 
   try {
-    audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
-    await audioContext.resume?.();
-    soundUnlocked = audioContext.state === "running";
+    if (currentSettings.enable_goal_sound) {
+      audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+      await audioContext.resume?.();
+      soundUnlocked = audioContext.state === "running";
+    } else {
+      soundUnlocked = true;
+    }
     videoPlaybackBlocked = false;
     playPlaylistVideo();
     elements.soundUnlock.hidden = !shouldShowSoundUnlock() || soundUnlocked;
@@ -583,38 +595,48 @@ function playlistUrls(input) {
 }
 
 function playPlaylistVideo(index = currentVideoIndex) {
-  if (!elements.playlistVideo) return;
+  const players = [
+    { video: elements.playlistVideo, empty: elements.playlistEmpty },
+    { video: elements.matchPlaylistVideo, empty: elements.matchPlaylistEmpty }
+  ].filter(player => player.video);
+
+  if (!players.length) return;
   if (!currentVideoPlaylist.length) {
-    elements.playlistVideo.removeAttribute("src");
-    elements.playlistVideo.load();
-    elements.playlistVideo.hidden = true;
-    elements.playlistEmpty.hidden = false;
+    players.forEach(({ video, empty }) => {
+      video.removeAttribute("src");
+      video.load();
+      video.hidden = true;
+      if (empty) empty.hidden = false;
+    });
     return;
   }
 
   currentVideoIndex = ((index % currentVideoPlaylist.length) + currentVideoPlaylist.length) % currentVideoPlaylist.length;
   const nextSrc = currentVideoPlaylist[currentVideoIndex];
-  elements.playlistEmpty.hidden = true;
-  elements.playlistVideo.hidden = false;
-  elements.playlistVideo.loop = currentVideoPlaylist.length === 1;
-  elements.playlistVideo.muted = currentSettings.enable_video_sound === false;
-  elements.playlistVideo.volume = currentSettings.enable_video_sound === false ? 0 : 1;
 
-  if (elements.playlistVideo.getAttribute("src") !== nextSrc) {
-    elements.playlistVideo.src = nextSrc;
-    elements.playlistVideo.load();
-  }
+  players.forEach(({ video, empty }, index) => {
+    if (empty) empty.hidden = true;
+    video.hidden = false;
+    video.loop = currentVideoPlaylist.length === 1;
+    video.muted = currentSettings.enable_video_sound === false || index > 0;
+    video.volume = currentSettings.enable_video_sound === false || index > 0 ? 0 : 1;
 
-  elements.playlistVideo.play().then(() => {
-    videoPlaybackBlocked = false;
-    elements.soundUnlock.hidden = !shouldShowSoundUnlock() || soundUnlocked;
-  }).catch(() => {
-    videoPlaybackBlocked = currentSettings.enable_video_sound !== false;
-    elements.soundUnlock.hidden = !shouldShowSoundUnlock();
-    if (currentSettings.enable_video_sound !== false) {
-      elements.playlistVideo.muted = true;
-      elements.playlistVideo.play().catch(() => {});
+    if (video.getAttribute("src") !== nextSrc) {
+      video.src = nextSrc;
+      video.load();
     }
+
+    video.play().then(() => {
+      videoPlaybackBlocked = false;
+      elements.soundUnlock.hidden = !shouldShowSoundUnlock() || soundUnlocked;
+    }).catch(() => {
+      videoPlaybackBlocked = currentSettings.enable_video_sound !== false;
+      elements.soundUnlock.hidden = !shouldShowSoundUnlock();
+      if (currentSettings.enable_video_sound !== false) {
+        video.muted = true;
+        video.play().catch(() => {});
+      }
+    });
   });
 }
 
@@ -657,6 +679,7 @@ function renderTicker(matches, groups) {
 function renderLiveUpdates(data) {
   elements.scoreboard.classList.remove("show-standings");
   elements.scoreboard.classList.remove("show-video-updates");
+  elements.scoreboard.classList.remove("show-match-video");
   elements.scoreboard.classList.add("show-live-updates");
   elements.competition.textContent = "ZONE MONDIAL 26";
   elements.status.textContent = "LIVE UPDATES";
@@ -677,7 +700,7 @@ function renderLiveUpdates(data) {
 }
 
 function renderVideoUpdates(data) {
-  elements.scoreboard.classList.remove("show-standings", "show-live-updates");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-match-video");
   elements.scoreboard.classList.add("show-video-updates");
   elements.competition.textContent = "ZONE MONDIAL 26";
   elements.status.textContent = "VIDÉOS LIVE";
@@ -709,7 +732,7 @@ function animate() {
 }
 
 function renderMatch(match) {
-  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video");
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = displayStatus(match);
   elements.homeFlag.src = flagUrl(match.home_code, match.home);
@@ -739,8 +762,14 @@ function renderMatch(match) {
   );
 }
 
+function renderMatchVideo(match) {
+  renderMatch(match);
+  elements.scoreboard.classList.add("show-match-video");
+  playPlaylistVideo();
+}
+
 function renderGroup(group) {
-  elements.scoreboard.classList.remove("show-live-updates", "show-video-updates");
+  elements.scoreboard.classList.remove("show-live-updates", "show-video-updates", "show-match-video");
   elements.scoreboard.classList.add("show-standings");
   elements.competition.textContent = value(group.subtitle, "COUPE DU MONDE 2026");
   elements.status.textContent = "CLASSEMENT";
@@ -775,7 +804,7 @@ function renderScene(options = {}) {
   if (shouldAnimate) clearTimeout(rotationTimer);
   const token = ++sceneRenderToken;
   if (!scenes.length) {
-    elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "scene-group", "scene-live-updates", "scene-video-updates");
+    elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "scene-group", "scene-live-updates", "scene-video-updates", "scene-match-video");
     elements.scoreboard.classList.add("scene-match");
     applySceneBackground("match");
     elements.matchInfo.textContent = "Aucun contenu publié";
@@ -788,11 +817,13 @@ function renderScene(options = {}) {
     elements.scoreboard.classList.toggle("scene-group", scene.type === "group");
     elements.scoreboard.classList.toggle("scene-live-updates", scene.type === "ticker");
     elements.scoreboard.classList.toggle("scene-video-updates", scene.type === "video");
-    elements.scoreboard.classList.toggle("scene-match", scene.type === "match");
+    elements.scoreboard.classList.toggle("scene-match", ["match", "match-video"].includes(scene.type));
+    elements.scoreboard.classList.toggle("scene-match-video", scene.type === "match-video");
     applySceneBackground(scene.type);
     if (scene.type === "group") renderGroup(scene.data);
     else if (scene.type === "ticker") renderLiveUpdates(scene.data);
     else if (scene.type === "video") renderVideoUpdates(scene.data);
+    else if (scene.type === "match-video") renderMatchVideo(scene.data);
     else renderMatch(scene.data);
     renderPagination();
     elements.scoreboard.classList.remove("is-leaving");
@@ -837,6 +868,7 @@ function applyData(data, options = {}) {
 
   const scoreSceneMatches = publishedMatches.filter(match => isVisibleInScoreScenes(match));
   const matchScenes = scoreSceneMatches.map(match => ({ type: "match", id: match.id, data: match }));
+  const matchVideoScenes = scoreSceneMatches.map(match => ({ type: "match-video", id: match.id, data: match }));
   const groupScenes = [];
   publishedMatches.forEach(match => {
 
@@ -875,6 +907,10 @@ function applyData(data, options = {}) {
     scenes = [
       matchScenes.find(scene => scene.id === currentSettings.selected_match_id) || matchScenes[0]
     ].filter(Boolean);
+  } else if (currentSettings.scene_mode === "match-video") {
+    scenes = [
+      matchVideoScenes.find(scene => scene.id === currentSettings.selected_match_id) || matchVideoScenes[0]
+    ].filter(Boolean);
   } else if (currentSettings.scene_mode === "group") {
     scenes = [
       groupScenes.find(scene => scene.id === currentSettings.selected_group_id) || groupScenes[0]
@@ -886,6 +922,7 @@ function applyData(data, options = {}) {
   } else {
     scenes = [
       ...(currentSettings.include_match_scenes ? matchScenes : []),
+      ...(currentSettings.include_match_video_scenes ? matchVideoScenes : []),
       ...(currentSettings.include_group_scenes ? groupScenes : []),
       ...(currentSettings.include_ticker_scene ? [tickerScene] : []),
       ...(currentSettings.include_video_scene ? [videoScene] : [])
@@ -900,13 +937,16 @@ function applyData(data, options = {}) {
   } else if (requestedScene === "video") {
     activeScene = scenes.findIndex(scene => scene.type === "video");
     if (activeScene < 0) activeScene = 0;
+  } else if (requestedScene === "match-video") {
+    activeScene = scenes.findIndex(scene => scene.type === "match-video");
+    if (activeScene < 0) activeScene = 0;
   } else if (requestedScene === "group") {
     activeScene = scenes.findIndex(scene => scene.type === "group");
     if (activeScene < 0) activeScene = 0;
   } else if (kickoffEvents.length || goalEvents.length) {
     const featuredEvent = kickoffEvents[0] || goalEvents[0];
     const eventSceneIndex = scenes.findIndex(scene =>
-      scene.type === "match" && matchKey(scene.data) === featuredEvent.key
+      ["match", "match-video"].includes(scene.type) && matchKey(scene.data) === featuredEvent.key
     );
     if (eventSceneIndex >= 0) activeScene = eventSceneIndex;
   } else {

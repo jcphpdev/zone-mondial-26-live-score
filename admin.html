@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Administration des scores — Zone Mondial 26</title>
-  <link rel="stylesheet" href="admin.css?v=20260630-03">
+  <link rel="stylesheet" href="admin.css?v=20260630-04">
 </head>
 <body>
   <header class="admin-header">
@@ -171,6 +171,7 @@
             <div class="control-actions">
               <button class="button primary" data-control-scene="auto" type="button">Retour auto</button>
               <button class="button secondary" data-control-scene="match" type="button">Score match</button>
+              <button class="button secondary" data-control-scene="match-video" type="button">Score + vidéo</button>
               <button class="button secondary" data-control-scene="group" type="button">Classement</button>
               <button class="button secondary" data-control-scene="ticker" type="button">Live updates</button>
               <button class="button secondary" data-control-scene="video" type="button">Vidéos 9:16</button>
@@ -333,6 +334,7 @@
             <select id="sceneMode">
               <option value="auto">Automatique</option>
               <option value="match">Forcer un match</option>
+              <option value="match-video">Forcer score + vidéos 9:16</option>
               <option value="group">Forcer un classement</option>
               <option value="ticker">Forcer la scène ticker</option>
               <option value="video">Forcer la scène vidéos 9:16</option>
@@ -399,6 +401,11 @@
           </div>
 
           <div class="field full-setting">
+            <label for="matchVideoBackgroundUrl">Background score + vidéos 9:16</label>
+            <input id="matchVideoBackgroundUrl" type="text" placeholder="assets/bg-scene-match-video.png">
+          </div>
+
+          <div class="field full-setting">
             <label for="standingsBackgroundUrl">Background classement</label>
             <input id="standingsBackgroundUrl" type="text" placeholder="assets/bg-scene-standings.png">
           </div>
@@ -421,6 +428,14 @@
             <span>
               <strong>Inclure les scènes matchs</strong>
               <small>Ajoute les scores publiés dans la rotation automatique.</small>
+            </span>
+          </label>
+
+          <label class="setting-switch">
+            <input id="includeMatchVideoScenes" type="checkbox">
+            <span>
+              <strong>Inclure score + vidéos 9:16</strong>
+              <small>Ajoute les matchs publiés avec la playlist verticale à côté.</small>
             </span>
           </label>
 
@@ -760,6 +775,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260630-03"></script>
+  <script type="module" src="admin.js?v=20260630-04"></script>
 </body>
 </html>

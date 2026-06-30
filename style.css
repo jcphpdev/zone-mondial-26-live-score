@@ -619,7 +619,8 @@ body {
 
 .scoreboard:not(.show-standings) .standings-view,
 .scoreboard:not(.show-live-updates) .live-updates-view,
-.scoreboard:not(.show-video-updates) .video-updates-view {
+.scoreboard:not(.show-video-updates) .video-updates-view,
+.scoreboard:not(.show-match-video) .match-video-frame {
   display: none;
 }
 
@@ -633,7 +634,8 @@ body {
 .scoreboard.is-leaving .match-footer,
 .scoreboard.is-leaving .standings-view,
 .scoreboard.is-leaving .live-updates-view,
-.scoreboard.is-leaving .video-updates-view {
+.scoreboard.is-leaving .video-updates-view,
+.scoreboard.is-leaving .match-video-frame {
   animation: scene-exit 0.26s ease-in forwards;
 }
 
@@ -701,6 +703,14 @@ body {
 .scoreboard.is-entering.scene-video-updates .live-update-row:nth-child(4) { animation-delay: 0.28s; }
 .scoreboard.is-entering.scene-video-updates .live-update-row:nth-child(5) { animation-delay: 0.34s; }
 
+.scoreboard.is-entering.scene-match-video .team-home,
+.scoreboard.is-entering.scene-match-video .team-away,
+.scoreboard.is-entering.scene-match-video .score-panel,
+.scoreboard.is-entering.scene-match-video .match-footer,
+.scoreboard.is-entering.scene-match-video .match-video-frame {
+  animation: match-slide-in 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .match-header {
   top: 10.9%;
   left: 26.7%;
@@ -754,6 +764,96 @@ body {
 
 .team-away {
   right: 5.55%;
+}
+
+.match-video-frame {
+  position: absolute;
+  top: 19.4%;
+  left: 64.84%;
+  width: 21.1%;
+  height: 66.7%;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+  border-radius: 26px;
+  background: rgba(2, 8, 23, 0.72);
+  box-shadow: 0 22px 46px rgba(0, 0, 0, 0.45);
+}
+
+.match-video-frame video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.match-video-frame .playlist-empty {
+  width: 100%;
+  height: 100%;
+}
+
+.scoreboard.show-match-video .team-panel {
+  left: 9.5%;
+  width: 53.5%;
+  height: 14.2%;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 1.6vw;
+  padding: 1.2vh 2.2vw;
+  text-align: left;
+}
+
+.scoreboard.show-match-video .team-home {
+  top: 23.2%;
+}
+
+.scoreboard.show-match-video .team-away {
+  top: 55.6%;
+  right: auto;
+}
+
+.scoreboard.show-match-video .flag {
+  width: clamp(88px, 7.1vw, 136px);
+  height: clamp(58px, 4.7vw, 91px);
+}
+
+.scoreboard.show-match-video .team-panel h1 {
+  font-size: clamp(34px, 3.25vw, 62px);
+  line-height: 0.94;
+}
+
+.scoreboard.show-match-video .score-panel {
+  top: 35.6%;
+  left: 15.7%;
+  width: 48.8%;
+  height: 19.4%;
+}
+
+.scoreboard.show-match-video .score {
+  gap: 0.92em;
+  font-size: clamp(96px, 10vw, 190px);
+}
+
+.scoreboard.show-match-video .penalty-score {
+  margin-top: 0.6vh;
+}
+
+.scoreboard.show-match-video .minute {
+  margin-top: 0.7vh;
+  font-size: clamp(18px, 1.6vw, 30px);
+}
+
+.scoreboard.show-match-video .match-footer {
+  top: 74.2%;
+  left: 16%;
+  width: 47.2%;
+  height: 6.4%;
+  padding: 0.6vh 2vw;
+}
+
+.scoreboard.show-match-video .match-footer p {
+  font-size: clamp(15px, 1.32vw, 25px);
+  -webkit-line-clamp: 2;
 }
 
 .flag {

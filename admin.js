@@ -138,10 +138,10 @@ const DEFAULT_SETTINGS = {
   include_video_scene: false,
   enable_video_sound: true,
   video_playlist_urls: "",
-  match_background_url: "assets/bg-v2-score.png",
-  match_video_background_url: "assets/bg-v2-score-video.png",
-  standings_background_url: "assets/bg-v2-standings.png",
-  ticker_background_url: "assets/bg-v2-live-updates.png"
+  match_background_url: "assets/bg-ambience-score.svg",
+  match_video_background_url: "assets/bg-ambience-score-video.svg",
+  standings_background_url: "assets/bg-ambience-standings.svg",
+  ticker_background_url: "assets/bg-ambience-live-updates.svg"
 };
 
 const LEGACY_SCOREBOARD_BACKGROUNDS = new Set([
@@ -149,6 +149,10 @@ const LEGACY_SCOREBOARD_BACKGROUNDS = new Set([
   "assets/bg-scene-match-video.png",
   "assets/bg-scene-standings.png",
   "assets/bg-scene-live-updates.png",
+  "assets/bg-v2-score.png",
+  "assets/bg-v2-score-video.png",
+  "assets/bg-v2-standings.png",
+  "assets/bg-v2-live-updates.png",
   "assets/bg-scoreboard-16-9-v2.png",
   "assets/bg-scoreboard-16-9.png"
 ]);

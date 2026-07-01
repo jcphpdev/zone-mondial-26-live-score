@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+  <defs>
+    <radialGradient id="sky" cx="42%" cy="20%" r="82%">
+      <stop offset="0" stop-color="#183777"/>
+      <stop offset="0.55" stop-color="#06152f"/>
+      <stop offset="1" stop-color="#020711"/>
+    </radialGradient>
+    <linearGradient id="pitch" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a5a31" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#06150c"/>
+    </linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="11"/></filter>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <rect y="560" width="1600" height="340" fill="url(#pitch)"/>
+  <ellipse cx="690" cy="760" rx="300" ry="78" fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="4"/>
+  <path d="M690 560v340" stroke="#ffffff" stroke-opacity="0.14" stroke-width="4"/>
+  <g filter="url(#blur)" opacity="0.72">
+    <circle cx="80" cy="82" r="70" fill="#ffffff"/>
+    <circle cx="1520" cy="82" r="70" fill="#ffffff"/>
+    <circle cx="1260" cy="170" r="44" fill="#ffffff" opacity="0.46"/>
+  </g>
+  <path d="M-120 470c290-120 575-128 900-36" fill="none" stroke="#e61d25" stroke-opacity="0.26" stroke-width="38"/>
+  <path d="M1680 470c-160-70-290-95-470-88" fill="none" stroke="#3cac3b" stroke-opacity="0.32" stroke-width="38"/>
+  <rect x="1130" y="70" width="430" height="700" rx="48" fill="#06152f" opacity="0.32"/>
+  <path d="M0 0h1600v900H0z" fill="#020711" opacity="0.22"/>
+  <g opacity="0.08">
+    <path d="M0 0h1600M0 90h1600M0 180h1600M0 270h1600M0 360h1600M0 450h1600M0 540h1600M0 630h1600M0 720h1600M0 810h1600" stroke="#ffffff"/>
+    <path d="M160 0v900M320 0v900M480 0v900M640 0v900M800 0v900M960 0v900M1120 0v900M1280 0v900M1440 0v900" stroke="#ffffff"/>
+  </g>
+</svg>

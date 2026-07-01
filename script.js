@@ -177,7 +177,7 @@ function sceneBackgroundUrl(type) {
 function applySceneBackground(type) {
   const background = cssUrl(sceneBackgroundUrl(type));
   document.documentElement.style.setProperty("--scene-bg", background);
-  document.body.style.background = `#020817 ${background} center / cover no-repeat`;
+  document.body.style.setProperty("background", `#020817 ${background} center / cover no-repeat`, "important");
 }
 
 function escapeHtml(input) {
@@ -945,7 +945,10 @@ function applyData(data, options = {}) {
   }
 
   const requestedScene = new URLSearchParams(window.location.search).get("scene");
-  if (requestedScene === "ticker") {
+  if (requestedScene === "match") {
+    activeScene = scenes.findIndex(scene => scene.type === "match");
+    if (activeScene < 0) activeScene = 0;
+  } else if (requestedScene === "ticker") {
     activeScene = scenes.findIndex(scene => scene.type === "ticker");
     if (activeScene < 0) activeScene = 0;
   } else if (requestedScene === "video") {

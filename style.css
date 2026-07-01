@@ -25,7 +25,7 @@ body {
   color: var(--zm-white);
   background: #020817 var(--scene-bg) center / cover no-repeat;
   font-family: "Inter", Arial, sans-serif;
-  transition: background-image 0.35s ease;
+  transition: none;
 }
 
 .scoreboard {
@@ -1348,37 +1348,39 @@ body {
 .scoreboard.scene-group .match-header,
 .scoreboard.scene-live-updates .match-header,
 .scoreboard.scene-video-updates .match-header {
-  top: 7.9%;
-  left: 19.3%;
-  width: 43.2%;
-  height: 7.2%;
+  top: 8.2%;
+  left: 19.2%;
+  width: 42.4%;
+  height: 6.8%;
   gap: 1.55vw;
-  font-size: clamp(19px, 1.85vw, 36px);
+  color: #101827;
+  font-size: clamp(18px, 1.78vw, 34px);
+  text-shadow: none;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .match-header {
-  left: 19.6%;
-  width: 48.2%;
+  left: 15.55%;
+  width: 45.25%;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .team-panel {
-  left: 9.5%;
+  left: 8.55%;
   right: auto;
-  width: 54.6%;
-  height: 13.4%;
+  width: 45.3%;
+  height: 15%;
   flex-direction: row;
   justify-content: flex-start;
-  gap: 1.55vw;
-  padding: 1vh 2.25vw;
+  gap: 1.35vw;
+  padding: 1vh 1.8vw;
   text-align: left;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .team-home {
-  top: 25.5%;
+  top: 24.6%;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .team-away {
-  top: 42.8%;
+  top: 45.5%;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .flag {
@@ -1388,21 +1390,21 @@ body {
 }
 
 .scoreboard.scene-match:not(.show-match-video) .team-panel h1 {
-  font-size: clamp(38px, 3.9vw, 76px);
+  font-size: clamp(34px, 3.45vw, 68px);
   line-height: 0.88;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .score-panel {
-  top: 25.3%;
-  left: 62.1%;
-  width: 8.5%;
-  height: 31.2%;
+  top: 24.85%;
+  left: 55.05%;
+  width: 8.9%;
+  height: 35.4%;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .score {
   flex-direction: column;
-  gap: 2.35vh;
-  font-size: clamp(58px, 6.7vw, 130px);
+  gap: 4.8vh;
+  font-size: clamp(52px, 5.8vw, 112px);
   line-height: 0.72;
   letter-spacing: -0.025em;
 }
@@ -1410,7 +1412,7 @@ body {
 .scoreboard.scene-match:not(.show-match-video) .penalty-score,
 .scoreboard.scene-match:not(.show-match-video) .minute {
   position: absolute;
-  left: 118%;
+  left: 115%;
   top: 50%;
   margin-top: 0;
   transform: translateY(-50%);
@@ -1418,10 +1420,10 @@ body {
 }
 
 .scoreboard.scene-match:not(.show-match-video) .match-footer {
-  top: 63.5%;
-  left: 26.6%;
-  width: 39.4%;
-  height: 8.4%;
+  top: 66.2%;
+  left: 27.2%;
+  width: 41.6%;
+  height: 7.5%;
   padding: 0.8vh 2.25vw;
 }
 
@@ -1431,26 +1433,26 @@ body {
 }
 
 .scoreboard.show-match-video .match-header {
-  top: 10.8%;
-  left: 11%;
-  width: 53.8%;
-  height: 8.2%;
+  top: 11.1%;
+  left: 11.2%;
+  width: 40.1%;
+  height: 6.6%;
 }
 
 .scoreboard.show-match-video .team-panel {
-  left: 11.2%;
-  width: 31.4%;
-  height: 13.2%;
-  gap: 1.35vw;
-  padding: 0.8vh 1.9vw;
+  left: 6.05%;
+  width: 36.6%;
+  height: 13.4%;
+  gap: 1.15vw;
+  padding: 0.8vh 1.7vw;
 }
 
 .scoreboard.show-match-video .team-home {
-  top: 25.4%;
+  top: 27.6%;
 }
 
 .scoreboard.show-match-video .team-away {
-  top: 58.7%;
+  top: 45.8%;
 }
 
 .scoreboard.show-match-video .flag {
@@ -1460,21 +1462,21 @@ body {
 }
 
 .scoreboard.show-match-video .team-panel h1 {
-  font-size: clamp(34px, 3.45vw, 66px);
+  font-size: clamp(30px, 3vw, 58px);
   line-height: 0.9;
 }
 
 .scoreboard.show-match-video .score-panel {
-  top: 25.2%;
-  left: 43.35%;
-  width: 7.25%;
-  height: 32.2%;
+  top: 27.6%;
+  left: 43.4%;
+  width: 6.55%;
+  height: 31.9%;
 }
 
 .scoreboard.show-match-video .score {
   flex-direction: column;
-  gap: 3.05vh;
-  font-size: clamp(58px, 6.55vw, 126px);
+  gap: 5.05vh;
+  font-size: clamp(48px, 5.4vw, 104px);
   line-height: 0.72;
 }
 
@@ -1489,10 +1491,10 @@ body {
 }
 
 .scoreboard.show-match-video .match-footer {
-  top: 63.6%;
-  left: 26.4%;
-  width: 39.2%;
-  height: 8.4%;
+  top: 66.2%;
+  left: 20.45%;
+  width: 36.3%;
+  height: 7.35%;
   padding: 0.8vh 2.25vw;
 }
 
@@ -1502,33 +1504,33 @@ body {
 }
 
 .scoreboard.show-match-video .match-video-frame {
-  top: 19.3%;
-  left: 64.7%;
-  width: 21.25%;
-  height: 67.9%;
-  border-radius: 26px;
+  top: 14.7%;
+  left: 72.2%;
+  width: 23.35%;
+  height: 64.7%;
+  border-radius: 30px;
   background: transparent;
   box-shadow: none;
 }
 
 .scoreboard.show-match-video .match-video-frame video {
-  border-radius: 24px;
+  border-radius: 28px;
 }
 
 .scoreboard.scene-group .match-header,
 .scoreboard.scene-live-updates .match-header,
 .scoreboard.scene-video-updates .match-header {
-  top: 6.8%;
-  left: 19.4%;
-  width: 43.6%;
+  top: 6.1%;
+  left: 19.25%;
+  width: 38.4%;
 }
 
 .scoreboard.scene-group .standings-view {
-  top: 20.8%;
-  left: 10.1%;
-  width: 79.8%;
-  height: 49.2%;
-  padding: 2.15vh 2.35vw;
+  top: 19.35%;
+  left: 9.7%;
+  width: 79.9%;
+  height: 50.6%;
+  padding: 2.05vh 1.9vw;
 }
 
 .scoreboard.scene-group .standings-title {
@@ -1542,9 +1544,9 @@ body {
 
 .scoreboard.scene-group .standings-head,
 .scoreboard.scene-group .standing-row {
-  grid-template-columns: 0.34fr 2.35fr repeat(6, 0.47fr) 0.55fr 0.68fr;
-  min-height: 6.35vh;
-  padding: 0 1.25vw;
+  grid-template-columns: 0.44fr 3.2fr repeat(6, 0.74fr) 0.82fr 0.95fr;
+  min-height: 7.15vh;
+  padding: 0 1.2vw;
 }
 
 .scoreboard.scene-group .standings-head {
@@ -1552,11 +1554,11 @@ body {
 }
 
 .scoreboard.scene-live-updates .live-updates-view {
-  top: 17.2%;
-  left: 10.4%;
-  width: 79.8%;
-  height: 50.9%;
-  padding: 2.2vh 2.6vw 2.55vh;
+  top: 19.2%;
+  left: 10.15%;
+  width: 80.2%;
+  height: 50.1%;
+  padding: 2.35vh 2.55vw 2.5vh;
 }
 
 .scoreboard.scene-live-updates .live-updates-rows {
@@ -1565,9 +1567,9 @@ body {
 }
 
 .scoreboard.scene-live-updates .live-update-row {
-  grid-template-columns: 0.75fr 0.95fr minmax(0, 1.75fr) 0.72fr minmax(0, 1.75fr) 1.42fr;
-  padding: 0 1.45vw;
-  font-size: clamp(17px, 1.55vw, 31px);
+  grid-template-columns: 0.9fr 1fr minmax(0, 1.7fr) 0.8fr minmax(0, 1.7fr) 1.45fr;
+  padding: 0 1.25vw;
+  font-size: clamp(15px, 1.28vw, 25px);
 }
 
 .scoreboard.scene-live-updates .live-update-status {
@@ -1587,9 +1589,13 @@ body {
 
 .scoreboard.scene-live-updates .live-update-minute {
   color: #e8edff;
-  font-size: 0.76em;
+  font-size: 0.72em;
   font-weight: 900;
   line-height: 1.08;
+}
+
+.scoreboard.scene-live-updates .live-update-row strong:last-of-type {
+  text-align: left;
 }
 
 .scoreboard.scene-video-updates .video-updates-view {

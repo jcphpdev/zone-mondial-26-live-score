@@ -1348,7 +1348,7 @@ body {
 .scoreboard.scene-group .match-header,
 .scoreboard.scene-live-updates .match-header,
 .scoreboard.scene-video-updates .match-header {
-  top: 8.2%;
+  top: 10.2%;
   left: 19.2%;
   width: 42.4%;
   height: 6.8%;
@@ -1396,8 +1396,8 @@ body {
 
 .scoreboard.scene-match:not(.show-match-video) .score-panel {
   top: 24.85%;
-  left: 55.05%;
-  width: 8.9%;
+  left: 57.65%;
+  width: 9%;
   height: 35.4%;
 }
 
@@ -1420,7 +1420,7 @@ body {
 }
 
 .scoreboard.scene-match:not(.show-match-video) .match-footer {
-  top: 66.2%;
+  top: 68.15%;
   left: 27.2%;
   width: 41.6%;
   height: 7.5%;
@@ -1433,7 +1433,7 @@ body {
 }
 
 .scoreboard.show-match-video .match-header {
-  top: 11.1%;
+  top: 14.35%;
   left: 11.2%;
   width: 40.1%;
   height: 6.6%;
@@ -1520,15 +1520,23 @@ body {
 .scoreboard.scene-group .match-header,
 .scoreboard.scene-live-updates .match-header,
 .scoreboard.scene-video-updates .match-header {
-  top: 6.1%;
   left: 19.25%;
   width: 38.4%;
 }
 
+.scoreboard.scene-group .match-header {
+  top: 8.25%;
+}
+
+.scoreboard.scene-live-updates .match-header,
+.scoreboard.scene-video-updates .match-header {
+  top: 6.1%;
+}
+
 .scoreboard.scene-group .standings-view {
   top: 19.35%;
-  left: 9.7%;
-  width: 79.9%;
+  left: 9.35%;
+  width: 84.4%;
   height: 50.6%;
   padding: 2.05vh 1.9vw;
 }
@@ -1555,8 +1563,8 @@ body {
 
 .scoreboard.scene-live-updates .live-updates-view {
   top: 19.2%;
-  left: 10.15%;
-  width: 80.2%;
+  left: 8.75%;
+  width: 86%;
   height: 50.1%;
   padding: 2.35vh 2.55vw 2.5vh;
 }
@@ -1600,8 +1608,8 @@ body {
 
 .scoreboard.scene-video-updates .video-updates-view {
   top: 18.4%;
-  left: 9.9%;
-  width: 80.5%;
+  left: 8.75%;
+  width: 86%;
   height: 58.8%;
   grid-template-columns: minmax(0, 1fr) minmax(210px, 20.6vw);
   gap: 2.1vw;
@@ -1636,7 +1644,7 @@ body {
 .scoreboard.scene-group .official-logo,
 .scoreboard.scene-live-updates .official-logo,
 .scoreboard.scene-video-updates .official-logo {
-  right: 4.25%;
+  right: 2.55%;
   bottom: 4.25%;
   width: 8.5vw;
   height: 8.5vw;
@@ -1645,7 +1653,7 @@ body {
 
 .scoreboard.scene-live-updates .official-logo,
 .scoreboard.scene-video-updates .official-logo {
-  right: 5.1%;
+  right: 3.05%;
   bottom: 5.15%;
 }
 

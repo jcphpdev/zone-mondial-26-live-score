@@ -6,7 +6,7 @@
   --zm-navy: #2a398d;
   --zm-white: #fff;
   --shadow: 0 8px 28px rgba(0, 0, 0, 0.62);
-  --scene-bg: url("assets/bg-scene-score-panel-v1.png");
+  --scene-bg: url("assets/bg-v2-score.png");
 }
 
 * {
@@ -1336,154 +1336,162 @@ body {
   animation: scorer-flag-pulse 1.35s ease;
 }
 
-/* Flat panel backgrounds — scene-specific layout alignment */
+/* V2 pixel-perfect backgrounds — scene-specific layout alignment */
 .scoreboard.scene-match .scene-ambient,
 .scoreboard.scene-group .scene-ambient,
 .scoreboard.scene-live-updates .scene-ambient,
 .scoreboard.scene-video-updates .scene-ambient {
-  opacity: 0.18;
+  opacity: 0;
 }
 
 .scoreboard.scene-match .match-header,
 .scoreboard.scene-group .match-header,
 .scoreboard.scene-live-updates .match-header,
 .scoreboard.scene-video-updates .match-header {
-  top: 10.2%;
-  left: 19.2%;
-  width: 42.4%;
-  height: 6.8%;
-  gap: 1.55vw;
   color: #101827;
-  font-size: clamp(18px, 1.78vw, 34px);
+  gap: 1vw;
+  font-size: clamp(18px, 1.72vw, 34px);
   text-shadow: none;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .match-header {
-  left: 15.55%;
-  width: 45.25%;
+  top: 8.65%;
+  left: 15.3%;
+  width: 45.6%;
+  height: 8%;
 }
 
-.scoreboard.scene-match:not(.show-match-video) .team-panel {
-  left: 8.55%;
+.scoreboard.show-match-video .match-header {
+  top: 12.45%;
+  left: 10.95%;
+  width: 40%;
+  height: 7.55%;
+}
+
+.scoreboard.scene-group .match-header {
+  top: 8%;
+  left: 18.75%;
+  width: 40.6%;
+  height: 7.1%;
+}
+
+.scoreboard.scene-live-updates .match-header,
+.scoreboard.scene-video-updates .match-header {
+  top: 6.1%;
+  left: 20%;
+  width: 38.75%;
+  height: 7.1%;
+}
+
+.scoreboard.scene-match:not(.show-match-video) .team-panel,
+.scoreboard.show-match-video .team-panel {
   right: auto;
-  width: 45.3%;
-  height: 15%;
   flex-direction: row;
   justify-content: flex-start;
-  gap: 1.35vw;
-  padding: 1vh 1.8vw;
   text-align: left;
 }
 
+.scoreboard.scene-match:not(.show-match-video) .team-panel {
+  left: 9.05%;
+  width: 45.32%;
+  height: 11.65%;
+  gap: 1.88vw;
+  padding: 0;
+}
+
 .scoreboard.scene-match:not(.show-match-video) .team-home {
-  top: 24.6%;
+  top: 25.55%;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .team-away {
-  top: 45.5%;
+  top: 46.65%;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .flag {
-  width: clamp(82px, 7vw, 134px);
-  height: clamp(54px, 4.55vw, 88px);
-  border-radius: 7px;
+  width: clamp(78px, 8.12vw, 130px);
+  height: 100%;
+  border-radius: 8px;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .team-panel h1 {
-  font-size: clamp(34px, 3.45vw, 68px);
-  line-height: 0.88;
+  font-size: clamp(34px, 3.65vw, 70px);
+  line-height: 0.9;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .score-panel {
-  top: 24.85%;
-  left: 57.65%;
-  width: 9%;
-  height: 35.4%;
+  top: 25%;
+  left: 57.38%;
+  width: 9.05%;
+  height: 34.2%;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .score {
   flex-direction: column;
-  gap: 4.8vh;
-  font-size: clamp(52px, 5.8vw, 112px);
-  line-height: 0.72;
-  letter-spacing: -0.025em;
-}
-
-.scoreboard.scene-match:not(.show-match-video) .penalty-score,
-.scoreboard.scene-match:not(.show-match-video) .minute {
-  position: absolute;
-  left: 115%;
-  top: 50%;
-  margin-top: 0;
-  transform: translateY(-50%);
-  white-space: nowrap;
+  gap: 5.1vh;
+  font-size: clamp(54px, 6vw, 116px);
+  line-height: 0.7;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .match-footer {
-  top: 68.15%;
-  left: 27.2%;
-  width: 41.6%;
-  height: 7.5%;
-  padding: 0.8vh 2.25vw;
+  top: 68.9%;
+  left: 26.9%;
+  width: 41.9%;
+  height: 8.65%;
+  padding: 0.7vh 2vw;
 }
 
 .scoreboard.scene-match:not(.show-match-video) .match-footer p {
-  font-size: clamp(18px, 1.58vw, 31px);
+  font-size: clamp(18px, 1.55vw, 30px);
   -webkit-line-clamp: 2;
 }
 
-.scoreboard.show-match-video .match-header {
-  top: 14.35%;
-  left: 11.2%;
-  width: 40.1%;
-  height: 6.6%;
-}
-
 .scoreboard.show-match-video .team-panel {
-  left: 6.05%;
-  width: 36.6%;
-  height: 13.4%;
-  gap: 1.15vw;
-  padding: 0.8vh 1.7vw;
+  left: 6.88%;
+  width: 36.25%;
+  height: 10.25%;
+  gap: 1.56vw;
+  padding: 0;
 }
 
 .scoreboard.show-match-video .team-home {
-  top: 27.6%;
+  top: 27.78%;
 }
 
 .scoreboard.show-match-video .team-away {
-  top: 45.8%;
+  top: 46.67%;
 }
 
 .scoreboard.show-match-video .flag {
-  width: clamp(76px, 7vw, 132px);
-  height: clamp(50px, 4.55vw, 86px);
-  border-radius: 7px;
+  width: clamp(68px, 6.88vw, 110px);
+  height: 100%;
+  border-radius: 8px;
 }
 
 .scoreboard.show-match-video .team-panel h1 {
-  font-size: clamp(30px, 3vw, 58px);
+  font-size: clamp(28px, 2.75vw, 54px);
   line-height: 0.9;
 }
 
 .scoreboard.show-match-video .score-panel {
-  top: 27.6%;
-  left: 43.4%;
-  width: 6.55%;
-  height: 31.9%;
+  top: 27.22%;
+  left: 45.62%;
+  width: 7%;
+  height: 30.25%;
 }
 
 .scoreboard.show-match-video .score {
   flex-direction: column;
-  gap: 5.05vh;
-  font-size: clamp(48px, 5.4vw, 104px);
-  line-height: 0.72;
+  gap: 5.55vh;
+  font-size: clamp(48px, 5.1vw, 98px);
+  line-height: 0.7;
 }
 
+.scoreboard.scene-match:not(.show-match-video) .penalty-score,
+.scoreboard.scene-match:not(.show-match-video) .minute,
 .scoreboard.show-match-video .penalty-score,
 .scoreboard.show-match-video .minute {
   position: absolute;
-  left: 119%;
+  left: 112%;
   top: 50%;
   margin-top: 0;
   transform: translateY(-50%);
@@ -1491,108 +1499,62 @@ body {
 }
 
 .scoreboard.show-match-video .match-footer {
-  top: 66.2%;
-  left: 20.45%;
-  width: 36.3%;
-  height: 7.35%;
-  padding: 0.8vh 2.25vw;
+  top: 67.78%;
+  left: 21.25%;
+  width: 38.12%;
+  height: 8%;
+  padding: 0.7vh 1.9vw;
 }
 
 .scoreboard.show-match-video .match-footer p {
-  font-size: clamp(16px, 1.35vw, 26px);
+  font-size: clamp(15px, 1.35vw, 26px);
   -webkit-line-clamp: 2;
 }
 
 .scoreboard.show-match-video .match-video-frame {
-  top: 14.7%;
-  left: 72.2%;
-  width: 23.35%;
-  height: 64.7%;
-  border-radius: 30px;
+  top: 12.78%;
+  left: 74.38%;
+  width: 21.88%;
+  height: 65%;
+  border-radius: 34px;
   background: transparent;
   box-shadow: none;
 }
 
-.scoreboard.show-match-video .match-video-frame video {
-  border-radius: 28px;
-}
-
-.scoreboard.scene-group .match-header,
-.scoreboard.scene-live-updates .match-header,
-.scoreboard.scene-video-updates .match-header {
-  left: 19.25%;
-  width: 38.4%;
-}
-
-.scoreboard.scene-group .match-header {
-  top: 8.25%;
-}
-
-.scoreboard.scene-live-updates .match-header,
-.scoreboard.scene-video-updates .match-header {
-  top: 6.1%;
-}
-
-.scoreboard.scene-group .standings-view {
-  top: 19.35%;
-  left: 9.35%;
-  width: 84.4%;
-  height: 50.6%;
-  padding: 2.05vh 1.9vw;
-}
-
-.scoreboard.scene-group .standings-title {
-  min-height: 7.2vh;
-  align-items: center;
-}
-
-.scoreboard.scene-group .standings-table {
-  border: 0;
-}
-
-.scoreboard.scene-group .standings-head,
-.scoreboard.scene-group .standing-row {
-  grid-template-columns: 0.44fr 3.2fr repeat(6, 0.74fr) 0.82fr 0.95fr;
-  min-height: 7.15vh;
-  padding: 0 1.2vw;
-}
-
-.scoreboard.scene-group .standings-head {
-  min-height: 4.3vh;
+.scoreboard.show-match-video .match-video-frame video,
+.scoreboard.show-match-video .playlist-empty {
+  border-radius: 30px;
 }
 
 .scoreboard.scene-live-updates .live-updates-view {
-  top: 19.2%;
-  left: 8.75%;
-  width: 86%;
-  height: 50.1%;
-  padding: 2.35vh 2.55vw 2.5vh;
+  top: 15%;
+  left: 6.88%;
+  width: 86.25%;
+  height: 60%;
+  padding: 4.45vh 3.45vw 3.8vh;
 }
 
 .scoreboard.scene-live-updates .live-updates-rows {
-  grid-template-rows: repeat(5, minmax(0, 1fr));
-  gap: 1.12vh;
+  height: 100%;
+  grid-template-rows: repeat(5, 1fr);
+  gap: 1.45vh;
 }
 
 .scoreboard.scene-live-updates .live-update-row {
-  grid-template-columns: 0.9fr 1fr minmax(0, 1.7fr) 0.8fr minmax(0, 1.7fr) 1.45fr;
-  padding: 0 1.25vw;
-  font-size: clamp(15px, 1.28vw, 25px);
+  grid-template-columns: 0.72fr 0.82fr minmax(0, 2.52fr) 0.72fr minmax(0, 2.52fr) 0.95fr;
+  padding: 0 1.1vw;
+  font-size: clamp(15px, 1.24vw, 24px);
 }
 
-.scoreboard.scene-live-updates .live-update-status {
-  justify-self: center;
-  min-width: 5.2em;
-  text-align: center;
-}
-
+.scoreboard.scene-live-updates .live-update-status,
 .scoreboard.scene-live-updates .live-update-group {
+  justify-self: center;
   text-align: center;
 }
 
 .scoreboard.scene-live-updates .live-update-score {
-  min-width: 4.2em;
-  padding: 0.14em 0.42em;
+  min-width: 4.1em;
+  padding: 0.12em 0.42em;
 }
 
 .scoreboard.scene-live-updates .live-update-minute {
@@ -1602,69 +1564,120 @@ body {
   line-height: 1.08;
 }
 
+.scoreboard.scene-live-updates .live-update-row strong:first-of-type {
+  text-align: right;
+}
+
 .scoreboard.scene-live-updates .live-update-row strong:last-of-type {
   text-align: left;
 }
 
+.scoreboard.scene-group .standings-view {
+  top: 16.65%;
+  left: 5.95%;
+  width: 88.12%;
+  height: 59.45%;
+  padding: 3.2vh 3.45vw;
+}
+
+.scoreboard.scene-group .standings-title {
+  min-height: 8.1vh;
+  padding: 0 0.6vw 1.5vh;
+  align-items: center;
+}
+
+.scoreboard.scene-group .standings-title span {
+  font-size: clamp(30px, 2.75vw, 54px);
+}
+
+.scoreboard.scene-group .standings-title small {
+  font-size: clamp(13px, 0.95vw, 19px);
+}
+
+.scoreboard.scene-group .standings-table {
+  border: 0;
+}
+
+.scoreboard.scene-group .standings-head,
+.scoreboard.scene-group .standing-row {
+  grid-template-columns: 0.48fr 3.4fr repeat(6, 0.66fr) 0.78fr 0.95fr;
+  min-height: 7.8vh;
+  padding: 0 1.05vw;
+}
+
+.scoreboard.scene-group .standings-head {
+  min-height: 5.65vh;
+}
+
 .scoreboard.scene-video-updates .video-updates-view {
-  top: 18.4%;
-  left: 8.75%;
-  width: 86%;
-  height: 58.8%;
-  grid-template-columns: minmax(0, 1fr) minmax(210px, 20.6vw);
-  gap: 2.1vw;
-  padding: 2.1vh 2.4vw;
+  top: 15%;
+  left: 6.88%;
+  width: 86.25%;
+  height: 60%;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 21.88vw);
+  gap: 2.25vw;
+  padding: 4.45vh 3.45vw 3.8vh;
 }
 
 .scoreboard.scene-video-updates .video-updates-view .live-updates-rows {
-  grid-template-rows: repeat(5, minmax(0, 1fr));
-  gap: 1.05vh;
+  height: 100%;
+  grid-template-rows: repeat(5, 1fr);
+  gap: 1.45vh;
 }
 
 .scoreboard.scene-video-updates .video-updates-view .live-update-row {
-  grid-template-columns: 0.72fr 0.95fr minmax(0, 1.45fr) 0.72fr minmax(0, 1.45fr) 0.9fr;
-  padding: 0 1.15vw;
-  font-size: clamp(14px, 1.18vw, 24px);
+  grid-template-columns: 0.7fr 0.82fr minmax(0, 1.5fr) 0.7fr minmax(0, 1.5fr) 0.9fr;
+  padding: 0 0.95vw;
+  font-size: clamp(13px, 1.02vw, 21px);
 }
 
 .scoreboard.scene-video-updates .vertical-video-frame {
-  width: min(20.35vw, 390px);
+  width: min(21.88vw, 350px);
+  height: min(65vh, 585px);
   border: 0;
-  border-radius: 28px;
+  border-radius: 34px;
   background: transparent;
   box-shadow: none;
 }
 
 .scoreboard.scene-video-updates .vertical-video-frame video,
 .scoreboard.scene-video-updates .playlist-empty {
-  border-radius: 26px;
+  border-radius: 30px;
 }
 
 .scoreboard.scene-match .official-logo,
 .scoreboard.scene-group .official-logo,
 .scoreboard.scene-live-updates .official-logo,
 .scoreboard.scene-video-updates .official-logo {
-  right: 2.55%;
-  bottom: 4.25%;
-  width: 8.5vw;
-  height: 8.5vw;
+  right: 3.75%;
+  bottom: 6.1%;
+  width: 9.7vw;
+  height: 9.7vw;
   object-position: center;
-}
-
-.scoreboard.scene-live-updates .official-logo,
-.scoreboard.scene-video-updates .official-logo {
-  right: 3.05%;
-  bottom: 5.15%;
 }
 
 .scoreboard.scene-match .ticker,
 .scoreboard.scene-group .ticker,
 .scoreboard.scene-live-updates .ticker,
 .scoreboard.scene-video-updates .ticker {
-  left: 2.55%;
-  right: 16.4%;
-  bottom: 1.45%;
-  min-height: 4.75vh;
+  left: 7.38%;
+  right: 16.75%;
+  bottom: 0.9%;
+  min-height: 8vh;
+}
+
+.scoreboard.scene-match .ticker__label,
+.scoreboard.scene-group .ticker__label,
+.scoreboard.scene-live-updates .ticker__label,
+.scoreboard.scene-video-updates .ticker__label {
+  min-width: 0;
+}
+
+.scoreboard.scene-match .pagination,
+.scoreboard.scene-group .pagination,
+.scoreboard.scene-live-updates .pagination,
+.scoreboard.scene-video-updates .pagination {
+  display: none;
 }
 
 .sound-unlock {

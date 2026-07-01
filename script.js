@@ -32,10 +32,10 @@ const DEFAULT_SETTINGS = {
   include_video_scene: false,
   enable_video_sound: true,
   video_playlist_urls: "",
-  match_background_url: "assets/bg-scene-score-panel-v1.png",
-  match_video_background_url: "assets/bg-scene-score-video-panel-v1.png",
-  standings_background_url: "assets/bg-scene-standings-panel-v1.png",
-  ticker_background_url: "assets/bg-scene-live-updates-panel-v1.png"
+  match_background_url: "assets/bg-v2-score.png",
+  match_video_background_url: "assets/bg-v2-score-video.png",
+  standings_background_url: "assets/bg-v2-standings.png",
+  ticker_background_url: "assets/bg-v2-live-updates.png"
 };
 
 const LEGACY_SCOREBOARD_BACKGROUNDS = new Set([

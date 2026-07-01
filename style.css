@@ -6,7 +6,7 @@
   --zm-navy: #2a398d;
   --zm-white: #fff;
   --shadow: 0 8px 28px rgba(0, 0, 0, 0.62);
-  --scene-bg: url("assets/bg-scene-match.png");
+  --scene-bg: url("assets/bg-scene-score-panel-v1.png");
 }
 
 * {
@@ -1334,6 +1334,323 @@ body {
 .scoreboard.goal-home .team-home .flag,
 .scoreboard.goal-away .team-away .flag {
   animation: scorer-flag-pulse 1.35s ease;
+}
+
+/* Flat panel backgrounds — scene-specific layout alignment */
+.scoreboard.scene-match .scene-ambient,
+.scoreboard.scene-group .scene-ambient,
+.scoreboard.scene-live-updates .scene-ambient,
+.scoreboard.scene-video-updates .scene-ambient {
+  opacity: 0.18;
+}
+
+.scoreboard.scene-match .match-header,
+.scoreboard.scene-group .match-header,
+.scoreboard.scene-live-updates .match-header,
+.scoreboard.scene-video-updates .match-header {
+  top: 7.9%;
+  left: 19.3%;
+  width: 43.2%;
+  height: 7.2%;
+  gap: 1.55vw;
+  font-size: clamp(19px, 1.85vw, 36px);
+}
+
+.scoreboard.scene-match:not(.show-match-video) .match-header {
+  left: 19.6%;
+  width: 48.2%;
+}
+
+.scoreboard.scene-match:not(.show-match-video) .team-panel {
+  left: 9.5%;
+  right: auto;
+  width: 54.6%;
+  height: 13.4%;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 1.55vw;
+  padding: 1vh 2.25vw;
+  text-align: left;
+}
+
+.scoreboard.scene-match:not(.show-match-video) .team-home {
+  top: 25.5%;
+}
+
+.scoreboard.scene-match:not(.show-match-video) .team-away {
+  top: 42.8%;
+}
+
+.scoreboard.scene-match:not(.show-match-video) .flag {
+  width: clamp(82px, 7vw, 134px);
+  height: clamp(54px, 4.55vw, 88px);
+  border-radius: 7px;
+}
+
+.scoreboard.scene-match:not(.show-match-video) .team-panel h1 {
+  font-size: clamp(38px, 3.9vw, 76px);
+  line-height: 0.88;
+}
+
+.scoreboard.scene-match:not(.show-match-video) .score-panel {
+  top: 25.3%;
+  left: 62.1%;
+  width: 8.5%;
+  height: 31.2%;
+}
+
+.scoreboard.scene-match:not(.show-match-video) .score {
+  flex-direction: column;
+  gap: 2.35vh;
+  font-size: clamp(58px, 6.7vw, 130px);
+  line-height: 0.72;
+  letter-spacing: -0.025em;
+}
+
+.scoreboard.scene-match:not(.show-match-video) .penalty-score,
+.scoreboard.scene-match:not(.show-match-video) .minute {
+  position: absolute;
+  left: 118%;
+  top: 50%;
+  margin-top: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.scoreboard.scene-match:not(.show-match-video) .match-footer {
+  top: 63.5%;
+  left: 26.6%;
+  width: 39.4%;
+  height: 8.4%;
+  padding: 0.8vh 2.25vw;
+}
+
+.scoreboard.scene-match:not(.show-match-video) .match-footer p {
+  font-size: clamp(18px, 1.58vw, 31px);
+  -webkit-line-clamp: 2;
+}
+
+.scoreboard.show-match-video .match-header {
+  top: 10.8%;
+  left: 11%;
+  width: 53.8%;
+  height: 8.2%;
+}
+
+.scoreboard.show-match-video .team-panel {
+  left: 11.2%;
+  width: 31.4%;
+  height: 13.2%;
+  gap: 1.35vw;
+  padding: 0.8vh 1.9vw;
+}
+
+.scoreboard.show-match-video .team-home {
+  top: 25.4%;
+}
+
+.scoreboard.show-match-video .team-away {
+  top: 58.7%;
+}
+
+.scoreboard.show-match-video .flag {
+  width: clamp(76px, 7vw, 132px);
+  height: clamp(50px, 4.55vw, 86px);
+  border-radius: 7px;
+}
+
+.scoreboard.show-match-video .team-panel h1 {
+  font-size: clamp(34px, 3.45vw, 66px);
+  line-height: 0.9;
+}
+
+.scoreboard.show-match-video .score-panel {
+  top: 25.2%;
+  left: 43.35%;
+  width: 7.25%;
+  height: 32.2%;
+}
+
+.scoreboard.show-match-video .score {
+  flex-direction: column;
+  gap: 3.05vh;
+  font-size: clamp(58px, 6.55vw, 126px);
+  line-height: 0.72;
+}
+
+.scoreboard.show-match-video .penalty-score,
+.scoreboard.show-match-video .minute {
+  position: absolute;
+  left: 119%;
+  top: 50%;
+  margin-top: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.scoreboard.show-match-video .match-footer {
+  top: 63.6%;
+  left: 26.4%;
+  width: 39.2%;
+  height: 8.4%;
+  padding: 0.8vh 2.25vw;
+}
+
+.scoreboard.show-match-video .match-footer p {
+  font-size: clamp(16px, 1.35vw, 26px);
+  -webkit-line-clamp: 2;
+}
+
+.scoreboard.show-match-video .match-video-frame {
+  top: 19.3%;
+  left: 64.7%;
+  width: 21.25%;
+  height: 67.9%;
+  border-radius: 26px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.scoreboard.show-match-video .match-video-frame video {
+  border-radius: 24px;
+}
+
+.scoreboard.scene-group .match-header,
+.scoreboard.scene-live-updates .match-header,
+.scoreboard.scene-video-updates .match-header {
+  top: 6.8%;
+  left: 19.4%;
+  width: 43.6%;
+}
+
+.scoreboard.scene-group .standings-view {
+  top: 20.8%;
+  left: 10.1%;
+  width: 79.8%;
+  height: 49.2%;
+  padding: 2.15vh 2.35vw;
+}
+
+.scoreboard.scene-group .standings-title {
+  min-height: 7.2vh;
+  align-items: center;
+}
+
+.scoreboard.scene-group .standings-table {
+  border: 0;
+}
+
+.scoreboard.scene-group .standings-head,
+.scoreboard.scene-group .standing-row {
+  grid-template-columns: 0.34fr 2.35fr repeat(6, 0.47fr) 0.55fr 0.68fr;
+  min-height: 6.35vh;
+  padding: 0 1.25vw;
+}
+
+.scoreboard.scene-group .standings-head {
+  min-height: 4.3vh;
+}
+
+.scoreboard.scene-live-updates .live-updates-view {
+  top: 17.2%;
+  left: 10.4%;
+  width: 79.8%;
+  height: 50.9%;
+  padding: 2.2vh 2.6vw 2.55vh;
+}
+
+.scoreboard.scene-live-updates .live-updates-rows {
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  gap: 1.12vh;
+}
+
+.scoreboard.scene-live-updates .live-update-row {
+  grid-template-columns: 0.75fr 0.95fr minmax(0, 1.75fr) 0.72fr minmax(0, 1.75fr) 1.42fr;
+  padding: 0 1.45vw;
+  font-size: clamp(17px, 1.55vw, 31px);
+}
+
+.scoreboard.scene-live-updates .live-update-status {
+  justify-self: center;
+  min-width: 5.2em;
+  text-align: center;
+}
+
+.scoreboard.scene-live-updates .live-update-group {
+  text-align: center;
+}
+
+.scoreboard.scene-live-updates .live-update-score {
+  min-width: 4.2em;
+  padding: 0.14em 0.42em;
+}
+
+.scoreboard.scene-live-updates .live-update-minute {
+  color: #e8edff;
+  font-size: 0.76em;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.scoreboard.scene-video-updates .video-updates-view {
+  top: 18.4%;
+  left: 9.9%;
+  width: 80.5%;
+  height: 58.8%;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 20.6vw);
+  gap: 2.1vw;
+  padding: 2.1vh 2.4vw;
+}
+
+.scoreboard.scene-video-updates .video-updates-view .live-updates-rows {
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  gap: 1.05vh;
+}
+
+.scoreboard.scene-video-updates .video-updates-view .live-update-row {
+  grid-template-columns: 0.72fr 0.95fr minmax(0, 1.45fr) 0.72fr minmax(0, 1.45fr) 0.9fr;
+  padding: 0 1.15vw;
+  font-size: clamp(14px, 1.18vw, 24px);
+}
+
+.scoreboard.scene-video-updates .vertical-video-frame {
+  width: min(20.35vw, 390px);
+  border: 0;
+  border-radius: 28px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.scoreboard.scene-video-updates .vertical-video-frame video,
+.scoreboard.scene-video-updates .playlist-empty {
+  border-radius: 26px;
+}
+
+.scoreboard.scene-match .official-logo,
+.scoreboard.scene-group .official-logo,
+.scoreboard.scene-live-updates .official-logo,
+.scoreboard.scene-video-updates .official-logo {
+  right: 4.25%;
+  bottom: 4.25%;
+  width: 8.5vw;
+  height: 8.5vw;
+  object-position: center;
+}
+
+.scoreboard.scene-live-updates .official-logo,
+.scoreboard.scene-video-updates .official-logo {
+  right: 5.1%;
+  bottom: 5.15%;
+}
+
+.scoreboard.scene-match .ticker,
+.scoreboard.scene-group .ticker,
+.scoreboard.scene-live-updates .ticker,
+.scoreboard.scene-video-updates .ticker {
+  left: 2.55%;
+  right: 16.4%;
+  bottom: 1.45%;
+  min-height: 4.75vh;
 }
 
 .sound-unlock {

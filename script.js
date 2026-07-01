@@ -32,15 +32,26 @@ const DEFAULT_SETTINGS = {
   include_video_scene: false,
   enable_video_sound: true,
   video_playlist_urls: "",
-  match_background_url: "assets/bg-scene-match.png",
-  match_video_background_url: "assets/bg-scene-match-video.png",
-  standings_background_url: "assets/bg-scene-standings.png",
-  ticker_background_url: "assets/bg-scene-live-updates.png"
+  match_background_url: "assets/bg-scene-score-panel-v1.png",
+  match_video_background_url: "assets/bg-scene-score-video-panel-v1.png",
+  standings_background_url: "assets/bg-scene-standings-panel-v1.png",
+  ticker_background_url: "assets/bg-scene-live-updates-panel-v1.png"
 };
 
 const LEGACY_SCOREBOARD_BACKGROUNDS = new Set([
+  "assets/bg-scene-match.png",
+  "assets/bg-scene-match-video.png",
+  "assets/bg-scene-standings.png",
+  "assets/bg-scene-live-updates.png",
   "assets/bg-scoreboard-16-9-v2.png",
   "assets/bg-scoreboard-16-9.png"
+]);
+
+const SCENE_DEFAULT_BACKGROUNDS = new Set([
+  DEFAULT_SETTINGS.match_background_url,
+  DEFAULT_SETTINGS.match_video_background_url,
+  DEFAULT_SETTINGS.standings_background_url,
+  DEFAULT_SETTINGS.ticker_background_url
 ]);
 
 const elements = {
@@ -147,6 +158,7 @@ function normalizeSettings(settings = {}) {
 
 function sceneBackgroundSetting(input, fallback) {
   const url = value(input, fallback).trim();
+  if (SCENE_DEFAULT_BACKGROUNDS.has(url) && url !== fallback) return fallback;
   return LEGACY_SCOREBOARD_BACKGROUNDS.has(url) ? fallback : url;
 }
 
@@ -163,7 +175,9 @@ function sceneBackgroundUrl(type) {
 }
 
 function applySceneBackground(type) {
-  document.documentElement.style.setProperty("--scene-bg", cssUrl(sceneBackgroundUrl(type)));
+  const background = cssUrl(sceneBackgroundUrl(type));
+  document.documentElement.style.setProperty("--scene-bg", background);
+  document.body.style.background = `#020817 ${background} center / cover no-repeat`;
 }
 
 function escapeHtml(input) {
@@ -569,7 +583,7 @@ function liveUpdateRows(matches, groups) {
     return value(left.kickoff).localeCompare(value(right.kickoff));
   });
 
-  return orderedMatches.slice(0, 6).map(match => {
+  return orderedMatches.slice(0, 5).map(match => {
     const status = isFinished(match) ? "Terminé" : isUpcoming(match) ? "À venir" : "En direct";
     const score = isUpcoming(match)
       ? kickoffLabel(match) || value(match.status, "À venir")

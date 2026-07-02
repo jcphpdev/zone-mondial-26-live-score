@@ -1,2 +1,4 @@
 .edge-*/
 tmp/
+.firebase/
+firebase-debug.log

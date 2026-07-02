@@ -1,0 +1,30 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      ".git/**",
+      ".agents/**",
+      ".edge-cdp/**",
+      ".edge-console-check/**",
+      "tmp/**",
+      "**/node_modules/**",
+      "assets/background-prompts/**",
+      "firebase-debug.log",
+      "README.md",
+      "overlay-preview.png"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(html|css|js|json|svg|png|jpg|jpeg|webp|mp4)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ]
+  }
+}

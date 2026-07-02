@@ -1899,6 +1899,197 @@ body {
   border-radius: 999px;
 }
 
+/* Score + video scene — redesigned from the reference mockup.
+   One large left score card, vertical video card on the right. */
+.scoreboard.scene-match-video.show-match-video .match-header {
+  top: 5.35%;
+  left: 7.65%;
+  width: 56.9%;
+  height: 8.5%;
+  border-width: clamp(6px, 0.72vw, 12px);
+}
+
+.scoreboard.scene-match-video.show-match-video::before {
+  position: absolute;
+  top: 23.65%;
+  left: 5.2%;
+  z-index: 1;
+  width: 63.3%;
+  height: 34.2%;
+  content: "";
+  opacity: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(230, 29, 37, 0.16), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 34%),
+    rgba(5, 10, 18, 0.94);
+  border: clamp(7px, 0.8vw, 14px) solid rgba(255, 255, 255, 0.94);
+  border-radius: clamp(26px, 2.45vw, 46px);
+  box-shadow:
+    inset 12px 0 0 rgba(230, 29, 37, 0.72),
+    inset 0 -12px 0 rgba(60, 172, 59, 0.55),
+    0 22px 46px rgba(0, 0, 0, 0.58);
+  transform: none;
+}
+
+.scoreboard.scene-match-video.show-match-video::after {
+  position: absolute;
+  top: 40.8%;
+  left: 7.35%;
+  z-index: 2;
+  width: 60.15%;
+  height: 0;
+  content: "";
+  opacity: 1;
+  pointer-events: none;
+  border-top: clamp(3px, 0.33vw, 6px) solid rgba(190, 145, 255, 0.95);
+  background: none;
+  transform: none;
+}
+
+.scoreboard.scene-match-video.show-match-video .team-panel {
+  z-index: 3;
+  left: 7.25%;
+  width: 33.2%;
+  height: 10.3%;
+  gap: 1.35vw;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.scoreboard.scene-match-video.show-match-video .team-home {
+  top: 26.7%;
+}
+
+.scoreboard.scene-match-video.show-match-video .team-away {
+  top: 46.35%;
+}
+
+.scoreboard.scene-match-video.show-match-video .flag {
+  width: clamp(88px, 7.35vw, 140px);
+  height: clamp(58px, 5.05vw, 96px);
+  border: 3px solid rgba(255, 255, 255, 0.94);
+  border-radius: 8px;
+}
+
+.scoreboard.scene-match-video.show-match-video .team-panel h1 {
+  font-size: clamp(38px, 4vw, 76px);
+  text-shadow: 0 8px 16px rgba(0, 0, 0, 0.8);
+}
+
+.scoreboard.scene-match-video.show-match-video .score-panel {
+  z-index: 4;
+  top: 26.6%;
+  left: 43.2%;
+  width: 7%;
+  height: 28.4%;
+  background: transparent;
+}
+
+.scoreboard.scene-match-video.show-match-video .score {
+  flex-direction: column;
+  gap: 6.4vh;
+  font-size: clamp(46px, 4.8vw, 92px);
+  line-height: 0.75;
+}
+
+.scoreboard.scene-match-video.show-match-video .score > span:not(.score-separator) {
+  width: clamp(62px, 5.25vw, 100px);
+  height: clamp(54px, 4.65vw, 88px);
+  color: #061018;
+  background: linear-gradient(180deg, #75fff0, #20d8d1);
+  border: 3px solid rgba(255, 255, 255, 0.7);
+  border-radius: 14px;
+}
+
+.scoreboard.scene-match-video.show-match-video .minute {
+  left: 235%;
+  top: 50%;
+  min-width: 3.4em;
+  padding: 0.2em 0.42em;
+  background: #f0441c;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  font-size: clamp(30px, 3.2vw, 62px);
+  line-height: 1;
+  text-align: center;
+  transform: translateY(-50%);
+}
+
+.scoreboard.scene-match-video.show-match-video .penalty-score {
+  left: 228%;
+  top: 19%;
+  transform: none;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-footer {
+  z-index: 2;
+  top: 57.8%;
+  left: 16.45%;
+  width: 43%;
+  height: 6.2%;
+  padding: 0.35vh 1.6vw;
+  background: #a8f114;
+  border: 0;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.42);
+}
+
+.scoreboard.scene-match-video.show-match-video .match-footer p {
+  color: #050914;
+  font-family: "Inter", Arial, sans-serif;
+  font-size: clamp(18px, 1.7vw, 32px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-shadow: none;
+  -webkit-line-clamp: 1;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-footer .pagination {
+  display: none;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-video-frame {
+  z-index: 3;
+  top: 14.1%;
+  left: 70.7%;
+  width: 21.9%;
+  height: 64.8%;
+  border-width: clamp(7px, 0.85vw, 14px);
+  border-radius: clamp(28px, 2.45vw, 46px);
+  box-shadow:
+    10px 0 0 rgba(42, 57, 141, 0.9),
+    0 24px 46px rgba(0, 0, 0, 0.6);
+}
+
+.scoreboard.scene-match-video.show-match-video .match-video-frame video,
+.scoreboard.scene-match-video.show-match-video .match-video-frame .playlist-empty {
+  border-radius: clamp(18px, 1.65vw, 31px);
+}
+
+.scoreboard.scene-match-video.show-match-video .official-logo {
+  right: 3.85%;
+  bottom: 4.35%;
+  width: 10.6vw;
+  height: 10.6vw;
+  background: rgba(5, 10, 18, 0.92);
+  border-width: clamp(6px, 0.65vw, 11px);
+  box-shadow:
+    0 0 0 9px rgba(42, 57, 141, 0.72),
+    0 18px 36px rgba(0, 0, 0, 0.65);
+}
+
+.scoreboard.scene-match-video.show-match-video .ticker {
+  left: 2.5%;
+  right: 17.4%;
+  bottom: 0.95%;
+  min-height: 5.6vh;
+}
+
 .scoreboard.scene-match:not(.show-match-video) .penalty-score,
 .scoreboard.scene-match:not(.show-match-video) .minute,
 .scoreboard.show-match-video .penalty-score,
@@ -2002,6 +2193,24 @@ body {
   bottom: 1.35%;
   min-height: 5.6vh;
   border: 3px solid rgba(255, 255, 255, 0.86);
+}
+
+.scoreboard.scene-match-video.show-match-video.is-entering::before,
+.scoreboard.scene-match-video.show-match-video.is-entering::after {
+  animation: none;
+}
+
+.scoreboard.scene-match-video.show-match-video .minute {
+  left: 235%;
+  color: #fff;
+}
+
+.scoreboard.scene-match-video.show-match-video .minute:not([hidden])::after {
+  content: "'";
+}
+
+.scoreboard.scene-match-video.show-match-video .penalty-score {
+  left: 228%;
 }
 
 .sound-unlock {

@@ -298,6 +298,8 @@ function emptyMatch() {
     away_score: 0,
     home_penalty_score: 0,
     away_penalty_score: 0,
+    home_scorers: "",
+    away_scorers: "",
     home_penalty_scorers: "",
     away_penalty_scorers: "",
     home_penalty_misses: "",
@@ -608,6 +610,49 @@ function apiMinute(game) {
   return Number.isFinite(numeric) ? `${numeric}'` : elapsed || "0'";
 }
 
+function formatApiScorerEntry(entry) {
+  if (entry === undefined || entry === null || entry === "null") return "";
+  if (typeof entry === "string" || typeof entry === "number") return String(entry).trim();
+  const name = apiValue(
+    entry.name
+    || entry.player
+    || entry.player_name
+    || entry.scorer
+    || entry.scorer_name
+    || entry.label
+  ).trim();
+  const minute = apiValue(entry.minute || entry.time || entry.time_elapsed || entry.elapsed).trim();
+  if (!name) return "";
+  return minute ? `${name} ${minute.replace(/'$/, "")}'` : name;
+}
+
+function formatApiScorers(input) {
+  if (input === undefined || input === null || input === "null") return "";
+  if (Array.isArray(input)) {
+    return input.map(formatApiScorerEntry).filter(Boolean).join(" • ");
+  }
+  if (typeof input === "object") {
+    return Object.values(input).map(formatApiScorerEntry).filter(Boolean).join(" • ");
+  }
+  return String(input).trim();
+}
+
+function apiScorers(game, side) {
+  const fields = [
+    `${side}_scorers`,
+    `${side}_goals`,
+    `${side}_goal_scorers`,
+    `${side}_goalscorers`,
+    `${side}_goal_scorers_names`,
+    `${side}_scorer_names`
+  ];
+  for (const field of fields) {
+    const scorers = formatApiScorers(game[field]);
+    if (scorers) return scorers;
+  }
+  return "";
+}
+
 function isKnockoutMatch(match) {
   if (match.phase === "group") return false;
   if (match.phase === "knockout") return true;
@@ -700,6 +745,8 @@ function linkedApiDiffs() {
       away_score: apiScore(game.away_score),
       home_penalty_score: apiScore(game.home_penalty_score),
       away_penalty_score: apiScore(game.away_penalty_score),
+      home_scorers: apiScorers(game, "home"),
+      away_scorers: apiScorers(game, "away"),
       home_penalty_scorers: apiValue(game.home_penalty_scorers),
       away_penalty_scorers: apiValue(game.away_penalty_scorers),
       home_penalty_misses: apiValue(game.home_penalty_misses),
@@ -711,6 +758,8 @@ function linkedApiDiffs() {
       || match.away_score !== next.away_score
       || scoreNumber(match.home_penalty_score) !== next.home_penalty_score
       || scoreNumber(match.away_penalty_score) !== next.away_penalty_score
+      || text(match.home_scorers) !== next.home_scorers
+      || text(match.away_scorers) !== next.away_scorers
       || text(match.home_penalty_scorers) !== next.home_penalty_scorers
       || text(match.away_penalty_scorers) !== next.away_penalty_scorers
       || text(match.home_penalty_misses) !== next.home_penalty_misses
@@ -762,6 +811,8 @@ function filteredApiDiffs(options = {}) {
     if (options.onlyActive && isFinished(item.match) && isFinished({ ...item.match, ...item.next })) {
       const penaltyChanged = scoreNumber(item.match.home_penalty_score) !== item.next.home_penalty_score
         || scoreNumber(item.match.away_penalty_score) !== item.next.away_penalty_score
+        || text(item.match.home_scorers) !== item.next.home_scorers
+        || text(item.match.away_scorers) !== item.next.away_scorers
         || text(item.match.home_penalty_scorers) !== item.next.home_penalty_scorers
         || text(item.match.away_penalty_scorers) !== item.next.away_penalty_scorers
         || text(item.match.home_penalty_misses) !== item.next.home_penalty_misses
@@ -808,6 +859,8 @@ function applyApiDiffs(diffs, { log = true } = {}) {
     item.card.querySelector('[data-field="away_score"]').value = item.next.away_score;
     item.card.querySelector('[data-field="home_penalty_score"]').value = item.next.home_penalty_score;
     item.card.querySelector('[data-field="away_penalty_score"]').value = item.next.away_penalty_score;
+    item.card.querySelector('[data-field="home_scorers"]').value = item.next.home_scorers;
+    item.card.querySelector('[data-field="away_scorers"]').value = item.next.away_scorers;
     item.card.querySelector('[data-field="home_penalty_scorers"]').value = item.next.home_penalty_scorers;
     item.card.querySelector('[data-field="away_penalty_scorers"]').value = item.next.away_penalty_scorers;
     item.card.querySelector('[data-field="home_penalty_misses"]').value = item.next.home_penalty_misses;

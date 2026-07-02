@@ -67,6 +67,8 @@ const elements = {
   homeQualifiedBadge: document.getElementById("homeQualifiedBadge"),
   homeScore: document.getElementById("homeScore"),
   awayScore: document.getElementById("awayScore"),
+  homeScorers: document.getElementById("homeScorers"),
+  awayScorers: document.getElementById("awayScorers"),
   penaltyScore: document.getElementById("penaltyScore"),
   awayFlag: document.getElementById("awayFlag"),
   awayName: document.getElementById("awayName"),
@@ -168,6 +170,44 @@ function sceneBackgroundSetting(input, fallback) {
 
 function cssUrl(url) {
   return `url("${value(url).replaceAll("\\", "/").replaceAll('"', "%22")}")`;
+}
+
+function normalizeScorers(input) {
+  if (Array.isArray(input)) {
+    return input
+      .map(item => typeof item === "string"
+        ? item
+        : value(item?.label || item?.name || item?.player || item?.player_name || item?.scorer)
+      )
+      .map(item => item.trim())
+      .filter(Boolean)
+      .join(" • ");
+  }
+  if (input && typeof input === "object") {
+    return normalizeScorers(Object.values(input));
+  }
+  return value(input).trim();
+}
+
+function matchScorers(match, side) {
+  const direct = normalizeScorers(
+    match[`${side}_scorers`]
+    || match[`${side}_goals`]
+    || match[`${side}_goal_scorers`]
+    || match[`${side}_goalscorers`]
+  );
+  if (direct) return direct;
+
+  const generic = normalizeScorers(match.scorers);
+  if (!generic) return "";
+  const team = value(match[side]).toLocaleLowerCase("fr");
+  if (!team) return generic;
+  return generic
+    .split(/[|;\n]/)
+    .map(item => item.trim())
+    .filter(item => item.toLocaleLowerCase("fr").includes(team))
+    .map(item => item.replace(new RegExp(`^${team}\\s*[:\\-–—]?\\s*`, "i"), ""))
+    .join(" • ");
 }
 
 function sceneBackgroundUrl(type) {
@@ -757,6 +797,16 @@ function renderMatch(match) {
   elements.homeName.textContent = value(match.home, "Équipe 1");
   elements.homeScore.textContent = value(match.home_score, "0");
   elements.awayScore.textContent = value(match.away_score, "0");
+  const homeScorers = matchScorers(match, "home");
+  const awayScorers = matchScorers(match, "away");
+  if (elements.homeScorers) {
+    elements.homeScorers.textContent = homeScorers;
+    elements.homeScorers.hidden = !homeScorers;
+  }
+  if (elements.awayScorers) {
+    elements.awayScorers.textContent = awayScorers;
+    elements.awayScorers.hidden = !awayScorers;
+  }
   elements.penaltyScore.textContent = `TAB ${scoreNumber(match.home_penalty_score)} - ${scoreNumber(match.away_penalty_score)}`;
   elements.penaltyScore.hidden = !hasPenaltyShootout(match);
   elements.awayFlag.src = flagUrl(match.away_code, match.away);

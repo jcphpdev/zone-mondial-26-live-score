@@ -1999,14 +1999,16 @@ body {
 .scoreboard.scene-match-video.show-match-video .score > span:not(.score-separator) {
   width: clamp(62px, 5.25vw, 100px);
   height: clamp(54px, 4.65vw, 88px);
-  color: #061018;
-  background: linear-gradient(180deg, #75fff0, #20d8d1);
-  border: 3px solid rgba(255, 255, 255, 0.7);
+  color: #050914;
+  background: #64ebcc;
+  border: 0;
   border-radius: 14px;
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.38);
+  text-shadow: none;
 }
 
 .scoreboard.scene-match-video.show-match-video .minute {
-  left: 235%;
+  left: 298%;
   top: 50%;
   min-width: 3.4em;
   padding: 0.2em 0.42em;
@@ -2024,6 +2026,33 @@ body {
   left: 228%;
   top: 19%;
   transform: none;
+}
+
+.match-scorers {
+  position: absolute;
+  left: 135%;
+  width: min(20vw, 340px);
+  color: #fff;
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  font-size: clamp(13px, 1.08vw, 22px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 0.03em;
+  text-align: left;
+  text-shadow: 0 5px 12px rgba(0, 0, 0, 0.8);
+  text-transform: uppercase;
+}
+
+.match-scorers[hidden] {
+  display: none;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-scorers-home {
+  top: 12%;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-scorers-away {
+  top: 76%;
 }
 
 .scoreboard.scene-match-video.show-match-video .match-footer {
@@ -2201,7 +2230,7 @@ body {
 }
 
 .scoreboard.scene-match-video.show-match-video .minute {
-  left: 235%;
+  left: 298%;
   color: #fff;
 }
 

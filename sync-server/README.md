@@ -69,6 +69,14 @@ football-data comme source score d’un match, il faut définir sur ce match :
 Le header utilisé est `X-Auth-Token`, conformément à la documentation officielle
 football-data.org.
 
+Pour trouver les IDs officiels à copier dans `admin.html`, lancer :
+
+```powershell
+npm run list:football-data
+```
+
+La colonne `ID` correspond au champ `ID football-data` dans l’admin.
+
 Si `worldcup26.ir` est temporairement indisponible, par exemple erreur `502`,
 vous pouvez le désactiver temporairement :
 

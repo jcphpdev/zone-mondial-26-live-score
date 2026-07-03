@@ -688,6 +688,11 @@
           <input data-field="away_scorers" type="hidden">
           <small>Chargez les matchs API dans “Régie live”, puis liez chaque match une seule fois.</small>
         </div>
+        <div class="field">
+          <label>ID football-data</label>
+          <input data-field="football_data_match_id" type="text" placeholder="Ex : 498765">
+          <small>ID officiel football-data.org. Prioritaire pour enrichir ce match sans dépendre du matching automatique.</small>
+        </div>
         <div class="field full-setting">
           <label>Tireurs TAB réussis équipe 1</label>
           <input data-field="home_penalty_scorers" type="text" placeholder="Nom 1, Nom 2…">
@@ -782,6 +787,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260703-03"></script>
+  <script type="module" src="admin.js?v=20260703-04"></script>
 </body>
 </html>

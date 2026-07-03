@@ -278,10 +278,9 @@ function shouldShowMatchMinute(match) {
 function matchDisplayMinute(match) {
   if (isUpcoming(match) || isHalfTime(match) || isFinished(match)) return "";
   const minute = value(match.minute).trim();
+  if (["EN DIRECT", "LIVE"].includes(minute.toUpperCase())) return "EN DIRECT";
   if (minute && !["EN DIRECT", "LIVE"].includes(minute.toUpperCase())) return minute;
-  const kickoffMs = kickoffTime(match);
-  if (!kickoffMs || Date.now() < kickoffMs) return "";
-  return autoMinute(kickoffMs);
+  return "";
 }
 
 function isKnockoutMatch(match) {
@@ -383,7 +382,7 @@ function withAutoMatchState(match, now = Date.now()) {
     if (isLive(match) && ["", "LIVE", "EN DIRECT"].includes(minute)) {
       return {
         ...match,
-        minute: autoMinute(kickoffMs, now),
+        minute: "live",
         _autoStarted: true,
         _kickoffMs: kickoffMs
       };
@@ -394,7 +393,7 @@ function withAutoMatchState(match, now = Date.now()) {
   return {
     ...match,
     status: "En direct",
-    minute: autoMinute(kickoffMs, now),
+    minute: "live",
     _autoStarted: true,
     _kickoffMs: kickoffMs
   };
@@ -642,7 +641,7 @@ function tickerMessage(match, groups) {
     return `<strong>À venir</strong> ${escapeHtml(label)} — ${escapeHtml(home)} - ${escapeHtml(away)}${kickoff ? ` • ${escapeHtml(kickoff)}` : ""}`;
   }
 
-  return `<strong>En direct</strong> ${escapeHtml(label)} — ${escapeHtml(home)} ${score} ${escapeHtml(away)} • ${escapeHtml(value(match.minute, value(match.status, "LIVE")))}`;
+  return `<strong>En direct</strong> ${escapeHtml(label)} — ${escapeHtml(home)} ${score} ${escapeHtml(away)} • ${escapeHtml(matchDisplayMinute(match) || value(match.status, "LIVE"))}`;
 }
 
 function liveUpdateRows(matches, groups) {
@@ -665,7 +664,7 @@ function liveUpdateRows(matches, groups) {
       home: value(match.home, "Équipe 1"),
       away: value(match.away, "Équipe 2"),
       score,
-      minute: qualified ? `${qualified} qualifié` : isLive(match) ? value(match.minute, value(match.status, "LIVE")) : ""
+      minute: qualified ? `${qualified} qualifié` : isLive(match) ? (matchDisplayMinute(match) || value(match.status, "LIVE")) : ""
     };
   });
 }
@@ -846,6 +845,7 @@ function renderMatch(match) {
   elements.minute.textContent = matchDisplayMinute(match);
   elements.minute.hidden = !shouldShowMatchMinute(match);
   elements.minute.classList.toggle("is-finished", isFinished(match));
+  elements.minute.classList.toggle("is-live", matchDisplayMinute(match) === "EN DIRECT");
   elements.matchInfo.textContent = value(
     match.info || match.scorers || match.venue || (
       match.kickoff

@@ -982,6 +982,22 @@ body {
   background: linear-gradient(90deg, var(--zm-navy), #121d62);
 }
 
+.minute.is-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42em;
+}
+
+.minute.is-live::before {
+  width: 0.78em;
+  height: 0.78em;
+  content: "";
+  border: 0.12em solid rgba(255, 255, 255, 0.42);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: live-clock-spin 0.9s linear infinite;
+}
+
 .match-footer {
   top: 66.6%;
   left: 26.05%;
@@ -2022,6 +2038,11 @@ body {
   transform: translateY(-50%);
 }
 
+.scoreboard.scene-match-video.show-match-video .minute.is-live {
+  min-width: 5.8em;
+  font-size: clamp(18px, 1.65vw, 32px);
+}
+
 .scoreboard.scene-match-video.show-match-video .penalty-score {
   left: 228%;
   top: 19%;
@@ -2325,6 +2346,10 @@ body {
 @keyframes live-pulse {
   70% { box-shadow: 0 0 0 0.55em rgba(255, 255, 255, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+@keyframes live-clock-spin {
+  100% { transform: rotate(360deg); }
 }
 
 @keyframes goal-strap {

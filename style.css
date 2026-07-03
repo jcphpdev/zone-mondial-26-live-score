@@ -2557,6 +2557,45 @@ body {
   white-space: nowrap;
 }
 
+.scoreboard.scene-live-updates .live-update-qualified,
+.scoreboard.scene-video-updates .video-updates-view .live-update-qualified {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.34em;
+  max-width: 100%;
+  padding: 0.36em 0.76em;
+  color: #fff;
+  background: linear-gradient(180deg, #35c861, #168437);
+  border: 2px solid rgba(255, 255, 255, 0.26);
+  border-radius: 999px;
+  font-size: 0.78em;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  line-height: 1;
+  text-transform: uppercase;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.62);
+  white-space: nowrap;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 7px 15px rgba(0, 0, 0, 0.28);
+}
+
+.scoreboard.scene-live-updates .live-update-qualified i,
+.scoreboard.scene-video-updates .video-updates-view .live-update-qualified i {
+  display: inline-grid;
+  place-items: center;
+  width: 1.1em;
+  height: 1.1em;
+  color: #168437;
+  background: #fff;
+  border-radius: 50%;
+  font-style: normal;
+  font-weight: 950;
+  text-shadow: none;
+}
+
 .scoreboard.scene-live-updates .live-update-group,
 .scoreboard.scene-video-updates .video-updates-view .live-update-group {
   color: #eaf0ff;

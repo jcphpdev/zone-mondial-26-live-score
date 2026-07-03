@@ -750,9 +750,17 @@ function liveUpdateRows(matches, groups) {
       home: value(match.home, "Équipe 1"),
       away: value(match.away, "Équipe 2"),
       score,
-      minute: qualified ? `${qualified} qualifié` : isLive(match) ? (matchDisplayMinute(match) || value(match.status, "LIVE")) : ""
+      minute: qualified ? "" : isLive(match) ? (matchDisplayMinute(match) || value(match.status, "LIVE")) : "",
+      qualified
     };
   });
+}
+
+function liveUpdateMetaHtml(row) {
+  if (row.qualified) {
+    return `<span class="live-update-qualified"><i aria-hidden="true">✓</i>${escapeHtml(row.qualified)}</span>`;
+  }
+  return `<span class="live-update-minute">${escapeHtml(row.minute)}</span>`;
 }
 
 function playlistUrls(input) {
@@ -862,7 +870,7 @@ function renderLiveUpdates(data) {
           <strong>${escapeHtml(row.home)}</strong>
           <span class="live-update-score">${escapeHtml(row.score)}</span>
           <strong>${escapeHtml(row.away)}</strong>
-          <span class="live-update-minute">${escapeHtml(row.minute)}</span>
+          ${liveUpdateMetaHtml(row)}
         </div>
       `).join("")
     : `<div class="live-update-empty">Aucun match publié pour le moment</div>`;
@@ -883,7 +891,7 @@ function renderVideoUpdates(data) {
           <strong>${escapeHtml(row.home)}</strong>
           <span class="live-update-score">${escapeHtml(row.score)}</span>
           <strong>${escapeHtml(row.away)}</strong>
-          <span class="live-update-minute">${escapeHtml(row.minute)}</span>
+          ${liveUpdateMetaHtml(row)}
         </div>
       `).join("")
     : `<div class="live-update-empty">Aucun match publié pour le moment</div>`;

@@ -2528,10 +2528,10 @@ body {
 }
 
 .scoreboard.scene-video-updates .video-updates-view .live-update-row {
-  grid-template-columns: minmax(86px, 0.68fr) minmax(112px, 0.8fr) minmax(0, 1.75fr) minmax(92px, 0.62fr) minmax(0, 1.75fr) minmax(128px, 0.92fr);
-  gap: 0.95vw;
+  grid-template-columns: minmax(88px, 0.66fr) minmax(118px, 0.78fr) minmax(145px, 1.55fr) minmax(118px, 0.62fr) minmax(145px, 1.55fr) minmax(142px, 0.95fr);
+  gap: 1.2vw;
   padding: 0 1.25vw;
-  font-size: clamp(20px, 1.42vw, 31px);
+  font-size: clamp(19px, 1.36vw, 29px);
 }
 
 .scoreboard.scene-live-updates .live-update-row {
@@ -2554,6 +2554,7 @@ body {
   letter-spacing: 0.055em;
   line-height: 1;
   text-shadow: 0 3px 8px rgba(0, 0, 0, 0.62);
+  white-space: nowrap;
 }
 
 .scoreboard.scene-live-updates .live-update-group,
@@ -2566,6 +2567,7 @@ body {
   opacity: 0.96;
   text-align: center;
   text-shadow: 0 4px 10px rgba(0, 0, 0, 0.86);
+  white-space: nowrap;
 }
 
 .scoreboard.scene-live-updates .live-update-row strong,
@@ -2582,7 +2584,9 @@ body {
 
 .scoreboard.scene-live-updates .live-update-score,
 .scoreboard.scene-video-updates .video-updates-view .live-update-score {
-  min-width: 4.8em;
+  justify-self: center;
+  min-width: 4.05em;
+  max-width: 100%;
   padding: 0.24em 0.65em;
   color: #050914;
   background: #64ebcc;
@@ -2595,6 +2599,19 @@ body {
   text-align: center;
   text-shadow: none;
   box-shadow: 0 7px 16px rgba(0, 0, 0, 0.34);
+}
+
+.scoreboard.scene-live-updates .live-update-row > *,
+.scoreboard.scene-video-updates .video-updates-view .live-update-row > * {
+  min-width: 0;
+}
+
+.scoreboard.scene-video-updates .video-updates-view .live-update-row strong:first-of-type {
+  text-align: right;
+}
+
+.scoreboard.scene-video-updates .video-updates-view .live-update-row strong:last-of-type {
+  text-align: left;
 }
 
 .scoreboard.scene-live-updates .live-update-minute,

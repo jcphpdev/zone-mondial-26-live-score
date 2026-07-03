@@ -69,6 +69,18 @@ football-data comme source score d’un match, il faut définir sur ce match :
 Le header utilisé est `X-Auth-Token`, conformément à la documentation officielle
 football-data.org.
 
+Si `worldcup26.ir` est temporairement indisponible, par exemple erreur `502`,
+vous pouvez le désactiver temporairement :
+
+```env
+WORLD_CUP_ENABLED=false
+FOOTBALL_DATA_ENABLED=true
+```
+
+Le script continuera alors avec `football-data.org` si un token est configuré.
+S’il n’y a aucune source disponible, il n’arrête pas le serveur : il écrit un
+état `source-error` dans Firebase et retente au cycle suivant.
+
 ## Test sans écrire
 
 Mettre dans `.env` :

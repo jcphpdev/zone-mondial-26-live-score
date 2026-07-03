@@ -7,6 +7,7 @@ const ENV_PATH = path.join(__dirname, ".env");
 const DEFAULTS = {
   FIREBASE_API_KEY: "AIzaSyDIjQ5lfPcahptcaihe099tIYOCJ9IUnFk",
   FIREBASE_DATABASE_URL: "https://zone-mondial-26-default-rtdb.europe-west1.firebasedatabase.app",
+  WORLD_CUP_ENABLED: "true",
   WORLD_CUP_API_URL: "https://worldcup26.ir/get/games",
   FOOTBALL_DATA_ENABLED: "false",
   FOOTBALL_DATA_COMPETITIONS: "WC",
@@ -46,6 +47,7 @@ const scoreNumber = input => {
 
 const intervalSeconds = Math.max(15, Math.min(120, Number.parseInt(env.SYNC_INTERVAL_SECONDS, 10) || 30));
 const dryRun = value(env.DRY_RUN).toLowerCase() === "true";
+const worldCupEnabled = value(env.WORLD_CUP_ENABLED, "true").toLowerCase() !== "false";
 const footballDataEnabled = value(env.FOOTBALL_DATA_ENABLED).toLowerCase() === "true";
 let authSession = null;
 let syncRunning = false;
@@ -369,6 +371,7 @@ async function fetchFootballDataMatches() {
 }
 
 async function fetchApiGames() {
+  if (!worldCupEnabled) return [];
   const response = await fetch(env.WORLD_CUP_API_URL, { cache: "no-store" });
   if (!response.ok) throw new Error(`API World Cup indisponible (${response.status})`);
   const payload = await response.json();
@@ -377,14 +380,52 @@ async function fetchApiGames() {
   return games;
 }
 
+async function settleSource(label, task) {
+  try {
+    return { label, ok: true, data: await task() };
+  } catch (error) {
+    return { label, ok: false, data: [], error: error.message };
+  }
+}
+
 async function syncOnce() {
-  const [data, games, footballMatches] = await Promise.all([
+  const [data, worldCupSource, footballDataSource] = await Promise.all([
     firebaseReadLiveScores(),
-    fetchApiGames(),
-    fetchFootballDataMatches()
+    settleSource("worldcup26.ir", fetchApiGames),
+    settleSource("football-data.org", fetchFootballDataMatches)
   ]);
   if (!data || !Array.isArray(data.matches)) {
     throw new Error("Firebase /liveScores ne contient pas de tableau matches.");
+  }
+
+  const games = worldCupSource.data;
+  const footballMatches = footballDataSource.data;
+  const sourceErrors = [worldCupSource, footballDataSource]
+    .filter(source => !source.ok)
+    .map(source => `${source.label}: ${source.error}`);
+
+  if (sourceErrors.length) {
+    sourceErrors.forEach(error => log(`Source indisponible : ${error}`));
+  }
+
+  if (!games.length && !footballMatches.length) {
+    const now = new Date().toISOString();
+    await firebasePatchLiveScores({
+      automation: {
+        enabled: true,
+        mode: "local-pc",
+        source: "worldcup26.ir + football-data.org",
+        last_sync_at: now,
+        last_result: "source-error",
+        source_errors: sourceErrors.length ? sourceErrors : ["Aucune source active ou aucun match reçu."],
+        world_cup_enabled: worldCupEnabled,
+        football_data_enabled: footballDataEnabled,
+        interval_seconds: intervalSeconds,
+        dry_run: dryRun
+      }
+    });
+    log("Aucune source disponible pour cette passe. Nouvelle tentative au prochain cycle.");
+    return;
   }
 
   const gameById = new Map(games.map(game => [value(game.id), game]));
@@ -413,10 +454,12 @@ async function syncOnce() {
   const automation = {
     enabled: true,
     mode: "local-pc",
-    source: "worldcup26.ir",
+    source: "worldcup26.ir + football-data.org",
     last_sync_at: now,
-    last_result: changed ? "updated" : "no-change",
+    last_result: sourceErrors.length ? (changed ? "updated-with-source-warning" : "source-warning") : (changed ? "updated" : "no-change"),
+    source_errors: sourceErrors,
     linked_matches: linked,
+    world_cup_enabled: worldCupEnabled,
     api_matches: games.length,
     football_data_enabled: footballDataEnabled,
     football_data_matches: footballMatches.length,
@@ -428,7 +471,7 @@ async function syncOnce() {
   await firebasePatchLiveScores(changed ? { matches, updated_at: now, automation } : { automation });
   log(changed
     ? `Synchronisation appliquée : ${changed} match(s) mis à jour.`
-    : `Aucun changement. Matchs liés : ${linked}/${games.length}.`);
+    : `Aucun changement. Matchs liés : ${linked}. API World Cup : ${games.length} match(s), football-data : ${footballMatches.length} match(s).`);
   changedMatches.forEach(item => log(`  - ${item}`));
 }
 

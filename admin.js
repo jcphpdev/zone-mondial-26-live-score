@@ -307,6 +307,7 @@ function emptyMatch() {
     minute: "0'",
     status: "À venir",
     info: "",
+    timeline: "",
     external_api: "worldcup2026",
     external_match_id: ""
   };

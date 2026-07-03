@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Administration des scores — Zone Mondial 26</title>
-  <link rel="stylesheet" href="admin.css?v=20260630-04">
+  <link rel="stylesheet" href="admin.css?v=20260703-03">
 </head>
 <body>
   <header class="admin-header">
@@ -665,6 +665,11 @@
           <label>Information affichée en bas</label>
           <input data-field="info" type="text" placeholder="Buteurs, stade ou message">
         </div>
+        <div class="field full-setting">
+          <label>Temps forts / timeline live</label>
+          <textarea data-field="timeline" rows="5" placeholder="00’ Coup d’envoi.&#10;12’ Première occasion marocaine.&#10;45’ Mi-temps : 0–0."></textarea>
+          <small>Une ligne par temps fort. Si ce champ est vide, l’overlay génère une timeline simple depuis l’état du match et les buteurs.</small>
+        </div>
         <div class="field">
           <label>TAB équipe 1</label>
           <input data-field="home_penalty_score" type="number" min="0" value="0">
@@ -777,6 +782,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260703-01"></script>
+  <script type="module" src="admin.js?v=20260703-03"></script>
 </body>
 </html>

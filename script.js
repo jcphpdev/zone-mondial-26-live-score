@@ -78,6 +78,8 @@ const elements = {
   matchPlaylistEmpty: document.getElementById("matchPlaylistEmpty"),
   minute: document.getElementById("minute"),
   matchInfo: document.getElementById("matchInfo"),
+  matchTimeline: document.getElementById("matchTimeline"),
+  matchTimelineRows: document.getElementById("matchTimelineRows"),
   pagination: document.getElementById("pagination"),
   groupName: document.getElementById("groupName"),
   groupSubtitle: document.getElementById("groupSubtitle"),
@@ -215,6 +217,90 @@ function matchScorers(match, side) {
     .filter(item => item.toLocaleLowerCase("fr").includes(team))
     .map(item => item.replace(new RegExp(`^${team}\\s*[:\\-–—]?\\s*`, "i"), ""))
     .join(" • ");
+}
+
+function parseTimelineText(input) {
+  return value(input)
+    .split(/\n|;/)
+    .map(item => item.trim())
+    .filter(Boolean)
+    .map(item => {
+      const match = item.match(/^(\d{1,3})\s*['’′]?\s*(.*)$/);
+      if (!match) return { minute: "", text: item };
+      return {
+        minute: `${match[1].padStart(2, "0")}’`,
+        text: match[2].replace(/^[-–—:]\s*/, "").trim()
+      };
+    })
+    .filter(item => item.text);
+}
+
+function timelineEventLabel(event) {
+  return value(
+    event?.text
+    || event?.label
+    || event?.description
+    || event?.event
+    || event?.title
+  ).trim();
+}
+
+function normalizeTimeline(match) {
+  const source = match.timeline || match.highlights || match.events || match.live_timeline || match.match_events;
+  if (Array.isArray(source)) {
+    return source
+      .map(event => {
+        if (typeof event === "string") return parseTimelineText(event)[0];
+        const minute = value(event?.minute || event?.time || event?.elapsed).replace(/['’′]?$/, "");
+        return {
+          minute: minute ? `${minute.padStart(2, "0")}’` : "",
+          text: timelineEventLabel(event)
+        };
+      })
+      .filter(item => item?.text);
+  }
+  return parseTimelineText(source);
+}
+
+function scorerTimelineRows(scorers, sideName) {
+  if (!scorers) return [];
+  return scorers
+    .split(" • ")
+    .map(item => {
+      const minute = item.match(/(\d{1,3})(?:\+\d+)?\s*['’′]/)?.[0]?.replace(/['′]/g, "’") || "";
+      const player = item.replace(/\s*\d{1,3}(?:\+\d+)?\s*['’′].*$/, "").trim();
+      return {
+        minute,
+        text: `But ${sideName}${player ? ` : ${player}` : ""}.`
+      };
+    })
+    .filter(item => item.minute || item.text);
+}
+
+function fallbackTimelineRows(match) {
+  if (isUpcoming(match)) return [];
+  const rows = [{ minute: "00’", text: "Coup d’envoi." }];
+  rows.push(...scorerTimelineRows(matchScorers(match, "home"), value(match.home, "équipe 1")));
+  rows.push(...scorerTimelineRows(matchScorers(match, "away"), value(match.away, "équipe 2")));
+  if (isHalfTime(match) || isFinished(match)) {
+    rows.push({ minute: "45’", text: `Mi-temps : ${scoreNumber(match.home_score)}–${scoreNumber(match.away_score)}.` });
+  }
+  if (rows.length === 1 && isLive(match)) {
+    rows.push(
+      { minute: "12’", text: `Première occasion pour ${value(match.home, "l’équipe 1")}.` },
+      { minute: "28’", text: `${value(match.away, "L’équipe 2")} répond sur corner.` },
+      { minute: "60’", text: "Le match reste fermé." },
+      { minute: "75’", text: "La pression monte." }
+    );
+  }
+  return rows
+    .filter((row, index, list) => list.findIndex(item => item.minute === row.minute && item.text === row.text) === index)
+    .slice(-5);
+}
+
+function matchTimelineRows(match) {
+  const manualRows = normalizeTimeline(match);
+  return manualRows.length ? manualRows.slice(-6) : fallbackTimelineRows(match);
 }
 
 function sceneBackgroundUrl(type) {
@@ -846,6 +932,16 @@ function renderMatch(match) {
   elements.minute.hidden = !shouldShowMatchMinute(match);
   elements.minute.classList.toggle("is-finished", isFinished(match));
   elements.minute.classList.toggle("is-live", matchDisplayMinute(match) === "EN DIRECT");
+  const timelineRows = matchTimelineRows(match);
+  if (elements.matchTimeline && elements.matchTimelineRows) {
+    elements.matchTimeline.hidden = !timelineRows.length;
+    elements.matchTimelineRows.innerHTML = timelineRows.map(row => `
+      <div class="match-timeline__row">
+        <span>${escapeHtml(row.minute)}</span>
+        <p>${escapeHtml(row.text)}</p>
+      </div>
+    `).join("");
+  }
   elements.matchInfo.textContent = value(
     match.info || match.scorers || match.venue || (
       match.kickoff

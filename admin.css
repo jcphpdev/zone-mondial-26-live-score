@@ -32,7 +32,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -549,6 +550,7 @@ a {
 
 .field input,
 .field select,
+.field textarea,
 .update-box input {
   min-height: 44px;
   padding: 10px 12px;
@@ -559,8 +561,15 @@ a {
   outline: 0;
 }
 
+.field textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
 .field input:focus,
 .field select:focus,
+.field textarea:focus,
 .update-box input:focus {
   background: #fff;
   border-color: var(--blue);

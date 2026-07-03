@@ -613,7 +613,10 @@ body {
 .scoreboard.show-live-updates .match-footer,
 .scoreboard.show-video-updates .team-panel,
 .scoreboard.show-video-updates .score-panel,
-.scoreboard.show-video-updates .match-footer {
+.scoreboard.show-video-updates .match-footer,
+.scoreboard.show-standings .match-timeline,
+.scoreboard.show-live-updates .match-timeline,
+.scoreboard.show-video-updates .match-timeline {
   display: none;
 }
 
@@ -2101,6 +2104,83 @@ body {
 
 .scoreboard.scene-match-video.show-match-video .match-footer .pagination {
   display: none;
+}
+
+.match-timeline {
+  display: none;
+}
+
+.match-timeline[hidden] {
+  display: none !important;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-timeline {
+  position: absolute;
+  z-index: 2;
+  display: block;
+  left: 5.2%;
+  top: 66.4%;
+  width: 53.4%;
+  height: 17.2%;
+  padding: 1.1vh 1.6vw;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(230, 29, 37, 0.22), transparent 20%),
+    rgba(4, 9, 20, 0.76);
+  border: clamp(4px, 0.45vw, 8px) solid rgba(255, 255, 255, 0.94);
+  border-radius: clamp(18px, 1.7vw, 32px);
+  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.48);
+}
+
+.scoreboard.scene-match-video.show-match-video .match-timeline h2 {
+  margin: 0 0 0.45vh;
+  color: #64ebcc;
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  font-size: clamp(15px, 1.28vw, 24px);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-timeline__rows {
+  display: grid;
+  gap: 0.32vh;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-timeline__row {
+  display: grid;
+  grid-template-columns: minmax(44px, 3.5vw) 1fr;
+  align-items: center;
+  gap: 0.85vw;
+  min-height: 2.15vh;
+  color: #fff;
+  font-family: "Inter", Arial, sans-serif;
+  font-size: clamp(13px, 1.03vw, 20px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.82);
+}
+
+.scoreboard.scene-match-video.show-match-video .match-timeline__row span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.9em;
+  color: #050914;
+  background: #64ebcc;
+  border-radius: 999px;
+  font-family: "Barlow Condensed", Arial, sans-serif;
+  font-weight: 900;
+  text-shadow: none;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-timeline__row p {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .scoreboard.scene-match-video.show-match-video .match-video-frame {

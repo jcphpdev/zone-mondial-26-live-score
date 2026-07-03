@@ -1,0 +1,16 @@
+{
+  "name": "zone-mondial-26-functions",
+  "private": true,
+  "description": "Cloud Functions automation for Zone Mondial 26 live scores.",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "lint": "node --check index.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.1.2"
+  }
+}

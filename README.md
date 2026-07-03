@@ -38,3 +38,34 @@ comme secours si Firebase n’est pas configuré ou temporairement indisponible.
   compte dans le classement, y compris les matchs dépubliés.
 - La publication/dépublication contrôle uniquement la visibilité dans
   l’overlay.
+
+## Automatisation serveur avec Cloud Functions
+
+Le dossier `functions/` contient une Cloud Function Firebase planifiée :
+
+- source API : `https://worldcup26.ir/get/games` ;
+- fréquence : toutes les minutes ;
+- comportement : deux passages par minute, un au lancement puis un second après
+  30 secondes ;
+- cible : `/liveScores` dans Firebase Realtime Database ;
+- matchs synchronisés : uniquement les matchs possédant `external_match_id` ;
+- matchs dépubliés : synchronisés aussi, car la publication contrôle seulement
+  l’affichage overlay ;
+- champs mis à jour : score, statut, minute, buteurs, tirs au but et tireurs TAB.
+
+Commandes utiles :
+
+```bash
+cd functions
+npm install
+npm run lint
+cd ..
+firebase deploy --only functions --project zone-mondial-26
+```
+
+Important : Cloud Functions v2 nécessite le plan Firebase Blaze
+pay-as-you-go. Si le projet reste en plan gratuit Spark, Firebase refusera
+l’activation de certaines APIs nécessaires comme `artifactregistry.googleapis.com`.
+
+Après déploiement, l’admin n’a plus besoin de rester ouvert pour synchroniser les
+scores. L’overlay continue simplement d’écouter Firebase en temps réel.

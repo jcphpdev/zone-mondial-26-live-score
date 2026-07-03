@@ -1,0 +1,13 @@
+{
+  "name": "zone-mondial-26-local-sync",
+  "private": true,
+  "description": "Local OBS PC synchronizer for Zone Mondial 26 live scores.",
+  "main": "sync.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node sync.js",
+    "check": "node --check sync.js"
+  }
+}

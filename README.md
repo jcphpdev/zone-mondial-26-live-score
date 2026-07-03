@@ -69,3 +69,23 @@ l’activation de certaines APIs nécessaires comme `artifactregistry.googleapis
 
 Après déploiement, l’admin n’a plus besoin de rester ouvert pour synchroniser les
 scores. L’overlay continue simplement d’écouter Firebase en temps réel.
+
+## Alternative gratuite : synchroniseur local PC OBS
+
+Si le projet Firebase reste en plan gratuit Spark, utilisez le dossier
+`sync-server/`.
+
+Ce mode lance un petit script Node.js sur le PC OBS :
+
+```text
+API World Cup → script local PC OBS → Firebase Realtime Database → overlay OBS
+```
+
+Avantages :
+
+- gratuit ;
+- synchronisation toutes les 15 à 30 secondes ;
+- pas besoin de laisser `admin.html` ouvert ;
+- conserve Firebase comme source centrale.
+
+Voir `sync-server/README.md` pour l’installation.

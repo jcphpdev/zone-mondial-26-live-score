@@ -4,3 +4,5 @@ tmp/
 firebase-debug.log
 node_modules/
 functions/node_modules/
+sync-server/node_modules/
+sync-server/.env

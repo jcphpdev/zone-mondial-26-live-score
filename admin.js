@@ -586,12 +586,14 @@ function apiTeamName(game, side) {
 }
 
 function apiStatus(game) {
-  const elapsed = apiValue(game.time_elapsed).toLowerCase();
+  const elapsed = apiValue(game.time_elapsed).trim().toLowerCase();
+  const status = apiValue(game.status || game.match_status || game.state).trim().toLowerCase();
+  const statusText = `${elapsed} ${status}`;
   const finished = apiValue(game.finished).toUpperCase() === "TRUE";
-  if (finished || elapsed === "finished") return "Terminé";
-  if (["notstarted", "not_started", "scheduled"].includes(elapsed)) return "À venir";
-  if (["halftime", "half-time", "ht"].includes(elapsed)) return "Mi-temps";
-  if (["postponed", "delayed"].includes(elapsed)) return "Reporté";
+  if (finished || ["finished", "ft", "fulltime", "full-time", "full time"].some(item => statusText.includes(item))) return "Terminé";
+  if (["notstarted", "not_started", "not started", "scheduled", "fixture"].some(item => statusText.includes(item))) return "À venir";
+  if (["halftime", "half-time", "half time", "ht", "mi-temps"].some(item => statusText.includes(item))) return "Mi-temps";
+  if (["postponed", "delayed", "suspended"].some(item => statusText.includes(item))) return "Reporté";
   return "En direct";
 }
 
@@ -602,7 +604,7 @@ function isFinished(match) {
 }
 
 function apiMinute(game) {
-  const elapsed = apiValue(game.time_elapsed).toLowerCase();
+  const elapsed = apiValue(game.time_elapsed).trim().toLowerCase();
   if (apiStatus(game) === "Terminé") return "FT";
   if (apiStatus(game) === "À venir") return "";
   if (apiStatus(game) === "Mi-temps") return "45'";
@@ -634,7 +636,13 @@ function formatApiScorers(input) {
   if (typeof input === "object") {
     return Object.values(input).map(formatApiScorerEntry).filter(Boolean).join(" • ");
   }
-  return String(input).trim();
+  return String(input)
+    .trim()
+    .replace(/^\{|\}$/g, "")
+    .split(/","|',\s*'|,\s*(?=[A-ZÀ-Ý])/)
+    .map(item => item.replace(/^["']|["']$/g, "").trim())
+    .filter(Boolean)
+    .join(" • ");
 }
 
 function apiScorers(game, side) {

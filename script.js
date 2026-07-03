@@ -186,7 +186,14 @@ function normalizeScorers(input) {
   if (input && typeof input === "object") {
     return normalizeScorers(Object.values(input));
   }
-  return value(input).trim();
+  const raw = value(input).trim();
+  if (!raw || raw.toLowerCase() === "null") return "";
+  return raw
+    .replace(/^\{|\}$/g, "")
+    .split(/","|',\s*'|,\s*(?=[A-ZÀ-Ý])/)
+    .map(item => item.replace(/^["']|["']$/g, "").trim())
+    .filter(Boolean)
+    .join(" • ");
 }
 
 function matchScorers(match, side) {
@@ -240,7 +247,7 @@ function isFinished(match) {
 }
 
 function isHalfTime(match) {
-  const values = ["HT", "MT", "MI-TEMPS", "MI TEMPS", "PAUSE"];
+  const values = ["HT", "HALF", "HALFTIME", "HALF-TIME", "HALF TIME", "MT", "MI-TEMPS", "MI TEMPS", "PAUSE"];
   return values.includes(value(match.minute).trim().toUpperCase())
     || values.includes(value(match.status).trim().toUpperCase());
 }
@@ -265,8 +272,16 @@ function displayStatus(match) {
 
 function shouldShowMatchMinute(match) {
   if (isUpcoming(match) || isHalfTime(match) || isFinished(match)) return false;
+  return Boolean(matchDisplayMinute(match));
+}
+
+function matchDisplayMinute(match) {
+  if (isUpcoming(match) || isHalfTime(match) || isFinished(match)) return "";
   const minute = value(match.minute).trim();
-  return Boolean(minute) && !["EN DIRECT", "LIVE"].includes(minute.toUpperCase());
+  if (minute && !["EN DIRECT", "LIVE"].includes(minute.toUpperCase())) return minute;
+  const kickoffMs = kickoffTime(match);
+  if (!kickoffMs || Date.now() < kickoffMs) return "";
+  return autoMinute(kickoffMs);
 }
 
 function isKnockoutMatch(match) {
@@ -363,7 +378,18 @@ function withAutoMatchState(match, now = Date.now()) {
   if (!currentSettings.auto_start_matches || isFinished(match)) return match;
   const kickoffMs = kickoffTime(match);
   if (!kickoffMs || now < kickoffMs) return match;
-  if (!isUpcoming(match)) return match;
+  if (!isUpcoming(match)) {
+    const minute = value(match.minute).trim().toUpperCase();
+    if (isLive(match) && ["", "LIVE", "EN DIRECT"].includes(minute)) {
+      return {
+        ...match,
+        minute: autoMinute(kickoffMs, now),
+        _autoStarted: true,
+        _kickoffMs: kickoffMs
+      };
+    }
+    return match;
+  }
 
   return {
     ...match,
@@ -817,7 +843,7 @@ function renderMatch(match) {
   elements.scoreboard.classList.toggle("has-penalties", hasPenaltyShootout(match));
   elements.scoreboard.classList.toggle("winner-home", winner === "home");
   elements.scoreboard.classList.toggle("winner-away", winner === "away");
-  elements.minute.textContent = value(match.minute);
+  elements.minute.textContent = matchDisplayMinute(match);
   elements.minute.hidden = !shouldShowMatchMinute(match);
   elements.minute.classList.toggle("is-finished", isFinished(match));
   elements.matchInfo.textContent = value(

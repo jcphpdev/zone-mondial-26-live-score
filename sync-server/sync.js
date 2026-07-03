@@ -263,14 +263,90 @@ function footballDataScore(match, side) {
   return scoreNumber(first);
 }
 
+const TEAM_NAME_ALIASES = new Map(Object.entries({
+  afrique_du_sud: "south africa",
+  algerie: "algeria",
+  allemagne: "germany",
+  angleterre: "england",
+  arabie_saoudite: "saudi arabia",
+  argentine: "argentina",
+  australie: "australia",
+  autriche: "austria",
+  belgique: "belgium",
+  bosnie_herzegovine: "bosnia and herzegovina",
+  bresil: "brazil",
+  cameroun: "cameroon",
+  canada: "canada",
+  chili: "chile",
+  chine: "china",
+  colombie: "colombia",
+  coree_du_sud: "korea republic",
+  costa_rica: "costa rica",
+  cote_d_ivoire: "cote d ivoire",
+  croatie: "croatia",
+  danemark: "denmark",
+  egypte: "egypt",
+  emirats_arabes_unis: "united arab emirates",
+  equateur: "ecuador",
+  ecosse: "scotland",
+  espagne: "spain",
+  etats_unis: "united states",
+  france: "france",
+  ghana: "ghana",
+  grece: "greece",
+  honduras: "honduras",
+  inde: "india",
+  iran: "iran",
+  irak: "iraq",
+  irlande: "republic of ireland",
+  islande: "iceland",
+  italie: "italy",
+  japon: "japan",
+  maroc: "morocco",
+  mexique: "mexico",
+  nigeria: "nigeria",
+  norvege: "norway",
+  nouvelle_zelande: "new zealand",
+  ouzbekistan: "uzbekistan",
+  pays_bas: "netherlands",
+  paraguay: "paraguay",
+  pays_de_galles: "wales",
+  perou: "peru",
+  pologne: "poland",
+  portugal: "portugal",
+  qatar: "qatar",
+  rdc: "dr congo",
+  republique_democratique_du_congo: "dr congo",
+  roumanie: "romania",
+  senegal: "senegal",
+  serbie: "serbia",
+  slovaquie: "slovakia",
+  slovenie: "slovenia",
+  suede: "sweden",
+  suisse: "switzerland",
+  tunisie: "tunisia",
+  turquie: "turkey",
+  ukraine: "ukraine",
+  uruguay: "uruguay"
+}));
+
 function normalizeTeamName(input) {
-  return value(input)
+  const normalized = value(input)
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/\b(fc|cf|national|team|selection|the)\b/g, "")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+  const aliasKey = normalized.replace(/\s+/g, "_");
+  return TEAM_NAME_ALIASES.get(aliasKey) || normalized;
+}
+
+function teamNamesMatch(left, right) {
+  if (!left || !right) return false;
+  return left === right
+    || left.includes(right)
+    || right.includes(left);
 }
 
 function sameMatchDay(left, right) {
@@ -327,9 +403,7 @@ function matchFootballDataGame(localMatch, footballMatches) {
     if (!sameMatchDay(localMatch.kickoff, match.utcDate)) return false;
     const apiHome = normalizeTeamName(match.homeTeam?.shortName || match.homeTeam?.name);
     const apiAway = normalizeTeamName(match.awayTeam?.shortName || match.awayTeam?.name);
-    return apiHome.includes(localHome) || localHome.includes(apiHome)
-      ? apiAway.includes(localAway) || localAway.includes(apiAway)
-      : false;
+    return teamNamesMatch(apiHome, localHome) && teamNamesMatch(apiAway, localAway);
   }) || null;
 }
 
@@ -430,6 +504,8 @@ async function syncOnce() {
 
   const gameById = new Map(games.map(game => [value(game.id), game]));
   let linked = 0;
+  let worldCupLinked = 0;
+  let footballDataLinked = 0;
   let changed = 0;
   const changedMatches = [];
 
@@ -443,6 +519,8 @@ async function syncOnce() {
       ...(footballMatch ? footballDataPatch(footballMatch, match, explicitFootballScoreSource) : {})
     };
     if (game || footballMatch) linked += 1;
+    if (game) worldCupLinked += 1;
+    if (footballMatch) footballDataLinked += 1;
     if (!Object.keys(patch).length) return match;
     if (!hasChanged(match, patch)) return match;
     changed += 1;
@@ -459,6 +537,8 @@ async function syncOnce() {
     last_result: sourceErrors.length ? (changed ? "updated-with-source-warning" : "source-warning") : (changed ? "updated" : "no-change"),
     source_errors: sourceErrors,
     linked_matches: linked,
+    world_cup_linked_matches: worldCupLinked,
+    football_data_linked_matches: footballDataLinked,
     world_cup_enabled: worldCupEnabled,
     api_matches: games.length,
     football_data_enabled: footballDataEnabled,
@@ -471,7 +551,7 @@ async function syncOnce() {
   await firebasePatchLiveScores(changed ? { matches, updated_at: now, automation } : { automation });
   log(changed
     ? `Synchronisation appliquée : ${changed} match(s) mis à jour.`
-    : `Aucun changement. Matchs liés : ${linked}. API World Cup : ${games.length} match(s), football-data : ${footballMatches.length} match(s).`);
+    : `Aucun changement. Matchs liés : ${linked} (WorldCup ${worldCupLinked}, football-data ${footballDataLinked}). API World Cup : ${games.length} match(s), football-data : ${footballMatches.length} match(s).`);
   changedMatches.forEach(item => log(`  - ${item}`));
 }
 

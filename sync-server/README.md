@@ -33,6 +33,42 @@ Le script :
 Les matchs dépubliés sont aussi synchronisés. La publication reste uniquement un
 filtre d’affichage dans l’overlay.
 
+## Source optionnelle football-data.org
+
+Le script peut aussi utiliser `football-data.org` comme source d’informations
+complémentaires : stade, arbitre, statut brut, stage, groupe et identifiant
+football-data.
+
+Créer un token sur :
+
+```text
+https://www.football-data.org/client/register
+```
+
+Puis activer dans `.env` :
+
+```env
+FOOTBALL_DATA_ENABLED=true
+FOOTBALL_DATA_API_TOKEN=votre-token
+FOOTBALL_DATA_COMPETITIONS=WC
+FOOTBALL_DATA_LOOKBACK_DAYS=2
+FOOTBALL_DATA_LOOKAHEAD_DAYS=7
+```
+
+Par défaut, `worldcup26.ir` reste la source principale pour les scores live.
+`football-data.org` enrichit seulement les infos. Pour utiliser explicitement
+football-data comme source score d’un match, il faut définir sur ce match :
+
+```json
+{
+  "external_api": "football-data",
+  "external_match_id": "ID_DU_MATCH_FOOTBALL_DATA"
+}
+```
+
+Le header utilisé est `X-Auth-Token`, conformément à la documentation officielle
+football-data.org.
+
 ## Test sans écrire
 
 Mettre dans `.env` :

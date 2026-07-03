@@ -89,3 +89,7 @@ Avantages :
 - conserve Firebase comme source centrale.
 
 Voir `sync-server/README.md` pour l’installation.
+
+Le synchroniseur local supporte aussi `football-data.org` comme source
+optionnelle d’informations complémentaires si vous ajoutez un token dans
+`sync-server/.env`.

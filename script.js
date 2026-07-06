@@ -279,7 +279,7 @@ function scorerTimelineRows(scorers, sideName) {
 
 function fallbackTimelineRows(match) {
   if (isUpcoming(match)) return [];
-  const rows = [{ minute: "00’", text: "Coup d’envoi." }];
+  const rows = [];
   rows.push(...scorerTimelineRows(matchScorers(match, "home"), value(match.home, "équipe 1")));
   rows.push(...scorerTimelineRows(matchScorers(match, "away"), value(match.away, "équipe 2")));
   if (isHalfTime(match) || isFinished(match)) {

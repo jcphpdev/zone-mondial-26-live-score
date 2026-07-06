@@ -285,14 +285,6 @@ function fallbackTimelineRows(match) {
   if (isHalfTime(match) || isFinished(match)) {
     rows.push({ minute: "45’", text: `Mi-temps : ${scoreNumber(match.home_score)}–${scoreNumber(match.away_score)}.` });
   }
-  if (rows.length === 1 && isLive(match)) {
-    rows.push(
-      { minute: "12’", text: `Première occasion pour ${value(match.home, "l’équipe 1")}.` },
-      { minute: "28’", text: `${value(match.away, "L’équipe 2")} répond sur corner.` },
-      { minute: "60’", text: "Le match reste fermé." },
-      { minute: "75’", text: "La pression monte." }
-    );
-  }
   return rows
     .filter((row, index, list) => list.findIndex(item => item.minute === row.minute && item.text === row.text) === index)
     .slice(-5);

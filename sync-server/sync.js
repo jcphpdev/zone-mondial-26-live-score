@@ -221,6 +221,9 @@ function apiMatchPatch(game) {
 function hasChanged(match, patch) {
   return Object.entries(patch).some(([key, next]) => {
     if (typeof next === "number") return scoreNumber(match[key]) !== next;
+    if (next && typeof next === "object") {
+      return JSON.stringify(match[key] ?? null) !== JSON.stringify(next);
+    }
     return value(match[key]) !== value(next);
   });
 }
@@ -367,6 +370,24 @@ function footballDataInfo(match) {
   return parts.join(" • ");
 }
 
+function footballDataReferee(match) {
+  if (!Array.isArray(match.referees)) return "";
+  const referee = match.referees.find(item => value(item.type || item.role).toUpperCase() === "REFEREE")
+    || match.referees.find(item => value(item.type || item.role).toUpperCase().includes("REFEREE"))
+    || match.referees[0];
+  return value(referee?.name);
+}
+
+function compactLineup(players) {
+  if (!Array.isArray(players)) return [];
+  return players.slice(0, 11).map(player => ({
+    id: player.id ?? "",
+    name: value(player.name),
+    position: value(player.position),
+    shirtNumber: player.shirtNumber ?? player.shirt_number ?? ""
+  })).filter(player => player.name);
+}
+
 function footballDataPatch(apiMatch, localMatch, explicitScoreSource = false) {
   const patch = {
     football_data_match_id: value(apiMatch.id),
@@ -375,6 +396,17 @@ function footballDataPatch(apiMatch, localMatch, explicitScoreSource = false) {
     football_data_group: value(apiMatch.group),
     football_data_last_updated: value(apiMatch.lastUpdated)
   };
+  if (apiMatch.venue) patch.venue = value(apiMatch.venue);
+  const referee = footballDataReferee(apiMatch);
+  if (referee) patch.referee = referee;
+  if (apiMatch.homeTeam?.coach?.name) patch.home_coach = value(apiMatch.homeTeam.coach.name);
+  if (apiMatch.awayTeam?.coach?.name) patch.away_coach = value(apiMatch.awayTeam.coach.name);
+  if (apiMatch.homeTeam?.formation) patch.home_formation = value(apiMatch.homeTeam.formation);
+  if (apiMatch.awayTeam?.formation) patch.away_formation = value(apiMatch.awayTeam.formation);
+  const homeLineup = compactLineup(apiMatch.homeTeam?.lineup);
+  const awayLineup = compactLineup(apiMatch.awayTeam?.lineup);
+  if (homeLineup.length) patch.home_lineup = homeLineup;
+  if (awayLineup.length) patch.away_lineup = awayLineup;
   const info = footballDataInfo(apiMatch);
   if (info && !value(localMatch.info).trim()) patch.info = info;
   if (apiMatch.utcDate && !value(localMatch.kickoff).trim()) patch.kickoff = apiMatch.utcDate;
@@ -444,6 +476,31 @@ async function fetchFootballDataMatches() {
   return results;
 }
 
+async function fetchFootballDataMatchDetails(ids = []) {
+  if (!footballDataEnabled) return [];
+  if (!value(env.FOOTBALL_DATA_API_TOKEN).trim()) return [];
+  const uniqueIds = [...new Set(ids.map(id => value(id).trim()).filter(Boolean))];
+  const results = [];
+
+  for (const id of uniqueIds) {
+    const response = await fetch(`https://api.football-data.org/v4/matches/${encodeURIComponent(id)}`, {
+      headers: {
+        "X-Auth-Token": env.FOOTBALL_DATA_API_TOKEN,
+        "X-Unfold-Goals": "true"
+      },
+      cache: "no-store"
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      log(`football-data.org détail ignoré pour ${id} : HTTP ${response.status} ${body.slice(0, 120)}`);
+      continue;
+    }
+    results.push(await response.json());
+  }
+
+  return results;
+}
+
 async function fetchApiGames() {
   if (!worldCupEnabled) return [];
   const response = await fetch(env.WORLD_CUP_API_URL, { cache: "no-store" });
@@ -473,8 +530,17 @@ async function syncOnce() {
   }
 
   const games = worldCupSource.data;
-  const footballMatches = footballDataSource.data;
-  const sourceErrors = [worldCupSource, footballDataSource]
+  const explicitFootballIds = data.matches
+    .map(match => value(match.football_data_match_id).trim()
+      || (value(match.external_api) === "football-data" ? value(match.external_match_id).trim() : ""))
+    .filter(Boolean);
+  const footballDataDetailsSource = await settleSource("football-data.org/details", () => fetchFootballDataMatchDetails(explicitFootballIds));
+  const footballMatchesById = new Map([
+    ...footballDataSource.data,
+    ...footballDataDetailsSource.data
+  ].map(match => [value(match.id), match]));
+  const footballMatches = [...footballMatchesById.values()];
+  const sourceErrors = [worldCupSource, footballDataSource, footballDataDetailsSource]
     .filter(source => !source.ok)
     .map(source => `${source.label}: ${source.error}`);
 

@@ -43,6 +43,7 @@ const showUnpublishedMatches = document.getElementById("showUnpublishedMatches")
 const matchResultsInfo = document.getElementById("matchResultsInfo");
 const loadMoreMatches = document.getElementById("loadMoreMatches");
 const scoreSceneDurationInput = document.getElementById("scoreSceneDuration");
+const preMatchSceneDurationInput = document.getElementById("preMatchSceneDuration");
 const standingsSceneDurationInput = document.getElementById("standingsSceneDuration");
 const videoSceneDurationInput = document.getElementById("videoSceneDuration");
 const scoreSceneBeforeMinutesInput = document.getElementById("scoreSceneBeforeMinutes");
@@ -55,6 +56,7 @@ const enableGoalSoundInput = document.getElementById("enableGoalSound");
 const sceneModeInput = document.getElementById("sceneMode");
 const selectedMatchSceneInput = document.getElementById("selectedMatchScene");
 const selectedGroupSceneInput = document.getElementById("selectedGroupScene");
+const includePreMatchScenesInput = document.getElementById("includePreMatchScenes");
 const includeMatchScenesInput = document.getElementById("includeMatchScenes");
 const includeMatchVideoScenesInput = document.getElementById("includeMatchVideoScenes");
 const includeGroupScenesInput = document.getElementById("includeGroupScenes");
@@ -119,6 +121,7 @@ const NUMERIC_MATCH_FIELDS = new Set([
 
 const DEFAULT_SETTINGS = {
   score_scene_duration: 10,
+  pre_match_scene_duration: 12,
   standings_scene_duration: 8,
   video_scene_duration: 15,
   score_scene_before_minutes: 30,
@@ -131,6 +134,7 @@ const DEFAULT_SETTINGS = {
   scene_mode: "auto",
   selected_match_id: "",
   selected_group_id: "",
+  include_prematch_scenes: true,
   include_match_scenes: true,
   include_match_video_scenes: false,
   include_group_scenes: true,
@@ -189,6 +193,7 @@ function boundedNumber(value, fallback, min, max) {
 function readSettings() {
   return {
     score_scene_duration: boundedNumber(scoreSceneDurationInput.value, DEFAULT_SETTINGS.score_scene_duration, 3, 60),
+    pre_match_scene_duration: boundedNumber(preMatchSceneDurationInput.value, DEFAULT_SETTINGS.pre_match_scene_duration, 3, 60),
     standings_scene_duration: boundedNumber(standingsSceneDurationInput.value, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
     video_scene_duration: boundedNumber(videoSceneDurationInput.value, DEFAULT_SETTINGS.video_scene_duration, 5, 180),
     score_scene_before_minutes: boundedNumber(scoreSceneBeforeMinutesInput.value, DEFAULT_SETTINGS.score_scene_before_minutes, 0, 240),
@@ -201,6 +206,7 @@ function readSettings() {
     scene_mode: sceneModeInput.value || "auto",
     selected_match_id: selectedMatchSceneInput.value,
     selected_group_id: selectedGroupSceneInput.value,
+    include_prematch_scenes: includePreMatchScenesInput.checked,
     include_match_scenes: includeMatchScenesInput.checked,
     include_match_video_scenes: includeMatchVideoScenesInput.checked,
     include_group_scenes: includeGroupScenesInput.checked,
@@ -224,6 +230,7 @@ function sceneBackgroundSetting(input, fallback) {
 function fillSettings(settings = {}) {
   const merged = { ...DEFAULT_SETTINGS, ...settings };
   scoreSceneDurationInput.value = boundedNumber(merged.score_scene_duration, DEFAULT_SETTINGS.score_scene_duration, 3, 60);
+  preMatchSceneDurationInput.value = boundedNumber(merged.pre_match_scene_duration, DEFAULT_SETTINGS.pre_match_scene_duration, 3, 60);
   standingsSceneDurationInput.value = boundedNumber(merged.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60);
   videoSceneDurationInput.value = boundedNumber(merged.video_scene_duration, DEFAULT_SETTINGS.video_scene_duration, 5, 180);
   scoreSceneBeforeMinutesInput.value = boundedNumber(merged.score_scene_before_minutes, DEFAULT_SETTINGS.score_scene_before_minutes, 0, 240);
@@ -233,9 +240,10 @@ function fillSettings(settings = {}) {
   showGoalAlertInput.checked = merged.show_goal_alert !== false;
   autoStartMatchesInput.checked = merged.auto_start_matches !== false;
   enableGoalSoundInput.checked = merged.enable_goal_sound !== false;
-  sceneModeInput.value = ["auto", "match", "match-video", "group", "ticker", "video"].includes(merged.scene_mode) ? merged.scene_mode : "auto";
+  sceneModeInput.value = ["auto", "pre-match", "match", "match-video", "group", "ticker", "video"].includes(merged.scene_mode) ? merged.scene_mode : "auto";
   selectedMatchSceneInput.dataset.selectedValue = text(merged.selected_match_id);
   selectedGroupSceneInput.dataset.selectedValue = text(merged.selected_group_id);
+  includePreMatchScenesInput.checked = merged.include_prematch_scenes !== false;
   includeMatchScenesInput.checked = merged.include_match_scenes !== false;
   includeMatchVideoScenesInput.checked = merged.include_match_video_scenes === true;
   includeGroupScenesInput.checked = merged.include_group_scenes !== false;
@@ -308,6 +316,14 @@ function emptyMatch() {
     status: "À venir",
     info: "",
     timeline: "",
+    venue: "",
+    referee: "",
+    home_coach: "",
+    away_coach: "",
+    home_formation: "",
+    away_formation: "",
+    home_lineup: "",
+    away_lineup: "",
     external_api: "worldcup2026",
     external_match_id: "",
     football_data_match_id: ""
@@ -335,6 +351,17 @@ function readMatch(card) {
     const key = input.dataset.field;
     if (input.type === "checkbox") match[key] = input.checked;
     else if (key === "external_match_id") match[key] = (input.value || input.dataset.selectedValue || "").trim();
+    else if (input.dataset.json === "true") {
+      const raw = input.value.trim();
+      if (!raw) match[key] = "";
+      else {
+        try {
+          match[key] = JSON.parse(raw);
+        } catch {
+          match[key] = raw;
+        }
+      }
+    }
     else match[key] = NUMERIC_MATCH_FIELDS.has(key) ? number(input.value) : input.value.trim();
   });
   match.external_api = match.external_match_id ? (match.external_api || "worldcup2026") : "";
@@ -509,6 +536,7 @@ function updateSceneSelectors() {
 function sceneModeLabel(mode) {
   return {
     auto: "Automatique",
+    "pre-match": "Avant-match",
     match: "Score match",
     "match-video": "Score + vidéos 9:16",
     group: "Classement",
@@ -537,7 +565,7 @@ function syncControlRoom() {
 
   const mode = sceneModeInput.value || "auto";
   controlCurrentScene.textContent = sceneModeLabel(mode);
-  controlCurrentTarget.textContent = ["match", "match-video"].includes(mode)
+  controlCurrentTarget.textContent = ["pre-match", "match", "match-video"].includes(mode)
     ? selectedOptionLabel(selectedMatchSceneInput, "Premier match publié")
     : mode === "group"
       ? selectedOptionLabel(selectedGroupSceneInput, "Premier classement disponible")
@@ -563,6 +591,7 @@ function publishOrSaveFromControl() {
 
 function setControlScene(mode) {
   sceneModeInput.value = mode;
+  if (mode === "pre-match") includePreMatchScenesInput.checked = true;
   if (mode === "ticker") includeTickerSceneInput.checked = true;
   if (mode === "video") includeVideoSceneInput.checked = true;
   if (mode === "match-video") includeMatchVideoScenesInput.checked = true;
@@ -1018,6 +1047,8 @@ function fillMatch(card, match, index) {
     } else if (key === "external_match_id") {
       input.dataset.selectedValue = text(match[key], fallback);
       input.value = text(match[key], fallback);
+    } else if (input.dataset.json === "true" && match[key] && typeof match[key] === "object") {
+      input.value = JSON.stringify(match[key], null, 2);
     } else {
       input.value = text(match[key], fallback);
     }
@@ -1548,7 +1579,7 @@ updatedAtInput.addEventListener("input", () => {
   syncControlRoom();
   scheduleSave();
 });
-[scoreSceneDurationInput, standingsSceneDurationInput, videoSceneDurationInput, scoreSceneBeforeMinutesInput, scoreSceneAfterMinutesInput].forEach(input => {
+[scoreSceneDurationInput, preMatchSceneDurationInput, standingsSceneDurationInput, videoSceneDurationInput, scoreSceneBeforeMinutesInput, scoreSceneAfterMinutesInput].forEach(input => {
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });
@@ -1558,7 +1589,7 @@ updatedAtInput.addEventListener("input", () => {
 });
 videoPlaylistUrlsInput.addEventListener("input", scheduleSave);
 videoPlaylistUrlsInput.addEventListener("change", scheduleSave);
-[autoRotateScenesInput, showTickerInput, showGoalAlertInput, autoStartMatchesInput, enableGoalSoundInput, includeMatchScenesInput, includeMatchVideoScenesInput, includeGroupScenesInput, includeTickerSceneInput, includeVideoSceneInput, enableVideoSoundInput].forEach(input => {
+[autoRotateScenesInput, showTickerInput, showGoalAlertInput, autoStartMatchesInput, enableGoalSoundInput, includePreMatchScenesInput, includeMatchScenesInput, includeMatchVideoScenesInput, includeGroupScenesInput, includeTickerSceneInput, includeVideoSceneInput, enableVideoSoundInput].forEach(input => {
   input.addEventListener("change", scheduleSave);
 });
 [sceneModeInput, selectedMatchSceneInput, selectedGroupSceneInput].forEach(input => {

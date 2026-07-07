@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zone Mondial 26 — Live Scores</title>
-  <link rel="stylesheet" href="style.css?v=20260703-06">
+  <link rel="stylesheet" href="style.css?v=20260707-01">
 </head>
 <body>
   <main class="scoreboard" aria-live="polite">
@@ -81,6 +81,52 @@
       </aside>
     </section>
 
+    <section id="preMatchView" class="pre-match-view" aria-label="Avant-match">
+      <div class="pre-match-fixture">
+        <article class="pre-match-team">
+          <img id="preMatchHomeFlag" alt="">
+          <div>
+            <span>Équipe 1</span>
+            <h1 id="preMatchHomeName">Équipe 1</h1>
+            <p id="preMatchHomeFormation">Formation à confirmer</p>
+            <small id="preMatchHomeCoach">Sélectionneur à confirmer</small>
+          </div>
+        </article>
+
+        <div class="pre-match-center">
+          <strong>VS</strong>
+          <span id="preMatchKickoff">Coup d’envoi à confirmer</span>
+        </div>
+
+        <article class="pre-match-team pre-match-team-away">
+          <div>
+            <span>Équipe 2</span>
+            <h1 id="preMatchAwayName">Équipe 2</h1>
+            <p id="preMatchAwayFormation">Formation à confirmer</p>
+            <small id="preMatchAwayCoach">Sélectionneur à confirmer</small>
+          </div>
+          <img id="preMatchAwayFlag" alt="">
+        </article>
+      </div>
+
+      <div class="pre-match-meta">
+        <span id="preMatchStage">Avant-match</span>
+        <span id="preMatchVenue">Stade à confirmer</span>
+        <span id="preMatchReferee">Arbitre à confirmer</span>
+      </div>
+
+      <div class="pre-match-lineups">
+        <section>
+          <h2>Composition</h2>
+          <div id="preMatchHomeLineup" class="pre-match-lineup-list"></div>
+        </section>
+        <section>
+          <h2>Composition</h2>
+          <div id="preMatchAwayLineup" class="pre-match-lineup-list"></div>
+        </section>
+      </div>
+    </section>
+
     <footer class="match-footer">
       <p id="matchInfo">Chargement des informations du match…</p>
       <div id="pagination" class="pagination" aria-hidden="true"></div>
@@ -120,6 +166,6 @@
     Mise à jour des scores…
   </div>
 
-  <script type="module" src="script.js?v=20260706-02"></script>
+  <script type="module" src="script.js?v=20260707-01"></script>
 </body>
 </html>

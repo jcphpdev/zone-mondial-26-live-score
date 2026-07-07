@@ -170,6 +170,7 @@
             <h3>Forcer une scène</h3>
             <div class="control-actions">
               <button class="button primary" data-control-scene="auto" type="button">Retour auto</button>
+              <button class="button secondary" data-control-scene="pre-match" type="button">Avant-match</button>
               <button class="button secondary" data-control-scene="match" type="button">Score match</button>
               <button class="button secondary" data-control-scene="match-video" type="button">Score + vidéo</button>
               <button class="button secondary" data-control-scene="group" type="button">Classement</button>
@@ -333,6 +334,7 @@
             <label for="sceneMode">Mode d’affichage</label>
             <select id="sceneMode">
               <option value="auto">Automatique</option>
+              <option value="pre-match">Forcer avant-match</option>
               <option value="match">Forcer un match</option>
               <option value="match-video">Forcer score + vidéos 9:16</option>
               <option value="group">Forcer un classement</option>
@@ -359,6 +361,14 @@
             <label for="scoreSceneDuration">Durée score / match</label>
             <div class="unit-field">
               <input id="scoreSceneDuration" type="number" min="3" max="60" step="1" value="10">
+              <span>secondes</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="preMatchSceneDuration">Durée avant-match</label>
+            <div class="unit-field">
+              <input id="preMatchSceneDuration" type="number" min="3" max="60" step="1" value="12">
               <span>secondes</span>
             </div>
           </div>
@@ -420,6 +430,14 @@
             <span>
               <strong>Rotation automatique</strong>
               <small>Fait défiler les matchs et classements publiés.</small>
+            </span>
+          </label>
+
+          <label class="setting-switch">
+            <input id="includePreMatchScenes" type="checkbox" checked>
+            <span>
+              <strong>Inclure les scènes avant-match</strong>
+              <small>Affiche les fiches des matchs à venir dans la fenêtre choisie.</small>
             </span>
           </label>
 
@@ -671,6 +689,38 @@
           <small>Une ligne par vrai temps fort. Si ce champ est vide, la rubrique reste masquée sauf buteurs ou mi-temps disponibles.</small>
         </div>
         <div class="field">
+          <label>Stade</label>
+          <input data-field="venue" type="text" placeholder="Stade à confirmer">
+        </div>
+        <div class="field">
+          <label>Arbitre</label>
+          <input data-field="referee" type="text" placeholder="Arbitre à confirmer">
+        </div>
+        <div class="field">
+          <label>Sélectionneur équipe 1</label>
+          <input data-field="home_coach" type="text" placeholder="Nom du sélectionneur">
+        </div>
+        <div class="field">
+          <label>Sélectionneur équipe 2</label>
+          <input data-field="away_coach" type="text" placeholder="Nom du sélectionneur">
+        </div>
+        <div class="field">
+          <label>Formation équipe 1</label>
+          <input data-field="home_formation" type="text" placeholder="4-3-3">
+        </div>
+        <div class="field">
+          <label>Formation équipe 2</label>
+          <input data-field="away_formation" type="text" placeholder="4-2-3-1">
+        </div>
+        <div class="field full-setting">
+          <label>Composition équipe 1</label>
+          <textarea data-field="home_lineup" data-json="true" rows="4" placeholder="Une ligne par joueur ou JSON football-data"></textarea>
+        </div>
+        <div class="field full-setting">
+          <label>Composition équipe 2</label>
+          <textarea data-field="away_lineup" data-json="true" rows="4" placeholder="Une ligne par joueur ou JSON football-data"></textarea>
+        </div>
+        <div class="field">
           <label>TAB équipe 1</label>
           <input data-field="home_penalty_score" type="number" min="0" value="0">
         </div>
@@ -787,6 +837,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260706-01"></script>
+  <script type="module" src="admin.js?v=20260707-01"></script>
 </body>
 </html>

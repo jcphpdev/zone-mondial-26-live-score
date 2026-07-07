@@ -13,6 +13,7 @@ const KICKOFF_ALERT_WINDOW = 90_000;
 const params = new URLSearchParams(window.location.search);
 const DEFAULT_SETTINGS = {
   score_scene_duration: 10,
+  pre_match_scene_duration: 12,
   standings_scene_duration: 8,
   video_scene_duration: 15,
   score_scene_before_minutes: 30,
@@ -25,6 +26,7 @@ const DEFAULT_SETTINGS = {
   scene_mode: "auto",
   selected_match_id: "",
   selected_group_id: "",
+  include_prematch_scenes: true,
   include_match_scenes: true,
   include_match_video_scenes: false,
   include_group_scenes: true,
@@ -88,6 +90,21 @@ const elements = {
   liveUpdatesRows: document.getElementById("liveUpdatesRows"),
   videoUpdatesView: document.getElementById("videoUpdatesView"),
   videoUpdatesRows: document.getElementById("videoUpdatesRows"),
+  preMatchView: document.getElementById("preMatchView"),
+  preMatchHomeFlag: document.getElementById("preMatchHomeFlag"),
+  preMatchHomeName: document.getElementById("preMatchHomeName"),
+  preMatchHomeFormation: document.getElementById("preMatchHomeFormation"),
+  preMatchHomeCoach: document.getElementById("preMatchHomeCoach"),
+  preMatchAwayFlag: document.getElementById("preMatchAwayFlag"),
+  preMatchAwayName: document.getElementById("preMatchAwayName"),
+  preMatchAwayFormation: document.getElementById("preMatchAwayFormation"),
+  preMatchAwayCoach: document.getElementById("preMatchAwayCoach"),
+  preMatchKickoff: document.getElementById("preMatchKickoff"),
+  preMatchStage: document.getElementById("preMatchStage"),
+  preMatchVenue: document.getElementById("preMatchVenue"),
+  preMatchReferee: document.getElementById("preMatchReferee"),
+  preMatchHomeLineup: document.getElementById("preMatchHomeLineup"),
+  preMatchAwayLineup: document.getElementById("preMatchAwayLineup"),
   playlistVideo: document.getElementById("playlistVideo"),
   playlistEmpty: document.getElementById("playlistEmpty"),
   ticker: document.querySelector(".ticker"),
@@ -138,6 +155,7 @@ function boundedNumber(input, fallback, min, max) {
 function normalizeSettings(settings = {}) {
   return {
     score_scene_duration: boundedNumber(settings.score_scene_duration, DEFAULT_SETTINGS.score_scene_duration, 3, 60),
+    pre_match_scene_duration: boundedNumber(settings.pre_match_scene_duration, DEFAULT_SETTINGS.pre_match_scene_duration, 3, 60),
     standings_scene_duration: boundedNumber(settings.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
     video_scene_duration: boundedNumber(settings.video_scene_duration, DEFAULT_SETTINGS.video_scene_duration, 5, 180),
     score_scene_before_minutes: boundedNumber(settings.score_scene_before_minutes, DEFAULT_SETTINGS.score_scene_before_minutes, 0, 240),
@@ -147,9 +165,10 @@ function normalizeSettings(settings = {}) {
     show_goal_alert: settings.show_goal_alert !== false,
     enable_goal_sound: settings.enable_goal_sound !== false,
     auto_start_matches: settings.auto_start_matches !== false,
-    scene_mode: ["auto", "match", "match-video", "group", "ticker", "video"].includes(settings.scene_mode) ? settings.scene_mode : "auto",
+    scene_mode: ["auto", "pre-match", "match", "match-video", "group", "ticker", "video"].includes(settings.scene_mode) ? settings.scene_mode : "auto",
     selected_match_id: value(settings.selected_match_id),
     selected_group_id: value(settings.selected_group_id),
+    include_prematch_scenes: settings.include_prematch_scenes !== false,
     include_match_scenes: settings.include_match_scenes !== false,
     include_match_video_scenes: settings.include_match_video_scenes === true,
     include_group_scenes: settings.include_group_scenes !== false,
@@ -293,6 +312,66 @@ function fallbackTimelineRows(match) {
 function matchTimelineRows(match) {
   const manualRows = normalizeTimeline(match);
   return manualRows.length ? manualRows.slice(-6) : fallbackTimelineRows(match);
+}
+
+function formatMatchDateTime(input) {
+  if (!input) return "";
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) return value(input);
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function normalizeLineup(input) {
+  if (!input) return [];
+  if (Array.isArray(input)) return input;
+  if (typeof input === "object") return Object.values(input);
+  const raw = value(input).trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    // Texte libre : une ligne ou un séparateur par joueur.
+  }
+  return raw
+    .split(/\n|;|\|/)
+    .map(name => ({ name: name.trim() }))
+    .filter(player => player.name);
+}
+
+function lineupHtml(input) {
+  const players = normalizeLineup(input).slice(0, 11);
+  if (!players.length) {
+    return `<div class="pre-match-lineup-empty">Composition à confirmer</div>`;
+  }
+
+  return players.map((player, index) => {
+    const shirt = value(player.shirtNumber || player.shirt_number || player.number).trim();
+    const name = value(player.name || player.player || player.player_name, `Joueur ${index + 1}`);
+    const position = value(player.position).trim();
+    return `
+      <div class="pre-match-player">
+        <span>${escapeHtml(shirt || String(index + 1))}</span>
+        <strong>${escapeHtml(name)}</strong>
+        ${position ? `<small>${escapeHtml(position)}</small>` : ""}
+      </div>
+    `;
+  }).join("");
+}
+
+function matchStageLabel(match) {
+  const stage = value(match.round || match.stage || match.football_data_stage || match.phase).trim();
+  if (!stage) return "Avant-match";
+  return stage
+    .replaceAll("_", " ")
+    .replace(/\bround of\b/i, "Round of")
+    .toUpperCase();
 }
 
 function sceneBackgroundUrl(type) {
@@ -849,6 +928,7 @@ function renderLiveUpdates(data) {
   elements.scoreboard.classList.remove("show-standings");
   elements.scoreboard.classList.remove("show-video-updates");
   elements.scoreboard.classList.remove("show-match-video");
+  elements.scoreboard.classList.remove("show-pre-match");
   elements.scoreboard.classList.add("show-live-updates");
   elements.competition.textContent = "ZONE MONDIAL 26";
   elements.status.textContent = "LIVE UPDATES";
@@ -869,7 +949,7 @@ function renderLiveUpdates(data) {
 }
 
 function renderVideoUpdates(data) {
-  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-match-video");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-match-video", "show-pre-match");
   elements.scoreboard.classList.add("show-video-updates");
   elements.competition.textContent = "ZONE MONDIAL 26";
   elements.status.textContent = "VIDÉOS LIVE";
@@ -900,8 +980,34 @@ function animate() {
   }, SCENE_ENTER_DURATION);
 }
 
-function renderMatch(match) {
+function renderPreMatch(match) {
   elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video");
+  elements.scoreboard.classList.add("show-pre-match");
+  elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
+  elements.status.textContent = "AVANT-MATCH";
+
+  elements.preMatchHomeFlag.src = flagUrl(match.home_code, match.home);
+  elements.preMatchHomeName.textContent = value(match.home, "Équipe 1");
+  elements.preMatchHomeFormation.textContent = value(match.home_formation, "Formation à confirmer");
+  elements.preMatchHomeCoach.textContent = value(match.home_coach, "Sélectionneur à confirmer");
+
+  elements.preMatchAwayFlag.src = flagUrl(match.away_code, match.away);
+  elements.preMatchAwayName.textContent = value(match.away, "Équipe 2");
+  elements.preMatchAwayFormation.textContent = value(match.away_formation, "Formation à confirmer");
+  elements.preMatchAwayCoach.textContent = value(match.away_coach, "Sélectionneur à confirmer");
+
+  elements.preMatchKickoff.textContent = match.kickoff
+    ? `Coup d’envoi : ${formatMatchDateTime(match.kickoff)}`
+    : "Coup d’envoi à confirmer";
+  elements.preMatchStage.textContent = matchStageLabel(match);
+  elements.preMatchVenue.textContent = value(match.venue, "Stade à confirmer");
+  elements.preMatchReferee.textContent = value(match.referee, "Arbitre à confirmer");
+  elements.preMatchHomeLineup.innerHTML = lineupHtml(match.home_lineup);
+  elements.preMatchAwayLineup.innerHTML = lineupHtml(match.away_lineup);
+}
+
+function renderMatch(match) {
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match");
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = displayStatus(match);
   elements.homeFlag.src = flagUrl(match.home_code, match.home);
@@ -959,7 +1065,7 @@ function renderMatchVideo(match) {
 }
 
 function renderGroup(group) {
-  elements.scoreboard.classList.remove("show-live-updates", "show-video-updates", "show-match-video");
+  elements.scoreboard.classList.remove("show-live-updates", "show-video-updates", "show-match-video", "show-pre-match");
   elements.scoreboard.classList.add("show-standings");
   elements.competition.textContent = value(group.subtitle, "COUPE DU MONDE 2026");
   elements.status.textContent = "CLASSEMENT";
@@ -994,7 +1100,7 @@ function renderScene(options = {}) {
   if (shouldAnimate) clearTimeout(rotationTimer);
   const token = ++sceneRenderToken;
   if (!scenes.length) {
-    elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "scene-group", "scene-live-updates", "scene-video-updates", "scene-match-video");
+    elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "scene-group", "scene-live-updates", "scene-video-updates", "scene-match-video", "scene-pre-match");
     elements.scoreboard.classList.add("scene-match");
     applySceneBackground("match");
     elements.matchInfo.textContent = "Aucun contenu publié";
@@ -1009,11 +1115,13 @@ function renderScene(options = {}) {
     elements.scoreboard.classList.toggle("scene-video-updates", scene.type === "video");
     elements.scoreboard.classList.toggle("scene-match", ["match", "match-video"].includes(scene.type));
     elements.scoreboard.classList.toggle("scene-match-video", scene.type === "match-video");
+    elements.scoreboard.classList.toggle("scene-pre-match", scene.type === "pre-match");
     applySceneBackground(scene.type);
     if (scene.type === "group") renderGroup(scene.data);
     else if (scene.type === "ticker") renderLiveUpdates(scene.data);
     else if (scene.type === "video") renderVideoUpdates(scene.data);
     else if (scene.type === "match-video") renderMatchVideo(scene.data);
+    else if (scene.type === "pre-match") renderPreMatch(scene.data);
     else renderMatch(scene.data);
     renderPagination();
     elements.scoreboard.classList.remove("is-leaving");
@@ -1057,6 +1165,9 @@ function applyData(data, options = {}) {
   const displayedGroupIds = new Set();
 
   const scoreSceneMatches = publishedMatches.filter(match => isVisibleInScoreScenes(match));
+  const preMatchScenes = scoreSceneMatches
+    .filter(match => isUpcoming(match))
+    .map(match => ({ type: "pre-match", id: match.id, data: match }));
   const matchScenes = scoreSceneMatches.map(match => ({ type: "match", id: match.id, data: match }));
   const matchVideoScenes = scoreSceneMatches.map(match => ({ type: "match-video", id: match.id, data: match }));
   const groupScenes = [];
@@ -1093,7 +1204,11 @@ function applyData(data, options = {}) {
     data: { rows: liveUpdateRows(publishedMatches, allGroups) }
   };
 
-  if (currentSettings.scene_mode === "match") {
+  if (currentSettings.scene_mode === "pre-match") {
+    scenes = [
+      preMatchScenes.find(scene => scene.id === currentSettings.selected_match_id) || preMatchScenes[0]
+    ].filter(Boolean);
+  } else if (currentSettings.scene_mode === "match") {
     scenes = [
       matchScenes.find(scene => scene.id === currentSettings.selected_match_id) || matchScenes[0]
     ].filter(Boolean);
@@ -1111,6 +1226,7 @@ function applyData(data, options = {}) {
     scenes = [videoScene];
   } else {
     scenes = [
+      ...(currentSettings.include_prematch_scenes ? preMatchScenes : []),
       ...(currentSettings.include_match_scenes ? matchScenes : []),
       ...(currentSettings.include_match_video_scenes ? matchVideoScenes : []),
       ...(currentSettings.include_group_scenes ? groupScenes : []),
@@ -1121,7 +1237,10 @@ function applyData(data, options = {}) {
   }
 
   const requestedScene = new URLSearchParams(window.location.search).get("scene");
-  if (requestedScene === "match") {
+  if (requestedScene === "pre-match") {
+    activeScene = scenes.findIndex(scene => scene.type === "pre-match");
+    if (activeScene < 0) activeScene = 0;
+  } else if (requestedScene === "match") {
     activeScene = scenes.findIndex(scene => scene.type === "match");
     if (activeScene < 0) activeScene = 0;
   } else if (requestedScene === "ticker") {
@@ -1198,7 +1317,9 @@ function sceneDuration(scene) {
     ? currentSettings.standings_scene_duration
     : scene?.type === "video"
       ? currentSettings.video_scene_duration
-      : currentSettings.score_scene_duration;
+      : scene?.type === "pre-match"
+        ? currentSettings.pre_match_scene_duration
+        : currentSettings.score_scene_duration;
   return seconds * 1000;
 }
 

@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS = {
   lineups_scene_duration: 12,
   stats_scene_duration: 10,
   goal_detail_scene_duration: 6,
+  event_detail_scene_duration: 6,
   standings_scene_duration: 8,
   video_scene_duration: 15,
   score_scene_before_minutes: 30,
@@ -33,6 +34,7 @@ const DEFAULT_SETTINGS = {
   include_lineup_scenes: false,
   include_stats_scenes: false,
   include_goal_detail_scenes: false,
+  include_event_detail_scenes: false,
   include_match_scenes: true,
   include_match_video_scenes: false,
   include_group_scenes: true,
@@ -143,6 +145,16 @@ const elements = {
   goalDetailHome: document.getElementById("goalDetailHome"),
   goalDetailAway: document.getElementById("goalDetailAway"),
   goalDetailMatch: document.getElementById("goalDetailMatch"),
+  eventDetailView: document.getElementById("eventDetailView"),
+  eventDetailLabel: document.getElementById("eventDetailLabel"),
+  eventDetailFlag: document.getElementById("eventDetailFlag"),
+  eventDetailTeam: document.getElementById("eventDetailTeam"),
+  eventDetailMinute: document.getElementById("eventDetailMinute"),
+  eventDetailMain: document.getElementById("eventDetailMain"),
+  eventDetailType: document.getElementById("eventDetailType"),
+  eventDetailHome: document.getElementById("eventDetailHome"),
+  eventDetailAway: document.getElementById("eventDetailAway"),
+  eventDetailMatch: document.getElementById("eventDetailMatch"),
   playlistVideo: document.getElementById("playlistVideo"),
   playlistEmpty: document.getElementById("playlistEmpty"),
   ticker: document.querySelector(".ticker"),
@@ -164,6 +176,8 @@ let goalAlertTimer;
 let rotationTimer;
 let autoClockTimer;
 let previousScoreByMatch = new Map();
+let previousTimelineEventKeys = new Set();
+let timelineEventBaselineReady = false;
 let scoreBaselineReady = false;
 let previousAutoLiveByMatch = new Map();
 let autoLiveBaselineReady = false;
@@ -197,6 +211,7 @@ function normalizeSettings(settings = {}) {
     lineups_scene_duration: boundedNumber(settings.lineups_scene_duration, DEFAULT_SETTINGS.lineups_scene_duration, 3, 60),
     stats_scene_duration: boundedNumber(settings.stats_scene_duration, DEFAULT_SETTINGS.stats_scene_duration, 3, 60),
     goal_detail_scene_duration: boundedNumber(settings.goal_detail_scene_duration, DEFAULT_SETTINGS.goal_detail_scene_duration, 3, 30),
+    event_detail_scene_duration: boundedNumber(settings.event_detail_scene_duration, DEFAULT_SETTINGS.event_detail_scene_duration, 3, 30),
     standings_scene_duration: boundedNumber(settings.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
     video_scene_duration: boundedNumber(settings.video_scene_duration, DEFAULT_SETTINGS.video_scene_duration, 5, 180),
     score_scene_before_minutes: boundedNumber(settings.score_scene_before_minutes, DEFAULT_SETTINGS.score_scene_before_minutes, 0, 240),
@@ -206,13 +221,14 @@ function normalizeSettings(settings = {}) {
     show_goal_alert: settings.show_goal_alert !== false,
     enable_goal_sound: settings.enable_goal_sound !== false,
     auto_start_matches: settings.auto_start_matches !== false,
-    scene_mode: ["auto", "pre-match", "lineups", "stats", "goal-detail", "match", "match-video", "group", "ticker", "video"].includes(settings.scene_mode) ? settings.scene_mode : "auto",
+    scene_mode: ["auto", "pre-match", "lineups", "stats", "goal-detail", "card-detail", "substitution-detail", "half-time-detail", "full-time-detail", "match", "match-video", "group", "ticker", "video"].includes(settings.scene_mode) ? settings.scene_mode : "auto",
     selected_match_id: value(settings.selected_match_id),
     selected_group_id: value(settings.selected_group_id),
     include_prematch_scenes: settings.include_prematch_scenes !== false,
     include_lineup_scenes: settings.include_lineup_scenes === true,
     include_stats_scenes: settings.include_stats_scenes === true,
     include_goal_detail_scenes: settings.include_goal_detail_scenes === true,
+    include_event_detail_scenes: settings.include_event_detail_scenes === true,
     include_match_scenes: settings.include_match_scenes !== false,
     include_match_video_scenes: settings.include_match_video_scenes === true,
     include_group_scenes: settings.include_group_scenes !== false,
@@ -357,6 +373,106 @@ function scorerFromGoalEvent(event) {
     .replace(/\s*[([][^)\]]+[)\]].*$/g, "")
     .replace(/\s*—.*$/g, "")
     .trim();
+}
+
+function timelineEventKey(match, event) {
+  return [
+    matchKey(match),
+    value(event.type).toLowerCase(),
+    value(event.minute),
+    value(event.text)
+  ].join("|");
+}
+
+function eventSceneType(type) {
+  const normalized = value(type).toLowerCase();
+  if (["yellow-card", "red-card"].includes(normalized)) return "card-detail";
+  if (normalized === "substitution") return "substitution-detail";
+  if (normalized === "half-time") return "half-time-detail";
+  if (normalized === "full-time") return "full-time-detail";
+  return "";
+}
+
+function eventSceneLabel(type) {
+  const normalized = value(type).toLowerCase();
+  if (normalized === "yellow-card") return "CARTON JAUNE";
+  if (normalized === "red-card") return "CARTON ROUGE";
+  if (normalized === "substitution") return "REMPLACEMENT";
+  if (normalized === "half-time") return "MI-TEMPS";
+  if (normalized === "full-time") return "FIN DU MATCH";
+  return "TEMPS FORT";
+}
+
+function eventSceneSubtype(type) {
+  const normalized = value(type).toLowerCase();
+  if (normalized === "yellow-card") return "Avertissement";
+  if (normalized === "red-card") return "Exclusion";
+  if (normalized === "substitution") return "Changement";
+  if (normalized === "half-time") return "Pause";
+  if (normalized === "full-time") return "Résumé";
+  return "Live";
+}
+
+function eventTeamSide(match, event) {
+  const eventTeam = value(event.team).toLocaleLowerCase("fr");
+  if (eventTeam && eventTeam.includes(value(match.away).toLocaleLowerCase("fr"))) return "away";
+  if (eventTeam && eventTeam.includes(value(match.home).toLocaleLowerCase("fr"))) return "home";
+  return "";
+}
+
+function eventMainText(event) {
+  return value(event.player).trim()
+    || value(event.text)
+      .replace(/^(carton jaune|carton rouge|changement|mi-temps|fin du match)\s*:\s*/i, "")
+      .trim()
+    || "Temps fort";
+}
+
+function makeEventScene(match, event) {
+  const type = eventSceneType(event.type);
+  if (!type) return null;
+  const side = eventTeamSide(match, event);
+  return {
+    type,
+    id: `${type}-${timelineEventKey(match, event)}`,
+    data: {
+      match,
+      event,
+      side,
+      team: side ? value(match[side], "Équipe") : "Match",
+      minute: value(event.minute),
+      label: eventSceneLabel(event.type),
+      subtype: eventSceneSubtype(event.type),
+      main: eventMainText(event),
+      text: value(event.text),
+      score: matchScore(match)
+    }
+  };
+}
+
+function eventDetailScenesForMatch(match) {
+  return normalizeTimeline(match)
+    .map(event => makeEventScene(match, event))
+    .filter(Boolean);
+}
+
+function detectTimelineEventScenes(matches) {
+  const nextKeys = new Set();
+  const scenes = [];
+  matches.forEach(match => {
+    normalizeTimeline(match).forEach(event => {
+      const scene = makeEventScene(match, event);
+      if (!scene) return;
+      const key = timelineEventKey(match, event);
+      nextKeys.add(key);
+      if (timelineEventBaselineReady && !previousTimelineEventKeys.has(key)) {
+        scenes.push(scene);
+      }
+    });
+  });
+  previousTimelineEventKeys = nextKeys;
+  timelineEventBaselineReady = true;
+  return scenes;
 }
 
 function scorerTimelineRows(scorers, sideName) {
@@ -1106,6 +1222,7 @@ function renderLiveUpdates(data) {
   elements.scoreboard.classList.remove("show-lineups");
   elements.scoreboard.classList.remove("show-stats");
   elements.scoreboard.classList.remove("show-goal-detail");
+  elements.scoreboard.classList.remove("show-event-detail");
   elements.scoreboard.classList.add("show-live-updates");
   elements.competition.textContent = "ZONE MONDIAL 26";
   elements.status.textContent = "LIVE UPDATES";
@@ -1126,7 +1243,7 @@ function renderLiveUpdates(data) {
 }
 
 function renderVideoUpdates(data) {
-  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats", "show-goal-detail");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats", "show-goal-detail", "show-event-detail");
   elements.scoreboard.classList.add("show-video-updates");
   elements.competition.textContent = "ZONE MONDIAL 26";
   elements.status.textContent = "VIDÉOS LIVE";
@@ -1158,7 +1275,7 @@ function animate() {
 }
 
 function renderPreMatch(match) {
-  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-lineups", "show-stats", "show-goal-detail");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-lineups", "show-stats", "show-goal-detail", "show-event-detail");
   elements.scoreboard.classList.add("show-pre-match");
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = "AVANT-MATCH";
@@ -1184,7 +1301,7 @@ function renderPreMatch(match) {
 }
 
 function renderLineups(match) {
-  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-stats", "show-goal-detail");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-stats", "show-goal-detail", "show-event-detail");
   elements.scoreboard.classList.add("show-lineups");
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = "COMPOSITIONS";
@@ -1208,7 +1325,7 @@ function renderLineups(match) {
 }
 
 function renderStats(match) {
-  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-goal-detail");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-goal-detail", "show-event-detail");
   elements.scoreboard.classList.add("show-stats");
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = "STATS LIVE";
@@ -1234,7 +1351,7 @@ function renderStats(match) {
 
 function renderGoalDetail(event) {
   const match = event?.match || {};
-  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats", "show-event-detail");
   elements.scoreboard.classList.add("show-goal-detail");
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = "BUT";
@@ -1254,8 +1371,26 @@ function renderGoalDetail(event) {
   elements.goalDetailMatch.textContent = `${value(match.home, "Équipe 1")} - ${value(match.away, "Équipe 2")}`;
 }
 
-function renderMatch(match) {
+function renderEventDetail(data) {
+  const match = data?.match || {};
+  const side = data?.side;
   elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats", "show-goal-detail");
+  elements.scoreboard.classList.add("show-event-detail");
+  elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
+  elements.status.textContent = value(data?.label, "TEMPS FORT");
+  elements.eventDetailLabel.textContent = value(data?.label, "TEMPS FORT");
+  elements.eventDetailFlag.src = side ? flagUrl(match[`${side}_code`], match[side]) : "logo.png";
+  elements.eventDetailTeam.textContent = value(data?.team, "Match");
+  elements.eventDetailMinute.textContent = value(data?.minute, displayStatus(match));
+  elements.eventDetailMain.textContent = value(data?.main, "Temps fort");
+  elements.eventDetailType.textContent = value(data?.subtype, "Live");
+  elements.eventDetailHome.textContent = scoreNumber(data?.score?.home ?? match.home_score);
+  elements.eventDetailAway.textContent = scoreNumber(data?.score?.away ?? match.away_score);
+  elements.eventDetailMatch.textContent = value(data?.text) || `${value(match.home, "Équipe 1")} - ${value(match.away, "Équipe 2")}`;
+}
+
+function renderMatch(match) {
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats", "show-goal-detail", "show-event-detail");
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = displayStatus(match);
   elements.homeFlag.src = flagUrl(match.home_code, match.home);
@@ -1313,7 +1448,7 @@ function renderMatchVideo(match) {
 }
 
 function renderGroup(group) {
-  elements.scoreboard.classList.remove("show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats", "show-goal-detail");
+  elements.scoreboard.classList.remove("show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats", "show-goal-detail", "show-event-detail");
   elements.scoreboard.classList.add("show-standings");
   elements.competition.textContent = value(group.subtitle, "COUPE DU MONDE 2026");
   elements.status.textContent = "CLASSEMENT";
@@ -1348,7 +1483,7 @@ function renderScene(options = {}) {
   if (shouldAnimate) clearTimeout(rotationTimer);
   const token = ++sceneRenderToken;
   if (!scenes.length) {
-    elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats", "show-goal-detail", "scene-group", "scene-live-updates", "scene-video-updates", "scene-match-video", "scene-pre-match", "scene-lineups", "scene-stats", "scene-goal-detail");
+    elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats", "show-goal-detail", "show-event-detail", "scene-group", "scene-live-updates", "scene-video-updates", "scene-match-video", "scene-pre-match", "scene-lineups", "scene-stats", "scene-goal-detail", "scene-event-detail", "scene-card-detail", "scene-substitution-detail", "scene-half-time-detail", "scene-full-time-detail");
     elements.scoreboard.classList.add("scene-match");
     applySceneBackground("match");
     elements.matchInfo.textContent = "Aucun contenu publié";
@@ -1367,6 +1502,11 @@ function renderScene(options = {}) {
     elements.scoreboard.classList.toggle("scene-lineups", scene.type === "lineups");
     elements.scoreboard.classList.toggle("scene-stats", scene.type === "stats");
     elements.scoreboard.classList.toggle("scene-goal-detail", scene.type === "goal-detail");
+    elements.scoreboard.classList.toggle("scene-event-detail", ["card-detail", "substitution-detail", "half-time-detail", "full-time-detail"].includes(scene.type));
+    elements.scoreboard.classList.toggle("scene-card-detail", scene.type === "card-detail");
+    elements.scoreboard.classList.toggle("scene-substitution-detail", scene.type === "substitution-detail");
+    elements.scoreboard.classList.toggle("scene-half-time-detail", scene.type === "half-time-detail");
+    elements.scoreboard.classList.toggle("scene-full-time-detail", scene.type === "full-time-detail");
     applySceneBackground(scene.type);
     if (scene.type === "group") renderGroup(scene.data);
     else if (scene.type === "ticker") renderLiveUpdates(scene.data);
@@ -1376,6 +1516,7 @@ function renderScene(options = {}) {
     else if (scene.type === "lineups") renderLineups(scene.data);
     else if (scene.type === "stats") renderStats(scene.data);
     else if (scene.type === "goal-detail") renderGoalDetail(scene.data);
+    else if (["card-detail", "substitution-detail", "half-time-detail", "full-time-detail"].includes(scene.type)) renderEventDetail(scene.data);
     else renderMatch(scene.data);
     renderPagination();
     elements.scoreboard.classList.remove("is-leaving");
@@ -1409,6 +1550,7 @@ function applyData(data, options = {}) {
   const publishedMatches = effectiveMatches.filter(match => match.published !== false);
   syncVideoPlaylist(currentSettings.video_playlist_urls);
   const goalEvents = detectGoalEvents(publishedMatches);
+  const timelineEventScenes = detectTimelineEventScenes(publishedMatches);
   const kickoffEvents = detectKickoffEvents(publishedMatches);
   renderTicker(publishedMatches, allGroups);
   const publishedGroupsById = new Map(
@@ -1445,6 +1587,7 @@ function applyData(data, options = {}) {
       };
     })
     .filter(Boolean);
+  const eventDetailScenes = scoreSceneMatches.flatMap(eventDetailScenesForMatch);
   const matchScenes = scoreSceneMatches.map(match => ({ type: "match", id: match.id, data: match }));
   const matchVideoScenes = scoreSceneMatches.map(match => ({ type: "match-video", id: match.id, data: match }));
   const groupScenes = [];
@@ -1497,6 +1640,11 @@ function applyData(data, options = {}) {
     scenes = [
       goalDetailScenes.find(scene => scene.id === currentSettings.selected_match_id) || goalDetailScenes[0]
     ].filter(Boolean);
+  } else if (["card-detail", "substitution-detail", "half-time-detail", "full-time-detail"].includes(currentSettings.scene_mode)) {
+    scenes = [
+      eventDetailScenes.find(scene => scene.type === currentSettings.scene_mode && scene.id.includes(currentSettings.selected_match_id || "__none__"))
+      || eventDetailScenes.find(scene => scene.type === currentSettings.scene_mode)
+    ].filter(Boolean);
   } else if (currentSettings.scene_mode === "match") {
     scenes = [
       matchScenes.find(scene => scene.id === currentSettings.selected_match_id) || matchScenes[0]
@@ -1519,6 +1667,7 @@ function applyData(data, options = {}) {
       ...(currentSettings.include_lineup_scenes ? lineupScenes : []),
       ...(currentSettings.include_stats_scenes ? statsScenes : []),
       ...(currentSettings.include_goal_detail_scenes ? goalDetailScenes : []),
+      ...(currentSettings.include_event_detail_scenes ? eventDetailScenes : []),
       ...(currentSettings.include_match_scenes ? matchScenes : []),
       ...(currentSettings.include_match_video_scenes ? matchVideoScenes : []),
       ...(currentSettings.include_group_scenes ? groupScenes : []),
@@ -1540,6 +1689,9 @@ function applyData(data, options = {}) {
     if (activeScene < 0) activeScene = 0;
   } else if (requestedScene === "goal-detail") {
     activeScene = scenes.findIndex(scene => scene.type === "goal-detail");
+    if (activeScene < 0) activeScene = 0;
+  } else if (["card-detail", "substitution-detail", "half-time-detail", "full-time-detail"].includes(requestedScene)) {
+    activeScene = scenes.findIndex(scene => scene.type === requestedScene);
     if (activeScene < 0) activeScene = 0;
   } else if (requestedScene === "match") {
     activeScene = scenes.findIndex(scene => scene.type === "match");
@@ -1564,11 +1716,14 @@ function applyData(data, options = {}) {
         ["match", "match-video"].includes(scene.type) && matchKey(scene.data) === featuredEvent.key
       );
     if (eventSceneIndex >= 0) activeScene = eventSceneIndex;
+  } else if (timelineEventScenes.length) {
+    scenes.unshift(timelineEventScenes[0]);
+    activeScene = 0;
   } else {
     activeScene = Math.min(activeScene, Math.max(scenes.length - 1, 0));
   }
   elements.connectionState.hidden = true;
-  renderScene({ animate: options.animate !== false || kickoffEvents.length > 0 || goalEvents.length > 0 });
+  renderScene({ animate: options.animate !== false || kickoffEvents.length > 0 || goalEvents.length > 0 || timelineEventScenes.length > 0 });
 
   if ((kickoffEvents.length || goalEvents.length) && currentSettings.show_goal_alert) {
     window.setTimeout(() => triggerGoalAlert(kickoffEvents[0] || goalEvents[0]), SCENE_EXIT_DURATION + 180);
@@ -1624,11 +1779,13 @@ function sceneDuration(scene) {
         ? currentSettings.pre_match_scene_duration
         : scene?.type === "lineups"
           ? currentSettings.lineups_scene_duration
-        : scene?.type === "stats"
-          ? currentSettings.stats_scene_duration
+          : scene?.type === "stats"
+            ? currentSettings.stats_scene_duration
           : scene?.type === "goal-detail"
             ? currentSettings.goal_detail_scene_duration
-            : currentSettings.score_scene_duration;
+            : ["card-detail", "substitution-detail", "half-time-detail", "full-time-detail"].includes(scene?.type)
+              ? currentSettings.event_detail_scene_duration
+              : currentSettings.score_scene_duration;
   return seconds * 1000;
 }
 

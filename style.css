@@ -180,6 +180,22 @@ body {
     radial-gradient(ellipse at 50% 84%, rgba(100, 235, 204, 0.22), transparent 32%);
 }
 
+.scoreboard.scene-event-detail .scene-ambient {
+  opacity: 0.94;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(42, 57, 141, 0.24), transparent 25%),
+    radial-gradient(circle at 18% 62%, rgba(230, 29, 37, 0.17), transparent 24%),
+    radial-gradient(circle at 82% 62%, rgba(60, 172, 59, 0.17), transparent 24%),
+    linear-gradient(180deg, rgba(2, 8, 23, 0.03), rgba(2, 8, 23, 0.3));
+}
+
+.scoreboard.scene-event-detail .scene-ambient::before {
+  opacity: 0.56;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 42px, rgba(255, 255, 255, 0.028) 43px 44px),
+    linear-gradient(110deg, transparent 18%, rgba(255, 255, 255, 0.1) 48%, transparent 72%);
+}
+
 .scoreboard.scene-group .scene-ambient {
   opacity: 0.86;
   background:
@@ -717,13 +733,17 @@ body {
 .scoreboard.show-goal-detail .team-panel,
 .scoreboard.show-goal-detail .score-panel,
 .scoreboard.show-goal-detail .match-footer,
+.scoreboard.show-event-detail .team-panel,
+.scoreboard.show-event-detail .score-panel,
+.scoreboard.show-event-detail .match-footer,
 .scoreboard.show-standings .match-timeline,
 .scoreboard.show-live-updates .match-timeline,
 .scoreboard.show-video-updates .match-timeline,
 .scoreboard.show-pre-match .match-timeline,
 .scoreboard.show-lineups .match-timeline,
 .scoreboard.show-stats .match-timeline,
-.scoreboard.show-goal-detail .match-timeline {
+.scoreboard.show-goal-detail .match-timeline,
+.scoreboard.show-event-detail .match-timeline {
   display: none;
 }
 
@@ -734,6 +754,7 @@ body {
 .scoreboard:not(.show-lineups) .lineups-view,
 .scoreboard:not(.show-stats) .stats-view,
 .scoreboard:not(.show-goal-detail) .goal-detail-view,
+.scoreboard:not(.show-event-detail) .event-detail-view,
 .scoreboard:not(.show-match-video) .match-video-frame {
   display: none;
 }
@@ -753,6 +774,7 @@ body {
 .scoreboard.is-leaving .lineups-view,
 .scoreboard.is-leaving .stats-view,
 .scoreboard.is-leaving .goal-detail-view,
+.scoreboard.is-leaving .event-detail-view,
 .scoreboard.is-leaving .match-video-frame {
   animation: scene-exit 0.26s ease-in forwards;
 }
@@ -3722,6 +3744,81 @@ body {
 
 .scoreboard.is-entering .goal-detail-card {
   animation: goal-detail-pop 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.event-detail-card {
+  min-height: 54vh;
+}
+
+.scoreboard.scene-event-detail .goal-detail-label {
+  color: #050914;
+  background: #fff;
+}
+
+.scoreboard.scene-event-detail .goal-detail-player small,
+.scoreboard.scene-event-detail .goal-detail-player em,
+.scoreboard.scene-event-detail .goal-detail-score span {
+  background: #64ebcc;
+}
+
+.scoreboard.scene-card-detail .goal-detail-label,
+.scoreboard.scene-card-detail .goal-detail-player small,
+.scoreboard.scene-card-detail .goal-detail-player em,
+.scoreboard.scene-card-detail .goal-detail-score span {
+  color: #050914;
+  background: #ffd84d;
+}
+
+.scoreboard.scene-card-detail .event-detail-card p {
+  color: #fff4b5;
+}
+
+.scoreboard.scene-substitution-detail .goal-detail-label,
+.scoreboard.scene-substitution-detail .goal-detail-player small,
+.scoreboard.scene-substitution-detail .goal-detail-player em,
+.scoreboard.scene-substitution-detail .goal-detail-score span {
+  color: #fff;
+  background: #2a398d;
+}
+
+.scoreboard.scene-half-time-detail .goal-detail-label,
+.scoreboard.scene-half-time-detail .goal-detail-player small,
+.scoreboard.scene-half-time-detail .goal-detail-player em,
+.scoreboard.scene-half-time-detail .goal-detail-score span {
+  color: #050914;
+  background: #fff;
+}
+
+.scoreboard.scene-full-time-detail .goal-detail-label,
+.scoreboard.scene-full-time-detail .goal-detail-player small,
+.scoreboard.scene-full-time-detail .goal-detail-player em,
+.scoreboard.scene-full-time-detail .goal-detail-score span {
+  color: #050914;
+  background: #64ebcc;
+}
+
+.scoreboard.scene-event-detail .event-detail-card::before {
+  animation-duration: 8s;
+}
+
+.scoreboard.show-event-detail .match-header {
+  top: 4.6%;
+  left: 19%;
+  width: 62%;
+  height: 8.4%;
+}
+
+.scoreboard.show-event-detail .official-logo {
+  right: 3.2%;
+  bottom: 4.3%;
+}
+
+.scoreboard.show-event-detail .ticker {
+  opacity: 0;
+}
+
+.scoreboard.is-entering .event-detail-card {
+  animation: goal-detail-pop 0.66s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes goal-detail-pop {

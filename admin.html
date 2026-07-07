@@ -174,6 +174,10 @@
               <button class="button secondary" data-control-scene="lineups" type="button">Compositions</button>
               <button class="button secondary" data-control-scene="stats" type="button">Stats live</button>
               <button class="button secondary" data-control-scene="goal-detail" type="button">But détaillé</button>
+              <button class="button secondary" data-control-scene="card-detail" type="button">Carton</button>
+              <button class="button secondary" data-control-scene="substitution-detail" type="button">Remplacement</button>
+              <button class="button secondary" data-control-scene="half-time-detail" type="button">Mi-temps</button>
+              <button class="button secondary" data-control-scene="full-time-detail" type="button">Fin de match</button>
               <button class="button secondary" data-control-scene="match" type="button">Score match</button>
               <button class="button secondary" data-control-scene="match-video" type="button">Score + vidéo</button>
               <button class="button secondary" data-control-scene="group" type="button">Classement</button>
@@ -341,6 +345,10 @@
               <option value="lineups">Forcer compositions</option>
               <option value="stats">Forcer stats live</option>
               <option value="goal-detail">Forcer but détaillé</option>
+              <option value="card-detail">Forcer carton</option>
+              <option value="substitution-detail">Forcer remplacement</option>
+              <option value="half-time-detail">Forcer mi-temps</option>
+              <option value="full-time-detail">Forcer fin de match</option>
               <option value="match">Forcer un match</option>
               <option value="match-video">Forcer score + vidéos 9:16</option>
               <option value="group">Forcer un classement</option>
@@ -399,6 +407,14 @@
             <label for="goalDetailSceneDuration">Durée but détaillé</label>
             <div class="unit-field">
               <input id="goalDetailSceneDuration" type="number" min="3" max="30" step="1" value="6">
+              <span>secondes</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="eventDetailSceneDuration">Durée scènes événements</label>
+            <div class="unit-field">
+              <input id="eventDetailSceneDuration" type="number" min="3" max="30" step="1" value="6">
               <span>secondes</span>
             </div>
           </div>
@@ -492,6 +508,14 @@
             <span>
               <strong>Inclure les buts détaillés</strong>
               <small>Ajoute une scène spéciale pour le dernier but connu des matchs publiés.</small>
+            </span>
+          </label>
+
+          <label class="setting-switch">
+            <input id="includeEventDetailScenes" type="checkbox">
+            <span>
+              <strong>Inclure les événements détaillés</strong>
+              <small>Ajoute cartons, remplacements, mi-temps et fin de match dans la rotation.</small>
             </span>
           </label>
 
@@ -904,6 +928,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260707-05"></script>
+  <script type="module" src="admin.js?v=20260707-07"></script>
 </body>
 </html>

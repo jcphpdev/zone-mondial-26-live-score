@@ -581,6 +581,11 @@ function matchFootballDataGame(localMatch, footballMatches) {
   }) || null;
 }
 
+function hasFootballDataLink(match) {
+  return Boolean(value(match.football_data_match_id).trim())
+    || value(match.external_api) === "football-data";
+}
+
 async function fetchFootballDataMatches() {
   if (!footballDataEnabled) return [];
   if (!value(env.FOOTBALL_DATA_API_TOKEN).trim()) {
@@ -669,7 +674,9 @@ async function syncOnce() {
 
   const publishedMatches = data.matches.filter(match => match.published !== false);
   const needsWorldCupSource = publishedMatches.some(match =>
-    value(match.external_match_id).trim() && value(match.external_api) !== "football-data"
+    !hasFootballDataLink(match)
+    && value(match.external_match_id).trim()
+    && value(match.external_api) !== "football-data"
   );
   const needsFootballDataList = publishedMatches.some(match =>
     !value(match.football_data_match_id).trim()
@@ -742,8 +749,10 @@ async function syncOnce() {
   const matches = data.matches.map(match => {
     if (match.published === false) return match;
     const apiId = value(match.external_match_id).trim();
-    const game = value(match.external_api) === "football-data" ? null : gameById.get(apiId);
     const footballMatch = matchFootballDataGame(match, footballMatches);
+    const game = hasFootballDataLink(match)
+      ? null
+      : (value(match.external_api) === "football-data" ? null : gameById.get(apiId));
     const explicitFootballScoreSource = value(match.external_api) === "football-data";
     const patch = {
       ...(game ? apiMatchPatch(game) : {}),
@@ -792,7 +801,11 @@ async function runLoop() {
   try {
     await syncOnce();
   } catch (error) {
-    log(`Erreur : ${error.message}`);
+    const message = error?.message || String(error);
+    const isNetworkError = /fetch failed|network|timeout|econnreset|enotfound|etimedout/i.test(message);
+    log(isNetworkError
+      ? `Erreur réseau temporaire : ${message}. Nouvelle tentative au prochain cycle.`
+      : `Erreur : ${message}`);
   } finally {
     syncRunning = false;
   }

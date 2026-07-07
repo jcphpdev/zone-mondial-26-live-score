@@ -173,6 +173,7 @@
               <button class="button secondary" data-control-scene="pre-match" type="button">Avant-match</button>
               <button class="button secondary" data-control-scene="lineups" type="button">Compositions</button>
               <button class="button secondary" data-control-scene="stats" type="button">Stats live</button>
+              <button class="button secondary" data-control-scene="goal-detail" type="button">But détaillé</button>
               <button class="button secondary" data-control-scene="match" type="button">Score match</button>
               <button class="button secondary" data-control-scene="match-video" type="button">Score + vidéo</button>
               <button class="button secondary" data-control-scene="group" type="button">Classement</button>
@@ -339,6 +340,7 @@
               <option value="pre-match">Forcer avant-match</option>
               <option value="lineups">Forcer compositions</option>
               <option value="stats">Forcer stats live</option>
+              <option value="goal-detail">Forcer but détaillé</option>
               <option value="match">Forcer un match</option>
               <option value="match-video">Forcer score + vidéos 9:16</option>
               <option value="group">Forcer un classement</option>
@@ -389,6 +391,14 @@
             <label for="statsSceneDuration">Durée stats live</label>
             <div class="unit-field">
               <input id="statsSceneDuration" type="number" min="3" max="60" step="1" value="10">
+              <span>secondes</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="goalDetailSceneDuration">Durée but détaillé</label>
+            <div class="unit-field">
+              <input id="goalDetailSceneDuration" type="number" min="3" max="30" step="1" value="6">
               <span>secondes</span>
             </div>
           </div>
@@ -474,6 +484,14 @@
             <span>
               <strong>Inclure les stats live</strong>
               <small>Ajoute les statistiques comparées des matchs publiés dans la rotation automatique.</small>
+            </span>
+          </label>
+
+          <label class="setting-switch">
+            <input id="includeGoalDetailScenes" type="checkbox">
+            <span>
+              <strong>Inclure les buts détaillés</strong>
+              <small>Ajoute une scène spéciale pour le dernier but connu des matchs publiés.</small>
             </span>
           </label>
 
@@ -886,6 +904,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260707-04"></script>
+  <script type="module" src="admin.js?v=20260707-05"></script>
 </body>
 </html>

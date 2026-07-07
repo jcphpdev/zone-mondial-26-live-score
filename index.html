@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zone Mondial 26 — Live Scores</title>
-  <link rel="stylesheet" href="style.css?v=20260707-04">
+  <link rel="stylesheet" href="style.css?v=20260707-05">
 </head>
 <body>
   <main class="scoreboard" aria-live="polite">
@@ -188,6 +188,27 @@
       </div>
     </section>
 
+    <section id="goalDetailView" class="goal-detail-view" aria-label="But détaillé">
+      <div class="goal-detail-card">
+        <div class="goal-detail-label">BUUUT !</div>
+        <div class="goal-detail-team">
+          <img id="goalDetailFlag" alt="">
+          <span id="goalDetailTeam">Équipe</span>
+        </div>
+        <div class="goal-detail-player">
+          <small id="goalDetailMinute">00’</small>
+          <strong id="goalDetailScorer">Buteur</strong>
+          <em id="goalDetailType">But</em>
+        </div>
+        <div class="goal-detail-score">
+          <span id="goalDetailHome">0</span>
+          <b>-</b>
+          <span id="goalDetailAway">0</span>
+        </div>
+        <p id="goalDetailMatch">Match</p>
+      </div>
+    </section>
+
     <footer class="match-footer">
       <p id="matchInfo">Chargement des informations du match…</p>
       <div id="pagination" class="pagination" aria-hidden="true"></div>
@@ -227,6 +248,6 @@
     Mise à jour des scores…
   </div>
 
-  <script type="module" src="script.js?v=20260707-04"></script>
+  <script type="module" src="script.js?v=20260707-05"></script>
 </body>
 </html>

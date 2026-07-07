@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zone Mondial 26 — Live Scores</title>
-  <link rel="stylesheet" href="style.css?v=20260707-02">
+  <link rel="stylesheet" href="style.css?v=20260707-03">
 </head>
 <body>
   <main class="scoreboard" aria-live="polite">
@@ -163,6 +163,31 @@
       </div>
     </section>
 
+    <section id="statsView" class="stats-view" aria-label="Stats live">
+      <div class="stats-heading">
+        <div class="stats-team">
+          <img id="statsHomeFlag" alt="">
+          <strong id="statsHomeName">Équipe 1</strong>
+        </div>
+        <div class="stats-title">
+          <span>STATS LIVE</span>
+          <small id="statsMatchMeta">Match en direct</small>
+        </div>
+        <div class="stats-team stats-team-away">
+          <strong id="statsAwayName">Équipe 2</strong>
+          <img id="statsAwayFlag" alt="">
+        </div>
+      </div>
+
+      <div id="statsRows" class="stats-rows"></div>
+
+      <div class="stats-scoreline">
+        <span id="statsHomeScore">0</span>
+        <strong id="statsMinute">EN DIRECT</strong>
+        <span id="statsAwayScore">0</span>
+      </div>
+    </section>
+
     <footer class="match-footer">
       <p id="matchInfo">Chargement des informations du match…</p>
       <div id="pagination" class="pagination" aria-hidden="true"></div>
@@ -202,6 +227,6 @@
     Mise à jour des scores…
   </div>
 
-  <script type="module" src="script.js?v=20260707-02"></script>
+  <script type="module" src="script.js?v=20260707-03"></script>
 </body>
 </html>

@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS = {
   score_scene_duration: 10,
   pre_match_scene_duration: 12,
   lineups_scene_duration: 12,
+  stats_scene_duration: 10,
   standings_scene_duration: 8,
   video_scene_duration: 15,
   score_scene_before_minutes: 30,
@@ -29,6 +30,7 @@ const DEFAULT_SETTINGS = {
   selected_group_id: "",
   include_prematch_scenes: true,
   include_lineup_scenes: false,
+  include_stats_scenes: false,
   include_match_scenes: true,
   include_match_video_scenes: false,
   include_group_scenes: true,
@@ -120,6 +122,16 @@ const elements = {
   lineupsHomeCoach: document.getElementById("lineupsHomeCoach"),
   lineupsAwayCoach: document.getElementById("lineupsAwayCoach"),
   lineupsReferee: document.getElementById("lineupsReferee"),
+  statsView: document.getElementById("statsView"),
+  statsHomeFlag: document.getElementById("statsHomeFlag"),
+  statsHomeName: document.getElementById("statsHomeName"),
+  statsAwayFlag: document.getElementById("statsAwayFlag"),
+  statsAwayName: document.getElementById("statsAwayName"),
+  statsMatchMeta: document.getElementById("statsMatchMeta"),
+  statsRows: document.getElementById("statsRows"),
+  statsHomeScore: document.getElementById("statsHomeScore"),
+  statsAwayScore: document.getElementById("statsAwayScore"),
+  statsMinute: document.getElementById("statsMinute"),
   playlistVideo: document.getElementById("playlistVideo"),
   playlistEmpty: document.getElementById("playlistEmpty"),
   ticker: document.querySelector(".ticker"),
@@ -172,6 +184,7 @@ function normalizeSettings(settings = {}) {
     score_scene_duration: boundedNumber(settings.score_scene_duration, DEFAULT_SETTINGS.score_scene_duration, 3, 60),
     pre_match_scene_duration: boundedNumber(settings.pre_match_scene_duration, DEFAULT_SETTINGS.pre_match_scene_duration, 3, 60),
     lineups_scene_duration: boundedNumber(settings.lineups_scene_duration, DEFAULT_SETTINGS.lineups_scene_duration, 3, 60),
+    stats_scene_duration: boundedNumber(settings.stats_scene_duration, DEFAULT_SETTINGS.stats_scene_duration, 3, 60),
     standings_scene_duration: boundedNumber(settings.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
     video_scene_duration: boundedNumber(settings.video_scene_duration, DEFAULT_SETTINGS.video_scene_duration, 5, 180),
     score_scene_before_minutes: boundedNumber(settings.score_scene_before_minutes, DEFAULT_SETTINGS.score_scene_before_minutes, 0, 240),
@@ -181,11 +194,12 @@ function normalizeSettings(settings = {}) {
     show_goal_alert: settings.show_goal_alert !== false,
     enable_goal_sound: settings.enable_goal_sound !== false,
     auto_start_matches: settings.auto_start_matches !== false,
-    scene_mode: ["auto", "pre-match", "lineups", "match", "match-video", "group", "ticker", "video"].includes(settings.scene_mode) ? settings.scene_mode : "auto",
+    scene_mode: ["auto", "pre-match", "lineups", "stats", "match", "match-video", "group", "ticker", "video"].includes(settings.scene_mode) ? settings.scene_mode : "auto",
     selected_match_id: value(settings.selected_match_id),
     selected_group_id: value(settings.selected_group_id),
     include_prematch_scenes: settings.include_prematch_scenes !== false,
     include_lineup_scenes: settings.include_lineup_scenes === true,
+    include_stats_scenes: settings.include_stats_scenes === true,
     include_match_scenes: settings.include_match_scenes !== false,
     include_match_video_scenes: settings.include_match_video_scenes === true,
     include_group_scenes: settings.include_group_scenes !== false,
@@ -400,6 +414,74 @@ function detailedLineupHtml(input) {
       </div>
     `;
   }).join("");
+}
+
+function normalizeStats(input) {
+  if (!input) return {};
+  if (typeof input === "object" && !Array.isArray(input)) return input;
+  const raw = value(input).trim();
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function statValue(stats, keys) {
+  for (const key of keys) {
+    const direct = stats[key];
+    if (direct !== undefined && direct !== null && direct !== "") return direct;
+  }
+  return null;
+}
+
+function numericStat(stats, keys) {
+  const raw = statValue(stats, keys);
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function percentStat(stats, keys) {
+  const value = numericStat(stats, keys);
+  return value === null ? null : Math.max(0, Math.min(100, value));
+}
+
+function statsRows(match) {
+  const home = normalizeStats(match.home_statistics || match.home_stats);
+  const away = normalizeStats(match.away_statistics || match.away_stats);
+  const rows = [
+    { label: "Possession", type: "percent", home: percentStat(home, ["ball_possession", "possession"]), away: percentStat(away, ["ball_possession", "possession"]) },
+    { label: "Tirs", home: numericStat(home, ["shots", "total_shots"]), away: numericStat(away, ["shots", "total_shots"]) },
+    { label: "Tirs cadrés", home: numericStat(home, ["shots_on_goal", "shots_on_target"]), away: numericStat(away, ["shots_on_goal", "shots_on_target"]) },
+    { label: "Corners", home: numericStat(home, ["corner_kicks", "corners"]), away: numericStat(away, ["corner_kicks", "corners"]) },
+    { label: "Fautes", home: numericStat(home, ["fouls"]), away: numericStat(away, ["fouls"]) },
+    { label: "Hors-jeu", home: numericStat(home, ["offsides"]), away: numericStat(away, ["offsides"]) },
+    { label: "Cartons jaunes", home: numericStat(home, ["yellow_cards"]), away: numericStat(away, ["yellow_cards"]) },
+    { label: "Arrêts", home: numericStat(home, ["saves"]), away: numericStat(away, ["saves"]) }
+  ];
+  return rows.filter(row => row.home !== null || row.away !== null);
+}
+
+function statRowHtml(row) {
+  const home = row.home ?? 0;
+  const away = row.away ?? 0;
+  const total = row.type === "percent" ? 100 : Math.max(1, home + away);
+  const homeWidth = row.type === "percent" ? home : Math.round((home / total) * 100);
+  const awayWidth = row.type === "percent" ? away : Math.round((away / total) * 100);
+  const suffix = row.type === "percent" ? "%" : "";
+  return `
+    <div class="stats-row">
+      <span class="stats-value">${home}${suffix}</span>
+      <div class="stats-meter">
+        <div class="stats-meter__home" style="width:${homeWidth}%"></div>
+        <strong>${escapeHtml(row.label)}</strong>
+        <div class="stats-meter__away" style="width:${awayWidth}%"></div>
+      </div>
+      <span class="stats-value">${away}${suffix}</span>
+    </div>
+  `;
 }
 
 function matchStageLabel(match) {
@@ -967,6 +1049,7 @@ function renderLiveUpdates(data) {
   elements.scoreboard.classList.remove("show-match-video");
   elements.scoreboard.classList.remove("show-pre-match");
   elements.scoreboard.classList.remove("show-lineups");
+  elements.scoreboard.classList.remove("show-stats");
   elements.scoreboard.classList.add("show-live-updates");
   elements.competition.textContent = "ZONE MONDIAL 26";
   elements.status.textContent = "LIVE UPDATES";
@@ -987,7 +1070,7 @@ function renderLiveUpdates(data) {
 }
 
 function renderVideoUpdates(data) {
-  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-match-video", "show-pre-match", "show-lineups");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats");
   elements.scoreboard.classList.add("show-video-updates");
   elements.competition.textContent = "ZONE MONDIAL 26";
   elements.status.textContent = "VIDÉOS LIVE";
@@ -1019,7 +1102,7 @@ function animate() {
 }
 
 function renderPreMatch(match) {
-  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-lineups");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-lineups", "show-stats");
   elements.scoreboard.classList.add("show-pre-match");
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = "AVANT-MATCH";
@@ -1045,7 +1128,7 @@ function renderPreMatch(match) {
 }
 
 function renderLineups(match) {
-  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match");
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-stats");
   elements.scoreboard.classList.add("show-lineups");
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = "COMPOSITIONS";
@@ -1068,8 +1151,33 @@ function renderLineups(match) {
   elements.lineupsReferee.textContent = `Arbitre : ${value(match.referee, "à confirmer")}`;
 }
 
-function renderMatch(match) {
+function renderStats(match) {
   elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups");
+  elements.scoreboard.classList.add("show-stats");
+  elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
+  elements.status.textContent = "STATS LIVE";
+
+  elements.statsHomeFlag.src = flagUrl(match.home_code, match.home);
+  elements.statsHomeName.textContent = value(match.home, "Équipe 1");
+  elements.statsAwayFlag.src = flagUrl(match.away_code, match.away);
+  elements.statsAwayName.textContent = value(match.away, "Équipe 2");
+  elements.statsHomeScore.textContent = scoreNumber(match.home_score);
+  elements.statsAwayScore.textContent = scoreNumber(match.away_score);
+  elements.statsMinute.textContent = matchDisplayMinute(match) || displayStatus(match);
+  elements.statsMatchMeta.textContent = [
+    matchStageLabel(match),
+    value(match.venue),
+    match.kickoff ? formatMatchDateTime(match.kickoff) : ""
+  ].filter(Boolean).join(" • ") || "Statistiques du match";
+
+  const rows = statsRows(match);
+  elements.statsRows.innerHTML = rows.length
+    ? rows.map(statRowHtml).join("")
+    : `<div class="stats-empty">Stats live à confirmer</div>`;
+}
+
+function renderMatch(match) {
+  elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats");
   elements.competition.textContent = value(match.competition, "COUPE DU MONDE 2026");
   elements.status.textContent = displayStatus(match);
   elements.homeFlag.src = flagUrl(match.home_code, match.home);
@@ -1127,7 +1235,7 @@ function renderMatchVideo(match) {
 }
 
 function renderGroup(group) {
-  elements.scoreboard.classList.remove("show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups");
+  elements.scoreboard.classList.remove("show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats");
   elements.scoreboard.classList.add("show-standings");
   elements.competition.textContent = value(group.subtitle, "COUPE DU MONDE 2026");
   elements.status.textContent = "CLASSEMENT";
@@ -1162,7 +1270,7 @@ function renderScene(options = {}) {
   if (shouldAnimate) clearTimeout(rotationTimer);
   const token = ++sceneRenderToken;
   if (!scenes.length) {
-    elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "scene-group", "scene-live-updates", "scene-video-updates", "scene-match-video", "scene-pre-match", "scene-lineups");
+    elements.scoreboard.classList.remove("show-standings", "show-live-updates", "show-video-updates", "show-match-video", "show-pre-match", "show-lineups", "show-stats", "scene-group", "scene-live-updates", "scene-video-updates", "scene-match-video", "scene-pre-match", "scene-lineups", "scene-stats");
     elements.scoreboard.classList.add("scene-match");
     applySceneBackground("match");
     elements.matchInfo.textContent = "Aucun contenu publié";
@@ -1179,6 +1287,7 @@ function renderScene(options = {}) {
     elements.scoreboard.classList.toggle("scene-match-video", scene.type === "match-video");
     elements.scoreboard.classList.toggle("scene-pre-match", scene.type === "pre-match");
     elements.scoreboard.classList.toggle("scene-lineups", scene.type === "lineups");
+    elements.scoreboard.classList.toggle("scene-stats", scene.type === "stats");
     applySceneBackground(scene.type);
     if (scene.type === "group") renderGroup(scene.data);
     else if (scene.type === "ticker") renderLiveUpdates(scene.data);
@@ -1186,6 +1295,7 @@ function renderScene(options = {}) {
     else if (scene.type === "match-video") renderMatchVideo(scene.data);
     else if (scene.type === "pre-match") renderPreMatch(scene.data);
     else if (scene.type === "lineups") renderLineups(scene.data);
+    else if (scene.type === "stats") renderStats(scene.data);
     else renderMatch(scene.data);
     renderPagination();
     elements.scoreboard.classList.remove("is-leaving");
@@ -1233,6 +1343,7 @@ function applyData(data, options = {}) {
     .filter(match => isUpcoming(match))
     .map(match => ({ type: "pre-match", id: match.id, data: match }));
   const lineupScenes = scoreSceneMatches.map(match => ({ type: "lineups", id: match.id, data: match }));
+  const statsScenes = scoreSceneMatches.map(match => ({ type: "stats", id: match.id, data: match }));
   const matchScenes = scoreSceneMatches.map(match => ({ type: "match", id: match.id, data: match }));
   const matchVideoScenes = scoreSceneMatches.map(match => ({ type: "match-video", id: match.id, data: match }));
   const groupScenes = [];
@@ -1277,6 +1388,10 @@ function applyData(data, options = {}) {
     scenes = [
       lineupScenes.find(scene => scene.id === currentSettings.selected_match_id) || lineupScenes[0]
     ].filter(Boolean);
+  } else if (currentSettings.scene_mode === "stats") {
+    scenes = [
+      statsScenes.find(scene => scene.id === currentSettings.selected_match_id) || statsScenes[0]
+    ].filter(Boolean);
   } else if (currentSettings.scene_mode === "match") {
     scenes = [
       matchScenes.find(scene => scene.id === currentSettings.selected_match_id) || matchScenes[0]
@@ -1297,6 +1412,7 @@ function applyData(data, options = {}) {
     scenes = [
       ...(currentSettings.include_prematch_scenes ? preMatchScenes : []),
       ...(currentSettings.include_lineup_scenes ? lineupScenes : []),
+      ...(currentSettings.include_stats_scenes ? statsScenes : []),
       ...(currentSettings.include_match_scenes ? matchScenes : []),
       ...(currentSettings.include_match_video_scenes ? matchVideoScenes : []),
       ...(currentSettings.include_group_scenes ? groupScenes : []),
@@ -1312,6 +1428,9 @@ function applyData(data, options = {}) {
     if (activeScene < 0) activeScene = 0;
   } else if (requestedScene === "lineups") {
     activeScene = scenes.findIndex(scene => scene.type === "lineups");
+    if (activeScene < 0) activeScene = 0;
+  } else if (requestedScene === "stats") {
+    activeScene = scenes.findIndex(scene => scene.type === "stats");
     if (activeScene < 0) activeScene = 0;
   } else if (requestedScene === "match") {
     activeScene = scenes.findIndex(scene => scene.type === "match");
@@ -1394,7 +1513,9 @@ function sceneDuration(scene) {
         ? currentSettings.pre_match_scene_duration
         : scene?.type === "lineups"
           ? currentSettings.lineups_scene_duration
-          : currentSettings.score_scene_duration;
+          : scene?.type === "stats"
+            ? currentSettings.stats_scene_duration
+            : currentSettings.score_scene_duration;
   return seconds * 1000;
 }
 

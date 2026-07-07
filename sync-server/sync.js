@@ -388,6 +388,31 @@ function compactLineup(players) {
   })).filter(player => player.name);
 }
 
+function compactStatistics(stats) {
+  if (!stats || typeof stats !== "object") return {};
+  const keys = [
+    "ball_possession",
+    "shots",
+    "shots_on_goal",
+    "shots_off_goal",
+    "corner_kicks",
+    "free_kicks",
+    "goal_kicks",
+    "offsides",
+    "fouls",
+    "saves",
+    "throw_ins",
+    "yellow_cards",
+    "yellow_red_cards",
+    "red_cards"
+  ];
+  return Object.fromEntries(
+    keys
+      .filter(key => stats[key] !== undefined && stats[key] !== null)
+      .map(key => [key, stats[key]])
+  );
+}
+
 function footballDataPatch(apiMatch, localMatch, explicitScoreSource = false) {
   const patch = {
     football_data_match_id: value(apiMatch.id),
@@ -407,6 +432,10 @@ function footballDataPatch(apiMatch, localMatch, explicitScoreSource = false) {
   const awayLineup = compactLineup(apiMatch.awayTeam?.lineup);
   if (homeLineup.length) patch.home_lineup = homeLineup;
   if (awayLineup.length) patch.away_lineup = awayLineup;
+  const homeStatistics = compactStatistics(apiMatch.homeTeam?.statistics);
+  const awayStatistics = compactStatistics(apiMatch.awayTeam?.statistics);
+  if (Object.keys(homeStatistics).length) patch.home_statistics = homeStatistics;
+  if (Object.keys(awayStatistics).length) patch.away_statistics = awayStatistics;
   const info = footballDataInfo(apiMatch);
   if (info && !value(localMatch.info).trim()) patch.info = info;
   if (apiMatch.utcDate && !value(localMatch.kickoff).trim()) patch.kickoff = apiMatch.utcDate;

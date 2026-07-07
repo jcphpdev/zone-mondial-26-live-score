@@ -2261,6 +2261,40 @@ body {
   text-shadow: none;
 }
 
+.scoreboard.scene-match-video.show-match-video .match-timeline__row--goal span {
+  background: #64ebcc;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-timeline__row--yellow-card span {
+  background: #ffd84d;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-timeline__row--red-card span {
+  color: #fff;
+  background: #e61d25;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-timeline__row--substitution span {
+  color: #fff;
+  background: #2a398d;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-timeline__row--penalty-scored span {
+  color: #050914;
+  background: #64ebcc;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-timeline__row--penalty-missed span {
+  color: #fff;
+  background: #e61d25;
+}
+
+.scoreboard.scene-match-video.show-match-video .match-timeline__row--half-time span,
+.scoreboard.scene-match-video.show-match-video .match-timeline__row--full-time span {
+  color: #050914;
+  background: #fff;
+}
+
 .scoreboard.scene-match-video.show-match-video .match-timeline__row p {
   margin: 0;
   overflow: hidden;

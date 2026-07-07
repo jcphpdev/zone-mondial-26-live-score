@@ -332,6 +332,7 @@ function emptyMatch() {
     status: "À venir",
     info: "",
     timeline: "",
+    timeline_events: "",
     venue: "",
     referee: "",
     home_coach: "",

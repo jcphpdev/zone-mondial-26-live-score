@@ -413,6 +413,117 @@ function compactStatistics(stats) {
   );
 }
 
+function eventMinuteValue(event, fallback = 0) {
+  const minute = Number.parseInt(event?.minute, 10);
+  if (!Number.isFinite(minute)) return fallback;
+  const injury = Number.parseInt(event?.injuryTime, 10);
+  return Number.isFinite(injury) ? minute + injury / 100 : minute;
+}
+
+function eventMinuteLabel(event, fallback = "") {
+  const minute = Number.parseInt(event?.minute, 10);
+  if (!Number.isFinite(minute)) return fallback;
+  const injury = Number.parseInt(event?.injuryTime, 10);
+  return Number.isFinite(injury) && injury > 0 ? `${minute}+${injury}` : String(minute);
+}
+
+function teamShortName(team) {
+  return value(team?.shortName || team?.tla || team?.name);
+}
+
+function compactTimelineEvents(match) {
+  const events = [];
+
+  (Array.isArray(match.goals) ? match.goals : []).forEach(goal => {
+    const scorer = value(goal.scorer?.name, "Buteur");
+    const team = teamShortName(goal.team);
+    const type = value(goal.type).toUpperCase();
+    const tags = [];
+    if (type.includes("PENALTY")) tags.push("penalty");
+    if (type.includes("OWN")) tags.push("csc");
+    const score = goal.score && (goal.score.home !== undefined || goal.score.away !== undefined)
+      ? ` — ${scoreNumber(goal.score.home)}-${scoreNumber(goal.score.away)}`
+      : "";
+    events.push({
+      minute: eventMinuteLabel(goal),
+      sort: eventMinuteValue(goal),
+      type: "goal",
+      team,
+      player: scorer,
+      text: `But : ${scorer}${team ? ` (${team})` : ""}${tags.length ? ` [${tags.join(", ")}]` : ""}${score}`
+    });
+  });
+
+  (Array.isArray(match.bookings) ? match.bookings : []).forEach(booking => {
+    const player = value(booking.player?.name, "Joueur");
+    const team = teamShortName(booking.team);
+    const card = value(booking.card).toUpperCase().includes("RED")
+      ? "Carton rouge"
+      : "Carton jaune";
+    events.push({
+      minute: eventMinuteLabel(booking),
+      sort: eventMinuteValue(booking),
+      type: card === "Carton rouge" ? "red-card" : "yellow-card",
+      team,
+      player,
+      text: `${card} : ${player}${team ? ` (${team})` : ""}`
+    });
+  });
+
+  (Array.isArray(match.substitutions) ? match.substitutions : []).forEach(substitution => {
+    const playerIn = value(substitution.playerIn?.name, "entrant");
+    const playerOut = value(substitution.playerOut?.name, "sortant");
+    const team = teamShortName(substitution.team);
+    events.push({
+      minute: eventMinuteLabel(substitution),
+      sort: eventMinuteValue(substitution),
+      type: "substitution",
+      team,
+      player: playerIn,
+      text: `Changement : ${playerIn} remplace ${playerOut}${team ? ` (${team})` : ""}`
+    });
+  });
+
+  (Array.isArray(match.penalties) ? match.penalties : []).forEach(penalty => {
+    const player = value(penalty.player?.name || penalty.scorer?.name, "Tireur");
+    const team = teamShortName(penalty.team);
+    const scored = penalty.scored === false || value(penalty.outcome).toUpperCase().includes("MISSED")
+      ? "raté"
+      : "marqué";
+    events.push({
+      minute: eventMinuteLabel(penalty, "TAB"),
+      sort: eventMinuteValue(penalty, 120),
+      type: scored === "marqué" ? "penalty-scored" : "penalty-missed",
+      team,
+      player,
+      text: `Tir au but ${scored} : ${player}${team ? ` (${team})` : ""}`
+    });
+  });
+
+  const status = footballDataStatus(match);
+  if (["Mi-temps", "Terminé"].includes(status) && match.score?.halfTime) {
+    events.push({
+      minute: "45",
+      sort: 45,
+      type: "half-time",
+      text: `Mi-temps : ${scoreNumber(match.score.halfTime.home)}-${scoreNumber(match.score.halfTime.away)}`
+    });
+  }
+  if (status === "Terminé" && match.score?.fullTime) {
+    events.push({
+      minute: "90",
+      sort: 90,
+      type: "full-time",
+      text: `Fin du match : ${scoreNumber(match.score.fullTime.home)}-${scoreNumber(match.score.fullTime.away)}`
+    });
+  }
+
+  return events
+    .filter(event => event.minute && event.text)
+    .sort((left, right) => left.sort - right.sort)
+    .map(({ sort, ...event }) => event);
+}
+
 function footballDataPatch(apiMatch, localMatch, explicitScoreSource = false) {
   const patch = {
     football_data_match_id: value(apiMatch.id),
@@ -436,6 +547,8 @@ function footballDataPatch(apiMatch, localMatch, explicitScoreSource = false) {
   const awayStatistics = compactStatistics(apiMatch.awayTeam?.statistics);
   if (Object.keys(homeStatistics).length) patch.home_statistics = homeStatistics;
   if (Object.keys(awayStatistics).length) patch.away_statistics = awayStatistics;
+  const timelineEvents = compactTimelineEvents(apiMatch);
+  if (timelineEvents.length) patch.timeline_events = timelineEvents;
   const info = footballDataInfo(apiMatch);
   if (info && !value(localMatch.info).trim()) patch.info = info;
   if (apiMatch.utcDate && !value(localMatch.kickoff).trim()) patch.kickoff = apiMatch.utcDate;

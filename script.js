@@ -296,14 +296,15 @@ function timelineEventLabel(event) {
 }
 
 function normalizeTimeline(match) {
-  const source = match.timeline || match.highlights || match.events || match.live_timeline || match.match_events;
+  const source = match.timeline || match.timeline_events || match.highlights || match.events || match.live_timeline || match.match_events;
   if (Array.isArray(source)) {
     return source
       .map(event => {
         if (typeof event === "string") return parseTimelineText(event)[0];
-        const minute = value(event?.minute || event?.time || event?.elapsed).replace(/['’′]?$/, "");
+        const minute = value(event?.minute_label || event?.minute || event?.time || event?.elapsed).replace(/['’′]?$/, "");
         return {
           minute: minute ? `${minute.padStart(2, "0")}’` : "",
+          type: value(event?.type || event?.kind).trim(),
           text: timelineEventLabel(event)
         };
       })
@@ -1212,7 +1213,7 @@ function renderMatch(match) {
   if (elements.matchTimeline && elements.matchTimelineRows) {
     elements.matchTimeline.hidden = !timelineRows.length;
     elements.matchTimelineRows.innerHTML = timelineRows.map(row => `
-      <div class="match-timeline__row">
+      <div class="match-timeline__row ${row.type ? `match-timeline__row--${value(row.type).toLowerCase().replace(/[^a-z0-9_-]/g, "")}` : ""}">
         <span>${escapeHtml(row.minute)}</span>
         <p>${escapeHtml(row.text)}</p>
       </div>

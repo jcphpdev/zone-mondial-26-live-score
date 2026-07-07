@@ -724,6 +724,11 @@
           <textarea data-field="timeline" rows="5" placeholder="36’ But : Mikel Oyarzabal.&#10;45’ Mi-temps : 1–0.&#10;90+4’ But : Gonçalo Ramos."></textarea>
           <small>Une ligne par vrai temps fort. Si ce champ est vide, la rubrique reste masquée sauf buteurs ou mi-temps disponibles.</small>
         </div>
+        <div class="field full-setting">
+          <label>Temps forts API</label>
+          <textarea data-field="timeline_events" data-json="true" rows="5" placeholder="Événements générés automatiquement par football-data"></textarea>
+          <small>Champ alimenté par le serveur local. Le champ manuel ci-dessus reste prioritaire s’il est rempli.</small>
+        </div>
         <div class="field">
           <label>Stade</label>
           <input data-field="venue" type="text" placeholder="Stade à confirmer">
@@ -881,6 +886,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260707-03"></script>
+  <script type="module" src="admin.js?v=20260707-04"></script>
 </body>
 </html>

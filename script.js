@@ -1091,6 +1091,65 @@ function tickerMessage(match, groups) {
   return `<strong>En direct</strong> ${escapeHtml(label)} — ${escapeHtml(home)} ${score} ${escapeHtml(away)} • ${escapeHtml(matchDisplayMinute(match) || value(match.status, "LIVE"))}`;
 }
 
+function tickerEventLabel(event) {
+  const type = value(event.type).toLowerCase();
+  if (type === "goal") return "But";
+  if (type === "yellow-card") return "Carton jaune";
+  if (type === "red-card") return "Carton rouge";
+  if (type === "substitution") return "Remplacement";
+  if (type === "half-time") return "Mi-temps";
+  if (type === "full-time") return "Fin";
+  if (type === "penalty-scored") return "TAB marqué";
+  if (type === "penalty-missed") return "TAB raté";
+  return "Temps fort";
+}
+
+function tickerEventMessages(match, groups) {
+  const label = groupLabel(match, groups);
+  const fixture = `${value(match.home, "Équipe 1")} - ${value(match.away, "Équipe 2")}`;
+  return normalizeTimeline(match)
+    .filter(event => value(event.type))
+    .slice(-4)
+    .reverse()
+    .map(event => {
+      const minute = value(event.minute);
+      return `<strong>${escapeHtml(tickerEventLabel(event))}</strong> ${escapeHtml(label)} — ${escapeHtml(fixture)}${minute ? ` • ${escapeHtml(minute)}’` : ""} • ${escapeHtml(value(event.text))}`;
+    });
+}
+
+function tickerStatsMessage(match) {
+  if (!isLive(match)) return "";
+  const rows = statsRows(match);
+  if (!rows.length) return "";
+  const possession = rows.find(row => row.label === "Possession");
+  const shots = rows.find(row => row.label === "Tirs cadrés") || rows.find(row => row.label === "Tirs");
+  const bits = [];
+  if (possession) bits.push(`Possession ${possession.home ?? 0}% - ${possession.away ?? 0}%`);
+  if (shots) bits.push(`${shots.label} ${shots.home ?? 0}-${shots.away ?? 0}`);
+  if (!bits.length) return "";
+  return `<strong>Stats live</strong> ${escapeHtml(value(match.home, "Équipe 1"))} - ${escapeHtml(value(match.away, "Équipe 2"))} • ${escapeHtml(bits.join(" • "))}`;
+}
+
+function enrichedTickerMessages(matches, groups) {
+  const orderedMatches = [...matches].sort((left, right) => {
+    const statusRank = match => isLive(match) ? 0 : isUpcoming(match) ? 1 : 2;
+    const rankDiff = statusRank(left) - statusRank(right);
+    if (rankDiff) return rankDiff;
+    return value(left.kickoff).localeCompare(value(right.kickoff));
+  });
+
+  const baseMessages = orderedMatches.slice(0, 14).map(match => tickerMessage(match, groups));
+  const eventMessages = orderedMatches.flatMap(match => tickerEventMessages(match, groups)).slice(0, 10);
+  const statMessages = orderedMatches.map(tickerStatsMessage).filter(Boolean).slice(0, 4);
+
+  return [
+    ...eventMessages.slice(0, 5),
+    ...baseMessages,
+    ...eventMessages.slice(5),
+    ...statMessages
+  ].filter(Boolean);
+}
+
 function liveUpdateRows(matches, groups) {
   const orderedMatches = [...matches].sort((left, right) => {
     const statusRank = match => isLive(match) ? 0 : isUpcoming(match) ? 1 : 2;
@@ -1194,16 +1253,7 @@ function renderTicker(matches, groups) {
   elements.ticker.hidden = !currentSettings.show_ticker;
   if (!currentSettings.show_ticker) return;
 
-  const orderedMatches = [...matches].sort((left, right) => {
-    const statusRank = match => isLive(match) ? 0 : isUpcoming(match) ? 1 : 2;
-    const rankDiff = statusRank(left) - statusRank(right);
-    if (rankDiff) return rankDiff;
-    return value(left.kickoff).localeCompare(value(right.kickoff));
-  });
-
-  const messages = orderedMatches
-    .slice(0, 14)
-    .map(match => tickerMessage(match, groups));
+  const messages = enrichedTickerMessages(matches, groups);
 
   if (!messages.length) {
     messages.push("<strong>Zone Mondial 26</strong> Aucun match publié pour le moment");
@@ -1211,7 +1261,7 @@ function renderTicker(matches, groups) {
 
   const content = messages.map(message => `<span class="ticker__item">${message}</span>`).join("");
   elements.tickerTrack.innerHTML = `${content}${content}`;
-  elements.tickerTrack.style.setProperty("--ticker-duration", `${Math.max(24, messages.length * 7)}s`);
+  elements.tickerTrack.style.setProperty("--ticker-duration", `${Math.max(28, messages.length * 6.4)}s`);
 }
 
 function renderLiveUpdates(data) {

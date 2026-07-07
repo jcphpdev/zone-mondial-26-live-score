@@ -1262,11 +1262,11 @@ body {
 .ticker__item {
   display: inline-flex;
   align-items: center;
-  gap: 0.45vw;
-  padding: 0 1.45vw;
+  gap: 0.5vw;
+  padding: 0 1.25vw;
   font-family: "Inter", Arial, sans-serif;
-  font-size: clamp(15px, 1.15vw, 26px);
-  font-weight: 800;
+  font-size: clamp(15px, 1.1vw, 25px);
+  font-weight: 850;
   letter-spacing: 0.015em;
   line-height: 1;
   white-space: nowrap;
@@ -1285,7 +1285,7 @@ body {
 
 .ticker__item strong {
   color: #fff;
-  background: rgba(230, 29, 37, 0.82);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent), rgba(230, 29, 37, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 999px;
   padding: 0.2em 0.55em;
@@ -1294,6 +1294,7 @@ body {
   letter-spacing: 0.08em;
   line-height: 1;
   text-transform: uppercase;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.72);
 }
 
 .connection-state {

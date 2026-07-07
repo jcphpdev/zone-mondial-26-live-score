@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zone Mondial 26 — Live Scores</title>
-  <link rel="stylesheet" href="style.css?v=20260707-01">
+  <link rel="stylesheet" href="style.css?v=20260707-02">
 </head>
 <body>
   <main class="scoreboard" aria-live="polite">
@@ -127,6 +127,42 @@
       </div>
     </section>
 
+    <section id="lineupsView" class="lineups-view" aria-label="Compositions">
+      <div class="lineups-heading">
+        <div class="lineups-team-title">
+          <img id="lineupsHomeFlag" alt="">
+          <span id="lineupsHomeName">Équipe 1</span>
+          <small id="lineupsHomeFormation">Formation</small>
+        </div>
+        <div class="lineups-versus">
+          <strong>COMPOSITIONS</strong>
+          <span id="lineupsMatchMeta">Match à venir</span>
+        </div>
+        <div class="lineups-team-title lineups-team-title-away">
+          <small id="lineupsAwayFormation">Formation</small>
+          <span id="lineupsAwayName">Équipe 2</span>
+          <img id="lineupsAwayFlag" alt="">
+        </div>
+      </div>
+
+      <div class="lineups-board">
+        <section>
+          <h2>Onze de départ</h2>
+          <div id="lineupsHomeRows" class="lineups-list"></div>
+        </section>
+        <section>
+          <h2>Onze de départ</h2>
+          <div id="lineupsAwayRows" class="lineups-list"></div>
+        </section>
+      </div>
+
+      <div class="lineups-footer">
+        <span id="lineupsHomeCoach">Sélectionneur à confirmer</span>
+        <span id="lineupsReferee">Arbitre à confirmer</span>
+        <span id="lineupsAwayCoach">Sélectionneur à confirmer</span>
+      </div>
+    </section>
+
     <footer class="match-footer">
       <p id="matchInfo">Chargement des informations du match…</p>
       <div id="pagination" class="pagination" aria-hidden="true"></div>
@@ -166,6 +202,6 @@
     Mise à jour des scores…
   </div>
 
-  <script type="module" src="script.js?v=20260707-01"></script>
+  <script type="module" src="script.js?v=20260707-02"></script>
 </body>
 </html>

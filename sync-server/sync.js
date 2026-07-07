@@ -520,21 +520,38 @@ async function settleSource(label, task) {
 }
 
 async function syncOnce() {
-  const [data, worldCupSource, footballDataSource] = await Promise.all([
-    firebaseReadLiveScores(),
-    settleSource("worldcup26.ir", fetchApiGames),
-    settleSource("football-data.org", fetchFootballDataMatches)
-  ]);
+  const data = await firebaseReadLiveScores();
   if (!data || !Array.isArray(data.matches)) {
     throw new Error("Firebase /liveScores ne contient pas de tableau matches.");
   }
 
-  const games = worldCupSource.data;
-  const explicitFootballIds = data.matches
+  const publishedMatches = data.matches.filter(match => match.published !== false);
+  const needsWorldCupSource = publishedMatches.some(match =>
+    value(match.external_match_id).trim() && value(match.external_api) !== "football-data"
+  );
+  const needsFootballDataList = publishedMatches.some(match =>
+    !value(match.football_data_match_id).trim()
+    && value(match.external_api) !== "football-data"
+    && match.kickoff
+  );
+  const explicitFootballIds = publishedMatches
     .map(match => value(match.football_data_match_id).trim()
       || (value(match.external_api) === "football-data" ? value(match.external_match_id).trim() : ""))
     .filter(Boolean);
-  const footballDataDetailsSource = await settleSource("football-data.org/details", () => fetchFootballDataMatchDetails(explicitFootballIds));
+
+  const [worldCupSource, footballDataSource, footballDataDetailsSource] = await Promise.all([
+    needsWorldCupSource
+      ? settleSource("worldcup26.ir", fetchApiGames)
+      : Promise.resolve({ label: "worldcup26.ir", ok: true, data: [] }),
+    needsFootballDataList
+      ? settleSource("football-data.org", fetchFootballDataMatches)
+      : Promise.resolve({ label: "football-data.org", ok: true, data: [] }),
+    explicitFootballIds.length
+      ? settleSource("football-data.org/details", () => fetchFootballDataMatchDetails(explicitFootballIds))
+      : Promise.resolve({ label: "football-data.org/details", ok: true, data: [] })
+  ]);
+
+  const games = worldCupSource.data;
   const footballMatchesById = new Map([
     ...footballDataSource.data,
     ...footballDataDetailsSource.data
@@ -549,6 +566,7 @@ async function syncOnce() {
   }
 
   if (!games.length && !footballMatches.length) {
+    const noApiNeeded = !needsWorldCupSource && !needsFootballDataList && !explicitFootballIds.length;
     const now = new Date().toISOString();
     await firebasePatchLiveScores({
       automation: {
@@ -556,15 +574,19 @@ async function syncOnce() {
         mode: "local-pc",
         source: "worldcup26.ir + football-data.org",
         last_sync_at: now,
-        last_result: "source-error",
-        source_errors: sourceErrors.length ? sourceErrors : ["Aucune source active ou aucun match reçu."],
+        last_result: noApiNeeded ? "no-api-needed" : "source-error",
+        source_errors: noApiNeeded
+          ? []
+          : (sourceErrors.length ? sourceErrors : ["Aucune source active ou aucun match reçu."]),
         world_cup_enabled: worldCupEnabled,
         football_data_enabled: footballDataEnabled,
         interval_seconds: intervalSeconds,
         dry_run: dryRun
       }
     });
-    log("Aucune source disponible pour cette passe. Nouvelle tentative au prochain cycle.");
+    log(noApiNeeded
+      ? `Aucune requête API nécessaire. Matchs publiés : ${publishedMatches.length}.`
+      : "Aucune source disponible pour cette passe. Nouvelle tentative au prochain cycle.");
     return;
   }
 
@@ -576,6 +598,7 @@ async function syncOnce() {
   const changedMatches = [];
 
   const matches = data.matches.map(match => {
+    if (match.published === false) return match;
     const apiId = value(match.external_match_id).trim();
     const game = value(match.external_api) === "football-data" ? null : gameById.get(apiId);
     const footballMatch = matchFootballDataGame(match, footballMatches);

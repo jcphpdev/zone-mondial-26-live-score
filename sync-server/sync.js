@@ -13,6 +13,8 @@ const DEFAULTS = {
   FOOTBALL_DATA_COMPETITIONS: "WC",
   FOOTBALL_DATA_LOOKBACK_DAYS: "2",
   FOOTBALL_DATA_LOOKAHEAD_DAYS: "7",
+  FOOTBALL_DATA_RETRY_ATTEMPTS: "3",
+  FOOTBALL_DATA_RETRY_DELAY_MS: "1200",
   SYNC_INTERVAL_SECONDS: "30",
   DRY_RUN: "false"
 };
@@ -49,6 +51,8 @@ const intervalSeconds = Math.max(15, Math.min(120, Number.parseInt(env.SYNC_INTE
 const dryRun = value(env.DRY_RUN).toLowerCase() === "true";
 const worldCupEnabled = value(env.WORLD_CUP_ENABLED, "true").toLowerCase() !== "false";
 const footballDataEnabled = value(env.FOOTBALL_DATA_ENABLED).toLowerCase() === "true";
+const footballDataRetryAttempts = Math.max(1, Math.min(5, Number.parseInt(env.FOOTBALL_DATA_RETRY_ATTEMPTS, 10) || 3));
+const footballDataRetryDelayMs = Math.max(250, Math.min(5000, Number.parseInt(env.FOOTBALL_DATA_RETRY_DELAY_MS, 10) || 1200));
 let authSession = null;
 let syncRunning = false;
 
@@ -60,6 +64,33 @@ function log(message, meta = undefined) {
   }).format(new Date());
   if (meta) console.log(`[${time}] ${message}`, meta);
   else console.log(`[${time}] ${message}`);
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(url, options = {}, label = "requête", retryOptions = {}) {
+  const attempts = Math.max(1, Number.parseInt(retryOptions.attempts, 10) || 1);
+  const delayMs = Math.max(0, Number.parseInt(retryOptions.delayMs, 10) || 0);
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || ![408, 425, 429, 500, 502, 503, 504].includes(response.status) || attempt === attempts) {
+        return response;
+      }
+      lastError = new Error(`${label} HTTP ${response.status}`);
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) break;
+    }
+
+    await sleep(delayMs * attempt);
+  }
+
+  throw lastError || new Error(`${label} indisponible`);
 }
 
 function requireConfig() {
@@ -606,12 +637,15 @@ async function fetchFootballDataMatches() {
     const url = new URL(`https://api.football-data.org/v4/competitions/${encodeURIComponent(competition)}/matches`);
     url.searchParams.set("dateFrom", dateFrom);
     url.searchParams.set("dateTo", dateTo);
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       headers: {
         "X-Auth-Token": env.FOOTBALL_DATA_API_TOKEN,
         "X-Unfold-Goals": "true"
       },
       cache: "no-store"
+    }, `football-data.org ${competition}`, {
+      attempts: footballDataRetryAttempts,
+      delayMs: footballDataRetryDelayMs
     });
     if (!response.ok) {
       const body = await response.text();
@@ -630,19 +664,26 @@ async function fetchFootballDataMatchDetails(ids = []) {
   const results = [];
 
   for (const id of uniqueIds) {
-    const response = await fetch(`https://api.football-data.org/v4/matches/${encodeURIComponent(id)}`, {
-      headers: {
-        "X-Auth-Token": env.FOOTBALL_DATA_API_TOKEN,
-        "X-Unfold-Goals": "true"
-      },
-      cache: "no-store"
-    });
-    if (!response.ok) {
-      const body = await response.text();
-      log(`football-data.org détail ignoré pour ${id} : HTTP ${response.status} ${body.slice(0, 120)}`);
-      continue;
+    try {
+      const response = await fetchWithRetry(`https://api.football-data.org/v4/matches/${encodeURIComponent(id)}`, {
+        headers: {
+          "X-Auth-Token": env.FOOTBALL_DATA_API_TOKEN,
+          "X-Unfold-Goals": "true"
+        },
+        cache: "no-store"
+      }, `football-data.org détail ${id}`, {
+        attempts: footballDataRetryAttempts,
+        delayMs: footballDataRetryDelayMs
+      });
+      if (!response.ok) {
+        const body = await response.text();
+        log(`football-data.org détail ignoré pour ${id} : HTTP ${response.status} ${body.slice(0, 120)}`);
+        continue;
+      }
+      results.push(await response.json());
+    } catch (error) {
+      log(`football-data.org détail ignoré pour ${id} après ${footballDataRetryAttempts} tentative(s) : ${error.message}`);
     }
-    results.push(await response.json());
   }
 
   return results;

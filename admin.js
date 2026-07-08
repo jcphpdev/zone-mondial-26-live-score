@@ -23,13 +23,16 @@ const WORLD_CUP_API_BASE_URL = "https://worldcup26.ir";
 
 const editor = document.getElementById("matchesEditor");
 const groupsEditor = document.getElementById("groupsEditor");
+const infosEditor = document.getElementById("infosEditor");
 const matchTemplate = document.getElementById("matchTemplate");
 const groupTemplate = document.getElementById("groupTemplate");
+const infoTemplate = document.getElementById("infoTemplate");
 const standingTeamTemplate = document.getElementById("standingTeamTemplate");
 const updatedAtInput = document.getElementById("updatedAt");
 const notice = document.getElementById("notice");
 const matchCount = document.getElementById("matchCount");
 const groupCount = document.getElementById("groupCount");
+const infoCount = document.getElementById("infoCount");
 const firebaseEmailInput = document.getElementById("firebaseEmail");
 const firebasePasswordInput = document.getElementById("firebasePassword");
 const firebaseState = document.getElementById("firebaseState");
@@ -46,6 +49,7 @@ const scoreSceneDurationInput = document.getElementById("scoreSceneDuration");
 const preMatchSceneDurationInput = document.getElementById("preMatchSceneDuration");
 const lineupsSceneDurationInput = document.getElementById("lineupsSceneDuration");
 const statsSceneDurationInput = document.getElementById("statsSceneDuration");
+const infoSceneDurationInput = document.getElementById("infoSceneDuration");
 const goalDetailSceneDurationInput = document.getElementById("goalDetailSceneDuration");
 const eventDetailSceneDurationInput = document.getElementById("eventDetailSceneDuration");
 const standingsSceneDurationInput = document.getElementById("standingsSceneDuration");
@@ -63,6 +67,7 @@ const selectedGroupSceneInput = document.getElementById("selectedGroupScene");
 const includePreMatchScenesInput = document.getElementById("includePreMatchScenes");
 const includeLineupScenesInput = document.getElementById("includeLineupScenes");
 const includeStatsScenesInput = document.getElementById("includeStatsScenes");
+const includeInfoScenesInput = document.getElementById("includeInfoScenes");
 const includeGoalDetailScenesInput = document.getElementById("includeGoalDetailScenes");
 const includeEventDetailScenesInput = document.getElementById("includeEventDetailScenes");
 const includeMatchScenesInput = document.getElementById("includeMatchScenes");
@@ -75,6 +80,7 @@ const matchBackgroundUrlInput = document.getElementById("matchBackgroundUrl");
 const matchVideoBackgroundUrlInput = document.getElementById("matchVideoBackgroundUrl");
 const standingsBackgroundUrlInput = document.getElementById("standingsBackgroundUrl");
 const tickerBackgroundUrlInput = document.getElementById("tickerBackgroundUrl");
+const infoBackgroundUrlInput = document.getElementById("infoBackgroundUrl");
 const videoPlaylistUrlsInput = document.getElementById("videoPlaylistUrls");
 const controlCurrentScene = document.getElementById("controlCurrentScene");
 const controlCurrentTarget = document.getElementById("controlCurrentTarget");
@@ -132,6 +138,7 @@ const DEFAULT_SETTINGS = {
   pre_match_scene_duration: 12,
   lineups_scene_duration: 12,
   stats_scene_duration: 10,
+  info_scene_duration: 12,
   goal_detail_scene_duration: 6,
   event_detail_scene_duration: 6,
   standings_scene_duration: 8,
@@ -149,6 +156,7 @@ const DEFAULT_SETTINGS = {
   include_prematch_scenes: true,
   include_lineup_scenes: false,
   include_stats_scenes: false,
+  include_info_scenes: false,
   include_goal_detail_scenes: false,
   include_event_detail_scenes: false,
   include_match_scenes: true,
@@ -161,6 +169,7 @@ const DEFAULT_SETTINGS = {
   match_background_url: "assets/bg-ambience-score.svg",
   match_video_background_url: "assets/bg-ambience-score-video.svg",
   standings_background_url: "assets/bg-ambience-standings.svg",
+  info_background_url: "assets/bg-ambience-live-updates.svg",
   ticker_background_url: "assets/bg-ambience-live-updates.svg"
 };
 
@@ -181,6 +190,7 @@ const SCENE_DEFAULT_BACKGROUNDS = new Set([
   DEFAULT_SETTINGS.match_background_url,
   DEFAULT_SETTINGS.match_video_background_url,
   DEFAULT_SETTINGS.standings_background_url,
+  DEFAULT_SETTINGS.info_background_url,
   DEFAULT_SETTINGS.ticker_background_url
 ]);
 
@@ -212,6 +222,7 @@ function readSettings() {
     pre_match_scene_duration: boundedNumber(preMatchSceneDurationInput.value, DEFAULT_SETTINGS.pre_match_scene_duration, 3, 60),
     lineups_scene_duration: boundedNumber(lineupsSceneDurationInput.value, DEFAULT_SETTINGS.lineups_scene_duration, 3, 60),
     stats_scene_duration: boundedNumber(statsSceneDurationInput.value, DEFAULT_SETTINGS.stats_scene_duration, 3, 60),
+    info_scene_duration: boundedNumber(infoSceneDurationInput.value, DEFAULT_SETTINGS.info_scene_duration, 3, 60),
     goal_detail_scene_duration: boundedNumber(goalDetailSceneDurationInput.value, DEFAULT_SETTINGS.goal_detail_scene_duration, 3, 30),
     event_detail_scene_duration: boundedNumber(eventDetailSceneDurationInput.value, DEFAULT_SETTINGS.event_detail_scene_duration, 3, 30),
     standings_scene_duration: boundedNumber(standingsSceneDurationInput.value, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
@@ -229,6 +240,7 @@ function readSettings() {
     include_prematch_scenes: includePreMatchScenesInput.checked,
     include_lineup_scenes: includeLineupScenesInput.checked,
     include_stats_scenes: includeStatsScenesInput.checked,
+    include_info_scenes: includeInfoScenesInput.checked,
     include_goal_detail_scenes: includeGoalDetailScenesInput.checked,
     include_event_detail_scenes: includeEventDetailScenesInput.checked,
     include_match_scenes: includeMatchScenesInput.checked,
@@ -241,6 +253,7 @@ function readSettings() {
     match_background_url: sceneBackgroundSetting(matchBackgroundUrlInput.value, DEFAULT_SETTINGS.match_background_url),
     match_video_background_url: sceneBackgroundSetting(matchVideoBackgroundUrlInput.value, DEFAULT_SETTINGS.match_video_background_url),
     standings_background_url: sceneBackgroundSetting(standingsBackgroundUrlInput.value, DEFAULT_SETTINGS.standings_background_url),
+    info_background_url: sceneBackgroundSetting(infoBackgroundUrlInput.value, DEFAULT_SETTINGS.info_background_url),
     ticker_background_url: sceneBackgroundSetting(tickerBackgroundUrlInput.value, DEFAULT_SETTINGS.ticker_background_url)
   };
 }
@@ -257,6 +270,7 @@ function fillSettings(settings = {}) {
   preMatchSceneDurationInput.value = boundedNumber(merged.pre_match_scene_duration, DEFAULT_SETTINGS.pre_match_scene_duration, 3, 60);
   lineupsSceneDurationInput.value = boundedNumber(merged.lineups_scene_duration, DEFAULT_SETTINGS.lineups_scene_duration, 3, 60);
   statsSceneDurationInput.value = boundedNumber(merged.stats_scene_duration, DEFAULT_SETTINGS.stats_scene_duration, 3, 60);
+  infoSceneDurationInput.value = boundedNumber(merged.info_scene_duration, DEFAULT_SETTINGS.info_scene_duration, 3, 60);
   goalDetailSceneDurationInput.value = boundedNumber(merged.goal_detail_scene_duration, DEFAULT_SETTINGS.goal_detail_scene_duration, 3, 30);
   eventDetailSceneDurationInput.value = boundedNumber(merged.event_detail_scene_duration, DEFAULT_SETTINGS.event_detail_scene_duration, 3, 30);
   standingsSceneDurationInput.value = boundedNumber(merged.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60);
@@ -268,12 +282,13 @@ function fillSettings(settings = {}) {
   showGoalAlertInput.checked = merged.show_goal_alert !== false;
   autoStartMatchesInput.checked = merged.auto_start_matches !== false;
   enableGoalSoundInput.checked = merged.enable_goal_sound !== false;
-  sceneModeInput.value = ["auto", "pre-match", "lineups", "stats", "goal-detail", "card-detail", "substitution-detail", "half-time-detail", "full-time-detail", "match", "match-video", "group", "ticker", "video"].includes(merged.scene_mode) ? merged.scene_mode : "auto";
+  sceneModeInput.value = ["auto", "pre-match", "lineups", "stats", "info", "goal-detail", "card-detail", "substitution-detail", "half-time-detail", "full-time-detail", "match", "match-video", "group", "ticker", "video"].includes(merged.scene_mode) ? merged.scene_mode : "auto";
   selectedMatchSceneInput.dataset.selectedValue = text(merged.selected_match_id);
   selectedGroupSceneInput.dataset.selectedValue = text(merged.selected_group_id);
   includePreMatchScenesInput.checked = merged.include_prematch_scenes !== false;
   includeLineupScenesInput.checked = merged.include_lineup_scenes === true;
   includeStatsScenesInput.checked = merged.include_stats_scenes === true;
+  includeInfoScenesInput.checked = merged.include_info_scenes === true;
   includeGoalDetailScenesInput.checked = merged.include_goal_detail_scenes === true;
   includeEventDetailScenesInput.checked = merged.include_event_detail_scenes === true;
   includeMatchScenesInput.checked = merged.include_match_scenes !== false;
@@ -288,6 +303,7 @@ function fillSettings(settings = {}) {
   matchBackgroundUrlInput.value = sceneBackgroundSetting(merged.match_background_url, DEFAULT_SETTINGS.match_background_url);
   matchVideoBackgroundUrlInput.value = sceneBackgroundSetting(merged.match_video_background_url, DEFAULT_SETTINGS.match_video_background_url);
   standingsBackgroundUrlInput.value = sceneBackgroundSetting(merged.standings_background_url, DEFAULT_SETTINGS.standings_background_url);
+  infoBackgroundUrlInput.value = sceneBackgroundSetting(merged.info_background_url, DEFAULT_SETTINGS.info_background_url);
   tickerBackgroundUrlInput.value = sceneBackgroundSetting(merged.ticker_background_url, DEFAULT_SETTINGS.ticker_background_url);
   syncControlRoom();
 }
@@ -380,6 +396,17 @@ function emptyGroup() {
   };
 }
 
+function emptyInfo() {
+  return {
+    id: crypto.randomUUID(),
+    published: true,
+    title: "Nouvelle info",
+    image: "",
+    details: "",
+    date: new Date().toISOString().slice(0, 10)
+  };
+}
+
 function readMatch(card) {
   const match = { id: card.dataset.matchId || crypto.randomUUID() };
   card.querySelectorAll("[data-field]").forEach(input => {
@@ -426,13 +453,24 @@ function readGroup(card) {
   return group;
 }
 
+function readInfo(card) {
+  const info = { id: card.dataset.infoId || crypto.randomUUID() };
+  card.querySelectorAll("[data-info-field]").forEach(input => {
+    const key = input.dataset.infoField;
+    info[key] = input.type === "checkbox" ? input.checked : input.value.trim();
+  });
+  return info;
+}
+
 function buildData() {
   const matches = [...editor.querySelectorAll(".match-editor")].map(readMatch);
   const groups = [...groupsEditor.querySelectorAll(".group-editor")].map(readGroup);
+  const infos = [...infosEditor.querySelectorAll(".info-editor")].map(readInfo);
   return {
     updated_at: updatedAtInput.value.trim() || formatCasablancaDate(),
     settings: readSettings(),
     matches,
+    infos,
     groups: groups.map(group => ({
       ...group,
       standings: calculateStandings(group, matches, group.rules_profile)
@@ -574,6 +612,7 @@ function sceneModeLabel(mode) {
     "pre-match": "Avant-match",
     lineups: "Compositions",
     stats: "Stats live",
+    info: "Infos",
     "goal-detail": "But détaillé",
     "card-detail": "Carton",
     "substitution-detail": "Remplacement",
@@ -636,6 +675,7 @@ function setControlScene(mode) {
   if (mode === "pre-match") includePreMatchScenesInput.checked = true;
   if (mode === "lineups") includeLineupScenesInput.checked = true;
   if (mode === "stats") includeStatsScenesInput.checked = true;
+  if (mode === "info") includeInfoScenesInput.checked = true;
   if (mode === "goal-detail") includeGoalDetailScenesInput.checked = true;
   if (["card-detail", "substitution-detail", "half-time-detail", "full-time-detail"].includes(mode)) includeEventDetailScenesInput.checked = true;
   if (mode === "ticker") includeTickerSceneInput.checked = true;
@@ -1062,7 +1102,11 @@ function setCardExpanded(card, expanded) {
   card.classList.toggle("is-collapsed", !expanded);
   card.querySelector(".summary-toggle").setAttribute("aria-expanded", String(expanded));
   if (expanded) {
-    const container = card.classList.contains("group-editor") ? groupsEditor : editor;
+    const container = card.classList.contains("group-editor")
+      ? groupsEditor
+      : card.classList.contains("info-editor")
+        ? infosEditor
+        : editor;
     container.querySelectorAll(".match-editor").forEach(other => {
       if (other !== card) {
         other.classList.add("is-collapsed");
@@ -1409,9 +1453,74 @@ function addGroup(group = emptyGroup(), afterCard = null) {
   return card;
 }
 
+function updateInfoAppearance(card) {
+  const published = card.querySelector('[data-info-field="published"]').checked;
+  card.classList.toggle("is-unpublished", !published);
+  card.querySelector(".publish-switch span").textContent = published ? "Publié" : "Dépublié";
+}
+
+function updateInfoSummary(card) {
+  const title = card.querySelector('[data-info-field="title"]').value.trim() || "Nouvelle info";
+  const date = card.querySelector('[data-info-field="date"]').value.trim() || "Date à définir";
+  card.querySelector(".info-summary-title").textContent = title;
+  card.querySelector(".info-summary-date").textContent = date;
+}
+
+function fillInfo(card, info) {
+  card.dataset.infoId = info.id || crypto.randomUUID();
+  card.querySelectorAll("[data-info-field]").forEach(input => {
+    const key = input.dataset.infoField;
+    if (input.type === "checkbox") input.checked = info[key] !== false;
+    else if (input.type === "date") input.value = text(info[key]).slice(0, 10);
+    else input.value = text(info[key], key === "title" ? "Nouvelle info" : "");
+  });
+  updateInfoAppearance(card);
+  updateInfoSummary(card);
+}
+
+function bindInfo(card) {
+  card.querySelector(".summary-toggle").addEventListener("click", () => {
+    setCardExpanded(card, card.classList.contains("is-collapsed"));
+  });
+  card.addEventListener("input", () => {
+    updateInfoSummary(card);
+    scheduleSave();
+  });
+  card.addEventListener("change", event => {
+    if (event.target.matches('[data-info-field="published"]')) updateInfoAppearance(card);
+    updateInfoSummary(card);
+    scheduleSave();
+  });
+  card.querySelector(".duplicate-info").addEventListener("click", () => {
+    addInfo({ ...readInfo(card), id: crypto.randomUUID() }, card);
+    showNotice("L’info a été dupliquée.");
+  });
+  card.querySelector(".remove-info").addEventListener("click", () => {
+    if (!confirm("Supprimer définitivement cette info ?")) return;
+    card.remove();
+    refreshNumbers();
+    scheduleSave();
+  });
+}
+
+function addInfo(info = emptyInfo(), afterCard = null) {
+  const fragment = infoTemplate.content.cloneNode(true);
+  const card = fragment.querySelector(".info-editor");
+  bindInfo(card);
+  fillInfo(card, info);
+  if (afterCard) afterCard.insertAdjacentElement("afterend", card);
+  else if (!rendering) infosEditor.prepend(card);
+  else infosEditor.appendChild(card);
+  refreshNumbers();
+  if (!rendering) setCardExpanded(card, true);
+  scheduleSave();
+  return card;
+}
+
 function refreshNumbers() {
   matchCount.textContent = editor.children.length;
   groupCount.textContent = groupsEditor.children.length;
+  infoCount.textContent = infosEditor.children.length;
 }
 
 function applyMatchFilters(resetLimit = false) {
@@ -1470,11 +1579,13 @@ function render(data) {
   rendering = true;
   editor.innerHTML = "";
   groupsEditor.innerHTML = "";
+  infosEditor.innerHTML = "";
   updatedAtInput.value = text(data.updated_at, formatCasablancaDate());
   fillSettings(data.settings);
   const sourceMatches = Array.isArray(data.matches) && data.matches.length ? data.matches : [emptyMatch()];
   sourceMatches.forEach(match => addMatch(match, null, false));
   (Array.isArray(data.groups) ? data.groups : []).forEach(group => addGroup(group));
+  (Array.isArray(data.infos) ? data.infos : []).forEach(info => addInfo(info));
   refreshNumbers();
   updateAllGroupSelects();
   updateSceneSelectors();
@@ -1590,6 +1701,10 @@ document.getElementById("addGroupButton").addEventListener("click", () => {
   const card = addGroup();
   card.scrollIntoView({ behavior: "smooth", block: "start" });
 });
+document.getElementById("addInfoButton").addEventListener("click", () => {
+  const card = addInfo();
+  card.scrollIntoView({ behavior: "smooth", block: "start" });
+});
 [
   matchSearch,
   matchPhaseFilter,
@@ -1625,17 +1740,17 @@ updatedAtInput.addEventListener("input", () => {
   syncControlRoom();
   scheduleSave();
 });
-[scoreSceneDurationInput, preMatchSceneDurationInput, lineupsSceneDurationInput, statsSceneDurationInput, goalDetailSceneDurationInput, eventDetailSceneDurationInput, standingsSceneDurationInput, videoSceneDurationInput, scoreSceneBeforeMinutesInput, scoreSceneAfterMinutesInput].forEach(input => {
+[scoreSceneDurationInput, preMatchSceneDurationInput, lineupsSceneDurationInput, statsSceneDurationInput, infoSceneDurationInput, goalDetailSceneDurationInput, eventDetailSceneDurationInput, standingsSceneDurationInput, videoSceneDurationInput, scoreSceneBeforeMinutesInput, scoreSceneAfterMinutesInput].forEach(input => {
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });
-[matchBackgroundUrlInput, matchVideoBackgroundUrlInput, standingsBackgroundUrlInput, tickerBackgroundUrlInput].forEach(input => {
+[matchBackgroundUrlInput, matchVideoBackgroundUrlInput, standingsBackgroundUrlInput, tickerBackgroundUrlInput, infoBackgroundUrlInput].forEach(input => {
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });
 videoPlaylistUrlsInput.addEventListener("input", scheduleSave);
 videoPlaylistUrlsInput.addEventListener("change", scheduleSave);
-[autoRotateScenesInput, showTickerInput, showGoalAlertInput, autoStartMatchesInput, enableGoalSoundInput, includePreMatchScenesInput, includeLineupScenesInput, includeStatsScenesInput, includeGoalDetailScenesInput, includeEventDetailScenesInput, includeMatchScenesInput, includeMatchVideoScenesInput, includeGroupScenesInput, includeTickerSceneInput, includeVideoSceneInput, enableVideoSoundInput].forEach(input => {
+[autoRotateScenesInput, showTickerInput, showGoalAlertInput, autoStartMatchesInput, enableGoalSoundInput, includePreMatchScenesInput, includeLineupScenesInput, includeStatsScenesInput, includeInfoScenesInput, includeGoalDetailScenesInput, includeEventDetailScenesInput, includeMatchScenesInput, includeMatchVideoScenesInput, includeGroupScenesInput, includeTickerSceneInput, includeVideoSceneInput, enableVideoSoundInput].forEach(input => {
   input.addEventListener("change", scheduleSave);
 });
 [sceneModeInput, selectedMatchSceneInput, selectedGroupSceneInput].forEach(input => {

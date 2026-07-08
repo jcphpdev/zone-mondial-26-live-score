@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Administration des scores — Zone Mondial 26</title>
-  <link rel="stylesheet" href="admin.css?v=20260703-03">
+  <link rel="stylesheet" href="admin.css?v=20260708-01">
 </head>
 <body>
   <header class="admin-header">
@@ -57,6 +57,9 @@
       </button>
       <button class="section-tab" data-section-target="groupsSection" type="button">
         Groupes
+      </button>
+      <button class="section-tab" data-section-target="infosSection" type="button">
+        Infos
       </button>
       <button class="section-tab" data-section-target="controlRoomSection" type="button">
         Régie live
@@ -134,6 +137,20 @@
     <section id="groupsEditor" class="matches-editor groups-editor"></section>
     </section>
 
+    <section id="infosSection" class="admin-section">
+      <section class="toolbar standings-toolbar">
+        <div>
+          <h2>Infos live <span id="infoCount">0</span></h2>
+          <p>Créez des cartes éditoriales avec titre, image, détails et date pour enrichir la rotation du live.</p>
+        </div>
+        <button id="addInfoButton" class="button add" type="button">
+          + Ajouter une info
+        </button>
+      </section>
+
+      <section id="infosEditor" class="matches-editor infos-editor"></section>
+    </section>
+
     <section id="controlRoomSection" class="admin-section">
       <section class="toolbar standings-toolbar">
         <div>
@@ -183,6 +200,7 @@
               <button class="button secondary" data-control-scene="group" type="button">Classement</button>
               <button class="button secondary" data-control-scene="ticker" type="button">Live updates</button>
               <button class="button secondary" data-control-scene="video" type="button">Vidéos 9:16</button>
+              <button class="button secondary" data-control-scene="info" type="button">Infos</button>
             </div>
             <p class="control-hint">Les boutons modifient le mode d’affichage et publient si la publication automatique est active.</p>
           </section>
@@ -354,6 +372,7 @@
               <option value="group">Forcer un classement</option>
               <option value="ticker">Forcer la scène ticker</option>
               <option value="video">Forcer la scène vidéos 9:16</option>
+              <option value="info">Forcer les infos</option>
             </select>
           </div>
 
@@ -399,6 +418,14 @@
             <label for="statsSceneDuration">Durée stats live</label>
             <div class="unit-field">
               <input id="statsSceneDuration" type="number" min="3" max="60" step="1" value="10">
+              <span>secondes</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="infoSceneDuration">Durée infos</label>
+            <div class="unit-field">
+              <input id="infoSceneDuration" type="number" min="3" max="60" step="1" value="12">
               <span>secondes</span>
             </div>
           </div>
@@ -471,6 +498,11 @@
             <input id="tickerBackgroundUrl" type="text" placeholder="assets/bg-ambience-live-updates.svg">
           </div>
 
+          <div class="field full-setting">
+            <label for="infoBackgroundUrl">Background Infos</label>
+            <input id="infoBackgroundUrl" type="text" placeholder="assets/bg-ambience-live-updates.svg">
+          </div>
+
           <label class="setting-switch">
             <input id="autoRotateScenes" type="checkbox" checked>
             <span>
@@ -500,6 +532,14 @@
             <span>
               <strong>Inclure les stats live</strong>
               <small>Ajoute les statistiques comparées des matchs publiés dans la rotation automatique.</small>
+            </span>
+          </label>
+
+          <label class="setting-switch">
+            <input id="includeInfoScenes" type="checkbox">
+            <span>
+              <strong>Inclure les infos live</strong>
+              <small>Ajoute les cartes éditoriales publiées dans la rotation automatique.</small>
             </span>
           </label>
 
@@ -909,6 +949,50 @@
     </article>
   </template>
 
+  <template id="infoTemplate">
+    <article class="match-editor info-editor is-collapsed">
+      <div class="match-editor-header match-summary">
+        <button class="summary-toggle info-summary-toggle" type="button" aria-expanded="false">
+          <span class="summary-date info-summary-date">Date à définir</span>
+          <span class="summary-fixture">
+            <strong class="info-summary-title">Nouvelle info</strong>
+          </span>
+          <span class="summary-meta">Carte info</span>
+        </button>
+        <div class="card-actions">
+          <label class="publish-switch">
+            <input data-info-field="published" type="checkbox" checked>
+            <span>Publié</span>
+          </label>
+          <button class="icon-button duplicate-info" type="button">Dupliquer</button>
+          <button class="icon-button danger remove-info" type="button">Supprimer</button>
+        </div>
+      </div>
+
+      <div class="match-editor-body">
+        <div class="details-grid">
+          <div class="field full-setting">
+            <label>Titre</label>
+            <input data-info-field="title" type="text" placeholder="Ex : Le programme du jour">
+          </div>
+          <div class="field full-setting">
+            <label>Image illustrative</label>
+            <input data-info-field="image" type="text" placeholder="assets/infos/image.png ou https://…">
+            <small>Utilisez une image locale du projet ou une URL directe.</small>
+          </div>
+          <div class="field">
+            <label>Date</label>
+            <input data-info-field="date" type="date">
+          </div>
+          <div class="field full-setting">
+            <label>Détails</label>
+            <textarea data-info-field="details" rows="5" placeholder="Texte court et lisible à afficher dans la scène."></textarea>
+          </div>
+        </div>
+      </div>
+    </article>
+  </template>
+
   <template id="standingTeamTemplate">
     <div class="standing-team-row">
       <div class="standing-team-name">
@@ -928,6 +1012,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260707-07"></script>
+  <script type="module" src="admin.js?v=20260708-01"></script>
 </body>
 </html>

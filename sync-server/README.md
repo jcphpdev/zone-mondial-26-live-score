@@ -57,6 +57,19 @@ Dans `admin.html`, chaque match peut être lié avec :
 Si aucun ID LiveScore n’est saisi, le serveur essaie aussi de faire un matching
 simple par noms d’équipes dans le flux live.
 
+Pour afficher les matchs actuellement présents dans le flux LiveScore et copier
+les bons identifiants :
+
+```powershell
+npm run list:live-score
+```
+
+Si le log affiche par exemple `LiveScore : 10 match(s)` mais
+`LiveScore 0` dans les matchs liés, cela signifie que l’API renvoie bien des
+matchs live, mais pas les matchs publiés dans l’overlay — ou que leurs noms ne
+correspondent pas assez pour le matching automatique. Dans ce cas, copiez
+`ID_Match` ou `ID_Fixture` dans la fiche du match.
+
 ## Source optionnelle football-data.org
 
 Le script peut aussi utiliser `football-data.org` comme source d’informations

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node sync.js",
+    "list:live-score": "node list-live-score.js",
     "list:football-data": "node list-football-data.js",
     "check": "node --check sync.js"
   }

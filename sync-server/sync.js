@@ -980,6 +980,9 @@ async function syncOnce() {
   log(changed
     ? `Synchronisation appliquée : ${changed} match(s) mis à jour.`
     : `Aucun changement. Matchs liés : ${linked} (LiveScore ${liveScoreLinked}, WorldCup ${worldCupLinked}, football-data ${footballDataLinked}). LiveScore : ${liveScoreMatches.length} match(s), API World Cup : ${games.length} match(s), football-data : ${footballMatches.length} match(s).`);
+  if (liveScoreMatches.length && !liveScoreLinked) {
+    log("Info LiveScore : le flux contient des matchs, mais aucun ne correspond aux matchs publiés. Lancez `npm run list:live-score` pour voir les IDs à lier.");
+  }
   changedMatches.forEach(item => log(`  - ${item}`));
 }
 

@@ -1645,6 +1645,7 @@ function renderScene(options = {}) {
 }
 
 function applyData(data, options = {}) {
+  const previousScene = scenes[activeScene] || null;
   latestData = data;
   currentSettings = normalizeSettings(data?.settings);
   elements.soundUnlock.hidden = !shouldShowSoundUnlock() || soundUnlocked;
@@ -1730,11 +1731,14 @@ function applyData(data, options = {}) {
     id: "video",
     data: { rows: liveUpdateRows(publishedMatches, allGroups) }
   };
-  const infoScenes = publishedInfos.map(info => ({
-    type: "info",
-    id: value(info.id, `info-${publishedInfos.indexOf(info)}`),
-    data: info
-  }));
+  const infoScenes = publishedInfos.map((info, index) => {
+    const infoId = value(info.id).trim() || `info-${index}-${value(info.title || info.date).trim().toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, "-")}`;
+    return {
+      type: "info",
+      id: infoId,
+      data: { ...info, id: infoId }
+    };
+  });
 
   if (currentSettings.scene_mode === "pre-match") {
     scenes = [
@@ -1803,7 +1807,12 @@ function applyData(data, options = {}) {
     activeScene = scenes.findIndex(scene => scene.type === "stats");
     if (activeScene < 0) activeScene = 0;
   } else if (requestedScene === "info") {
-    activeScene = scenes.findIndex(scene => scene.type === "info");
+    const previousInfoIndex = previousScene?.type === "info"
+      ? scenes.findIndex(scene => scene.type === "info" && scene.id === previousScene.id)
+      : -1;
+    activeScene = previousInfoIndex >= 0
+      ? previousInfoIndex
+      : scenes.findIndex(scene => scene.type === "info");
     if (activeScene < 0) activeScene = 0;
   } else if (requestedScene === "goal-detail") {
     activeScene = scenes.findIndex(scene => scene.type === "goal-detail");

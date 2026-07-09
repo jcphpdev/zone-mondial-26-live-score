@@ -107,6 +107,7 @@ const elements = {
   infoSceneDate: document.getElementById("infoSceneDate"),
   infoSceneTitle: document.getElementById("infoSceneTitle"),
   infoSceneDetails: document.getElementById("infoSceneDetails"),
+  infoScenePagination: document.getElementById("infoScenePagination"),
   preMatchView: document.getElementById("preMatchView"),
   preMatchHomeFlag: document.getElementById("preMatchHomeFlag"),
   preMatchHomeName: document.getElementById("preMatchHomeName"),
@@ -1341,6 +1342,21 @@ function renderInfoScene(info) {
   elements.infoSceneTitle.textContent = value(info.title, "Information Zone Mondial 26");
   elements.infoSceneDetails.textContent = value(info.details || info.description, "Information à compléter dans admin.html.");
   elements.infoSceneDate.textContent = infoDateLabel(info.date);
+  renderInfoScenePagination(info);
+}
+
+function renderInfoScenePagination(info) {
+  if (!elements.infoScenePagination) return;
+  const infoScenes = scenes.filter(scene => scene.type === "info");
+  if (infoScenes.length <= 1) {
+    elements.infoScenePagination.innerHTML = "";
+    return;
+  }
+  const currentInfoId = value(info.id);
+  const currentIndex = Math.max(0, infoScenes.findIndex(scene => value(scene.data?.id) === currentInfoId));
+  elements.infoScenePagination.innerHTML = infoScenes.map((scene, index) => `
+    <span class="${index === currentIndex ? "active" : ""}">${index + 1}</span>
+  `).join("");
 }
 
 function infoDateLabel(input) {

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zone Mondial 26 — Live Scores</title>
-  <link rel="stylesheet" href="style.css?v=20260708-01">
+  <link rel="stylesheet" href="style.css?v=20260709-01">
 </head>
 <body>
   <main class="scoreboard" aria-live="polite">
@@ -87,10 +87,13 @@
           <img id="infoSceneImage" alt="">
         </div>
         <div class="info-scene-content">
-          <span id="infoSceneDate" class="info-scene-date">Aujourd’hui</span>
-          <h1 id="infoSceneTitle">Information Zone Mondial 26</h1>
-          <p id="infoSceneDetails">Les dernières informations du tournoi seront affichées ici.</p>
+          <div class="info-scene-copy">
+            <h1 id="infoSceneTitle">Information Zone Mondial 26</h1>
+            <p id="infoSceneDetails">Les dernières informations du tournoi seront affichées ici.</p>
+          </div>
+          <time id="infoSceneDate" class="info-scene-date">Aujourd’hui</time>
         </div>
+        <div id="infoScenePagination" class="info-scene-pagination" aria-hidden="true"></div>
       </article>
     </section>
 
@@ -282,6 +285,6 @@
     Mise à jour des scores…
   </div>
 
-  <script type="module" src="script.js?v=20260708-01"></script>
+  <script type="module" src="script.js?v=20260709-01"></script>
 </body>
 </html>

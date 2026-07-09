@@ -801,15 +801,21 @@
           <label>Information affichée en bas</label>
           <input data-field="info" type="text" placeholder="Buteurs, stade ou message">
         </div>
-        <div class="field full-setting">
-          <label>Temps forts / timeline live</label>
-          <textarea data-field="timeline" rows="5" placeholder="36’ But : Mikel Oyarzabal.&#10;45’ Mi-temps : 1–0.&#10;90+4’ But : Gonçalo Ramos."></textarea>
-          <small>Une ligne par vrai temps fort. Si ce champ est vide, la rubrique reste masquée sauf buteurs ou mi-temps disponibles.</small>
-        </div>
-        <div class="field full-setting">
-          <label>Temps forts API</label>
-          <textarea data-field="timeline_events" data-json="true" rows="5" placeholder="Événements générés automatiquement par football-data"></textarea>
-          <small>Champ alimenté par le serveur local. Le champ manuel ci-dessus reste prioritaire s’il est rempli.</small>
+        <div class="preserved-api-fields" hidden>
+          <textarea data-field="timeline"></textarea>
+          <textarea data-field="timeline_events" data-json="true"></textarea>
+          <input data-field="home_coach" type="hidden">
+          <input data-field="away_coach" type="hidden">
+          <input data-field="home_formation" type="hidden">
+          <input data-field="away_formation" type="hidden">
+          <textarea data-field="home_statistics" data-json="true"></textarea>
+          <textarea data-field="away_statistics" data-json="true"></textarea>
+          <input data-field="home_penalty_score" type="hidden" value="0">
+          <input data-field="away_penalty_score" type="hidden" value="0">
+          <input data-field="home_penalty_scorers" type="hidden">
+          <input data-field="away_penalty_scorers" type="hidden">
+          <input data-field="home_penalty_misses" type="hidden">
+          <input data-field="away_penalty_misses" type="hidden">
         </div>
         <div class="field">
           <label>Stade</label>
@@ -819,22 +825,6 @@
           <label>Arbitre</label>
           <input data-field="referee" type="text" placeholder="Arbitre à confirmer">
         </div>
-        <div class="field">
-          <label>Sélectionneur équipe 1</label>
-          <input data-field="home_coach" type="text" placeholder="Nom du sélectionneur">
-        </div>
-        <div class="field">
-          <label>Sélectionneur équipe 2</label>
-          <input data-field="away_coach" type="text" placeholder="Nom du sélectionneur">
-        </div>
-        <div class="field">
-          <label>Formation équipe 1</label>
-          <input data-field="home_formation" type="text" placeholder="4-3-3">
-        </div>
-        <div class="field">
-          <label>Formation équipe 2</label>
-          <input data-field="away_formation" type="text" placeholder="4-2-3-1">
-        </div>
         <div class="field full-setting">
           <label>Composition équipe 1</label>
           <textarea data-field="home_lineup" data-json="true" rows="4" placeholder="Une ligne par joueur ou JSON football-data"></textarea>
@@ -842,22 +832,6 @@
         <div class="field full-setting">
           <label>Composition équipe 2</label>
           <textarea data-field="away_lineup" data-json="true" rows="4" placeholder="Une ligne par joueur ou JSON football-data"></textarea>
-        </div>
-        <div class="field full-setting">
-          <label>Stats équipe 1</label>
-          <textarea data-field="home_statistics" data-json="true" rows="4" placeholder="JSON football-data, ex : {&quot;shots&quot;:8,&quot;ball_possession&quot;:51}"></textarea>
-        </div>
-        <div class="field full-setting">
-          <label>Stats équipe 2</label>
-          <textarea data-field="away_statistics" data-json="true" rows="4" placeholder="JSON football-data, ex : {&quot;shots&quot;:12,&quot;ball_possession&quot;:49}"></textarea>
-        </div>
-        <div class="field">
-          <label>TAB équipe 1</label>
-          <input data-field="home_penalty_score" type="number" min="0" value="0">
-        </div>
-        <div class="field">
-          <label>TAB équipe 2</label>
-          <input data-field="away_penalty_score" type="number" min="0" value="0">
         </div>
         <div class="field api-link-field">
           <label>ID match API</label>
@@ -883,22 +857,6 @@
           <label>ID fixture LiveScore</label>
           <input data-field="live_score_fixture_id" type="text" placeholder="Ex : 1657338">
           <small>ID fixture du calendrier LiveScore, différent de l’ID match.</small>
-        </div>
-        <div class="field full-setting">
-          <label>Tireurs TAB réussis équipe 1</label>
-          <input data-field="home_penalty_scorers" type="text" placeholder="Nom 1, Nom 2…">
-        </div>
-        <div class="field full-setting">
-          <label>Tireurs TAB réussis équipe 2</label>
-          <input data-field="away_penalty_scorers" type="text" placeholder="Nom 1, Nom 2…">
-        </div>
-        <div class="field full-setting">
-          <label>Tireurs TAB ratés équipe 1</label>
-          <input data-field="home_penalty_misses" type="text" placeholder="Nom 1, Nom 2…">
-        </div>
-        <div class="field full-setting">
-          <label>Tireurs TAB ratés équipe 2</label>
-          <input data-field="away_penalty_misses" type="text" placeholder="Nom 1, Nom 2…">
         </div>
       </div>
       </div>

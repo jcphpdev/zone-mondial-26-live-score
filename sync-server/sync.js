@@ -12,6 +12,7 @@ const DEFAULTS = {
   LIVE_SCORE_API_ENABLED: "false",
   LIVE_SCORE_API_BASE_URL: "https://livescore-api.com/api-client",
   LIVE_SCORE_API_COMPETITION_IDS: "",
+  LIVE_SCORE_API_FIXTURE_COMPETITION_IDS: "",
   LIVE_SCORE_API_LANG: "",
   FOOTBALL_DATA_ENABLED: "false",
   FOOTBALL_DATA_COMPETITIONS: "WC",
@@ -706,6 +707,43 @@ function matchLiveScoreGame(localMatch, liveScoreMatches) {
   }) || null;
 }
 
+function liveScoreFixtureKickoff(fixture) {
+  const date = value(fixture.date).trim();
+  const time = value(fixture.time).trim();
+  if (!date) return "";
+  return time ? `${date}T${time.replace(/Z$/i, "")}Z` : `${date}T00:00:00Z`;
+}
+
+function matchLiveScoreFixture(localMatch, fixtures) {
+  const ids = liveScoreExplicitIds(localMatch);
+  if (ids.fixtureId) {
+    return fixtures.find(fixture => value(fixture.id) === ids.fixtureId) || null;
+  }
+
+  const localHome = normalizeTeamName(localMatch.home);
+  const localAway = normalizeTeamName(localMatch.away);
+  if (!localHome || !localAway) return null;
+
+  return fixtures.find(fixture => {
+    if (localMatch.kickoff && !sameMatchDay(localMatch.kickoff, liveScoreFixtureKickoff(fixture))) return false;
+    const apiHome = normalizeTeamName(fixture.home_translations?.fr || fixture.home_name);
+    const apiAway = normalizeTeamName(fixture.away_translations?.fr || fixture.away_name);
+    return teamNamesMatch(apiHome, localHome) && teamNamesMatch(apiAway, localAway);
+  }) || null;
+}
+
+function liveScoreFixturePatch(fixture, localMatch) {
+  const patch = {
+    live_score_fixture_id: value(fixture.id),
+    live_score_fixture_competition_id: value(fixture.competition_id || fixture.competition?.id),
+    live_score_fixture_round: value(fixture.round)
+  };
+  if (fixture.location) patch.venue = value(fixture.location);
+  const kickoff = liveScoreFixtureKickoff(fixture);
+  if (kickoff && !value(localMatch.kickoff).trim()) patch.kickoff = kickoff;
+  return patch;
+}
+
 function hasFootballDataLink(match) {
   return Boolean(value(match.football_data_match_id).trim())
     || value(match.external_api) === "football-data";
@@ -742,6 +780,42 @@ async function fetchLiveScoreMatches() {
     throw new Error(`live-score-api.com: ${value(payload?.error || payload?.message, "réponse non réussie")}`);
   }
   return Array.isArray(payload?.data?.match) ? payload.data.match : [];
+}
+
+async function fetchLiveScoreFixtures() {
+  if (!liveScoreApiEnabled) return [];
+  const key = value(env.LIVE_SCORE_API_KEY).trim();
+  const secret = value(env.LIVE_SCORE_API_SECRET).trim();
+  if (!key || !secret) return [];
+
+  const competitionIds = value(env.LIVE_SCORE_API_FIXTURE_COMPETITION_IDS || env.LIVE_SCORE_API_COMPETITION_IDS).trim();
+  if (!competitionIds) return [];
+
+  const base = value(env.LIVE_SCORE_API_BASE_URL, "https://livescore-api.com/api-client").replace(/\/$/, "");
+  const results = [];
+  for (const competitionId of competitionIds.split(",").map(item => item.trim()).filter(Boolean)) {
+    const url = new URL(`${base}/fixtures/matches.json`);
+    url.searchParams.set("key", key);
+    url.searchParams.set("secret", secret);
+    url.searchParams.set("competition_id", competitionId);
+    const lang = value(env.LIVE_SCORE_API_LANG).trim();
+    if (lang) url.searchParams.set("lang", lang);
+
+    const response = await fetchWithRetry(url, { cache: "no-store" }, `live-score-api.com fixtures ${competitionId}`, {
+      attempts: footballDataRetryAttempts,
+      delayMs: footballDataRetryDelayMs
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`live-score-api.com fixtures ${competitionId} HTTP ${response.status}: ${body.slice(0, 160)}`);
+    }
+    const payload = await response.json();
+    if (payload?.success === false) {
+      throw new Error(`live-score-api.com fixtures ${competitionId}: ${value(payload?.error || payload?.message, "réponse non réussie")}`);
+    }
+    results.push(...(Array.isArray(payload?.data?.fixtures) ? payload.data.fixtures : []));
+  }
+  return results;
 }
 
 async function fetchFootballDataMatches() {
@@ -846,6 +920,12 @@ async function syncOnce() {
     || ["En direct", "Mi-temps"].includes(value(match.status))
     || (!["Terminé", "Reporté"].includes(value(match.status)) && match.kickoff)
   );
+  const needsLiveScoreFixtures = liveScoreApiEnabled && publishedMatches.some(match =>
+    !value(match.live_score_fixture_id).trim()
+    && !["Terminé", "Reporté"].includes(value(match.status))
+    && value(match.home).trim()
+    && value(match.away).trim()
+  );
   const needsWorldCupSource = publishedMatches.some(match =>
     !hasLiveScoreLink(match) &&
     !hasFootballDataLink(match)
@@ -863,10 +943,13 @@ async function syncOnce() {
       || (value(match.external_api) === "football-data" ? value(match.external_match_id).trim() : ""))
     .filter(Boolean);
 
-  const [liveScoreSource, worldCupSource, footballDataSource, footballDataDetailsSource] = await Promise.all([
+  const [liveScoreSource, liveScoreFixturesSource, worldCupSource, footballDataSource, footballDataDetailsSource] = await Promise.all([
     needsLiveScoreSource
       ? settleSource("live-score-api.com", fetchLiveScoreMatches)
       : Promise.resolve({ label: "live-score-api.com", ok: true, data: [] }),
+    needsLiveScoreFixtures
+      ? settleSource("live-score-api.com/fixtures", fetchLiveScoreFixtures)
+      : Promise.resolve({ label: "live-score-api.com/fixtures", ok: true, data: [] }),
     needsWorldCupSource
       ? settleSource("worldcup26.ir", fetchApiGames)
       : Promise.resolve({ label: "worldcup26.ir", ok: true, data: [] }),
@@ -879,13 +962,14 @@ async function syncOnce() {
   ]);
 
   const liveScoreMatches = liveScoreSource.data;
+  const liveScoreFixtures = liveScoreFixturesSource.data;
   const games = worldCupSource.data;
   const footballMatchesById = new Map([
     ...footballDataSource.data,
     ...footballDataDetailsSource.data
   ].map(match => [value(match.id), match]));
   const footballMatches = [...footballMatchesById.values()];
-  const sourceErrors = [liveScoreSource, worldCupSource, footballDataSource, footballDataDetailsSource]
+  const sourceErrors = [liveScoreSource, liveScoreFixturesSource, worldCupSource, footballDataSource, footballDataDetailsSource]
     .filter(source => !source.ok)
     .map(source => `${source.label}: ${source.error}`);
 
@@ -893,8 +977,8 @@ async function syncOnce() {
     sourceErrors.forEach(error => log(`Source indisponible : ${error}`));
   }
 
-  if (!liveScoreMatches.length && !games.length && !footballMatches.length) {
-    const noApiNeeded = !needsLiveScoreSource && !needsWorldCupSource && !needsFootballDataList && !explicitFootballIds.length;
+  if (!liveScoreMatches.length && !liveScoreFixtures.length && !games.length && !footballMatches.length) {
+    const noApiNeeded = !needsLiveScoreSource && !needsLiveScoreFixtures && !needsWorldCupSource && !needsFootballDataList && !explicitFootballIds.length;
     const now = new Date().toISOString();
     await firebasePatchLiveScores({
       automation: {
@@ -908,6 +992,7 @@ async function syncOnce() {
           : (sourceErrors.length ? sourceErrors : ["Aucune source active ou aucun match reçu."]),
         live_score_api_enabled: liveScoreApiEnabled,
         live_score_api_matches: liveScoreMatches.length,
+        live_score_api_fixtures: liveScoreFixtures.length,
         world_cup_enabled: worldCupEnabled,
         football_data_enabled: footballDataEnabled,
         interval_seconds: intervalSeconds,
@@ -923,6 +1008,7 @@ async function syncOnce() {
   const gameById = new Map(games.map(game => [value(game.id), game]));
   let linked = 0;
   let liveScoreLinked = 0;
+  let liveScoreFixturesLinked = 0;
   let worldCupLinked = 0;
   let footballDataLinked = 0;
   let changed = 0;
@@ -932,6 +1018,7 @@ async function syncOnce() {
     if (match.published === false) return match;
     const apiId = value(match.external_match_id).trim();
     const liveScoreMatch = matchLiveScoreGame(match, liveScoreMatches);
+    const liveScoreFixture = liveScoreMatch ? null : matchLiveScoreFixture(match, liveScoreFixtures);
     const footballMatch = matchFootballDataGame(match, footballMatches);
     const game = liveScoreMatch || hasFootballDataLink(match)
       ? null
@@ -940,10 +1027,12 @@ async function syncOnce() {
     const patch = {
       ...(game ? apiMatchPatch(game) : {}),
       ...(footballMatch && !liveScoreMatch ? footballDataPatch(footballMatch, match, explicitFootballScoreSource) : {}),
+      ...(liveScoreFixture ? liveScoreFixturePatch(liveScoreFixture, match) : {}),
       ...(liveScoreMatch ? liveScorePatch(liveScoreMatch) : {})
     };
-    if (liveScoreMatch || game || footballMatch) linked += 1;
+    if (liveScoreMatch || liveScoreFixture || game || footballMatch) linked += 1;
     if (liveScoreMatch) liveScoreLinked += 1;
+    if (liveScoreFixture) liveScoreFixturesLinked += 1;
     if (game) worldCupLinked += 1;
     if (footballMatch && !liveScoreMatch) footballDataLinked += 1;
     if (!Object.keys(patch).length) return match;
@@ -963,10 +1052,12 @@ async function syncOnce() {
     source_errors: sourceErrors,
     linked_matches: linked,
     live_score_linked_matches: liveScoreLinked,
+    live_score_fixture_linked_matches: liveScoreFixturesLinked,
     world_cup_linked_matches: worldCupLinked,
     football_data_linked_matches: footballDataLinked,
     live_score_api_enabled: liveScoreApiEnabled,
     live_score_api_matches: liveScoreMatches.length,
+    live_score_api_fixtures: liveScoreFixtures.length,
     world_cup_enabled: worldCupEnabled,
     api_matches: games.length,
     football_data_enabled: footballDataEnabled,
@@ -979,7 +1070,7 @@ async function syncOnce() {
   await firebasePatchLiveScores(changed ? { matches, updated_at: now, automation } : { automation });
   log(changed
     ? `Synchronisation appliquée : ${changed} match(s) mis à jour.`
-    : `Aucun changement. Matchs liés : ${linked} (LiveScore ${liveScoreLinked}, WorldCup ${worldCupLinked}, football-data ${footballDataLinked}). LiveScore : ${liveScoreMatches.length} match(s), API World Cup : ${games.length} match(s), football-data : ${footballMatches.length} match(s).`);
+    : `Aucun changement. Matchs liés : ${linked} (LiveScore ${liveScoreLinked}, fixtures ${liveScoreFixturesLinked}, WorldCup ${worldCupLinked}, football-data ${footballDataLinked}). LiveScore : ${liveScoreMatches.length} match(s), fixtures : ${liveScoreFixtures.length}, API World Cup : ${games.length} match(s), football-data : ${footballMatches.length} match(s).`);
   if (liveScoreMatches.length && !liveScoreLinked) {
     log("Info LiveScore : le flux contient des matchs, mais aucun ne correspond aux matchs publiés. Lancez `npm run list:live-score` pour voir les IDs à lier.");
   }

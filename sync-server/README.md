@@ -45,7 +45,8 @@ Activer dans `.env` :
 LIVE_SCORE_API_ENABLED=true
 LIVE_SCORE_API_KEY=votre-key
 LIVE_SCORE_API_SECRET=votre-secret
-LIVE_SCORE_API_COMPETITION_IDS=
+LIVE_SCORE_API_COMPETITION_IDS=362
+LIVE_SCORE_API_FIXTURE_COMPETITION_IDS=362
 LIVE_SCORE_API_LANG=
 ```
 
@@ -63,6 +64,22 @@ les bons identifiants :
 ```powershell
 npm run list:live-score
 ```
+
+Pour afficher les fixtures de la compétition World Cup LiveScore (`362`) :
+
+```powershell
+npm run list:live-score-fixtures
+```
+
+Ou pour une autre compétition :
+
+```powershell
+npm run list:live-score-fixtures -- 362
+```
+
+Le serveur peut aussi utiliser automatiquement ces fixtures pour renseigner
+`live_score_fixture_id` sur les matchs publiés à venir, si
+`LIVE_SCORE_API_FIXTURE_COMPETITION_IDS` est configuré.
 
 Si le log affiche par exemple `LiveScore : 10 match(s)` mais
 `LiveScore 0` dans les matchs liés, cela signifie que l’API renvoie bien des

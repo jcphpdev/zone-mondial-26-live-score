@@ -26,12 +26,36 @@ Le script :
 
 1. se connecte à Firebase avec email/mot de passe ;
 2. lit `/liveScores` ;
-3. récupère les matchs depuis `https://worldcup26.ir/get/games` ;
-4. met à jour tous les matchs qui possèdent `external_match_id` ;
+3. récupère les matchs depuis les sources API activées ;
+4. applique les scores avec la priorité `live-score-api.com` → `football-data.org` → `worldcup26.ir` ;
 5. écrit les changements dans Firebase Realtime Database.
 
-Les matchs dépubliés sont aussi synchronisés. La publication reste uniquement un
-filtre d’affichage dans l’overlay.
+Seuls les matchs publiés sont interrogés par les API pour limiter les requêtes.
+La publication reste uniquement un filtre d’affichage dans l’overlay.
+
+## Source prioritaire live-score-api.com
+
+`live-score-api.com` est la source prioritaire pour les scores live. Selon sa
+documentation, l’endpoint live renvoie uniquement les matchs en cours et les
+matchs terminés récemment.
+
+Activer dans `.env` :
+
+```env
+LIVE_SCORE_API_ENABLED=true
+LIVE_SCORE_API_KEY=votre-key
+LIVE_SCORE_API_SECRET=votre-secret
+LIVE_SCORE_API_COMPETITION_IDS=
+LIVE_SCORE_API_LANG=
+```
+
+Dans `admin.html`, chaque match peut être lié avec :
+
+- `ID match LiveScore` : l’identifiant du match live ;
+- `ID fixture LiveScore` : l’identifiant calendrier, différent de l’ID match.
+
+Si aucun ID LiveScore n’est saisi, le serveur essaie aussi de faire un matching
+simple par noms d’équipes dans le flux live.
 
 ## Source optionnelle football-data.org
 
@@ -55,9 +79,9 @@ FOOTBALL_DATA_LOOKBACK_DAYS=2
 FOOTBALL_DATA_LOOKAHEAD_DAYS=7
 ```
 
-Par défaut, `worldcup26.ir` reste la source principale pour les scores live.
-`football-data.org` enrichit seulement les infos. Pour utiliser explicitement
-football-data comme source score d’un match, il faut définir sur ce match :
+`football-data.org` sert désormais de fallback/enrichissement quand LiveScore ne
+renvoie pas le match. Pour utiliser explicitement football-data comme source
+score d’un match, il faut définir sur ce match :
 
 ```json
 {

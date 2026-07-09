@@ -872,7 +872,17 @@
         <div class="field">
           <label>ID football-data</label>
           <input data-field="football_data_match_id" type="text" placeholder="Ex : 498765">
-          <small>ID officiel football-data.org. Prioritaire pour enrichir ce match sans dépendre du matching automatique.</small>
+          <small>ID officiel football-data.org. Utilisé comme fallback si LiveScore ne trouve rien.</small>
+        </div>
+        <div class="field">
+          <label>ID match LiveScore</label>
+          <input data-field="live_score_match_id" type="text" placeholder="Ex : 483252">
+          <small>ID match live-score-api.com. Source prioritaire quand le match est en live.</small>
+        </div>
+        <div class="field">
+          <label>ID fixture LiveScore</label>
+          <input data-field="live_score_fixture_id" type="text" placeholder="Ex : 1657338">
+          <small>ID fixture du calendrier LiveScore, différent de l’ID match.</small>
         </div>
         <div class="field full-setting">
           <label>Tireurs TAB réussis équipe 1</label>
@@ -1012,6 +1022,6 @@
     </div>
   </template>
 
-  <script type="module" src="admin.js?v=20260708-01"></script>
+  <script type="module" src="admin.js?v=20260709-01"></script>
 </body>
 </html>

@@ -377,7 +377,9 @@ function emptyMatch() {
     away_statistics: "",
     external_api: "worldcup2026",
     external_match_id: "",
-    football_data_match_id: ""
+    football_data_match_id: "",
+    live_score_match_id: "",
+    live_score_fixture_id: ""
   };
 }
 

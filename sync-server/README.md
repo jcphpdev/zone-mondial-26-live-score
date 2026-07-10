@@ -50,6 +50,9 @@ LIVE_SCORE_API_FIXTURE_COMPETITION_IDS=362
 LIVE_SCORE_API_LANG=
 LIVE_SCORE_API_EVENTS_ENABLED=true
 LIVE_SCORE_API_LINEUPS_ENABLED=true
+LIVE_SCORE_API_TOP_SCORERS_ENABLED=true
+LIVE_SCORE_API_TOP_SCORERS_COMPETITION_IDS=362
+LIVE_SCORE_API_TOP_SCORERS_INTERVAL_SECONDS=300
 ```
 
 Dans `admin.html`, chaque match peut être lié avec :
@@ -107,6 +110,22 @@ Ces champs sont utilisés par les scènes “Avant-match” et “Compositions�
 Comme pour les événements, cet endpoint utilise l’ID match LiveScore.
 Selon la compétition, LiveScore peut renvoyer une composition vide tant que les
 feuilles de match officielles ne sont pas publiées.
+
+Quand `LIVE_SCORE_API_TOP_SCORERS_ENABLED=true`, le serveur interroge aussi
+`/competitions/topscorers.json`. La fréquence est volontairement plus lente que
+les scores live, car ce classement ne change pas à chaque seconde :
+
+- `LIVE_SCORE_API_TOP_SCORERS_COMPETITION_IDS=362` : compétition(s) à suivre ;
+- `LIVE_SCORE_API_TOP_SCORERS_INTERVAL_SECONDS=300` : rafraîchissement toutes
+  les 5 minutes par défaut.
+
+Les données sont écrites dans Firebase sous :
+
+- `top_scorers` ;
+- `top_scorers_updated_at`.
+
+Chaque ligne contient le rang, le joueur, l’équipe, les buts, passes décisives,
+matchs joués, compétition et saison.
 
 Si le log affiche par exemple `LiveScore : 10 match(s)` mais
 `LiveScore 0` dans les matchs liés, cela signifie que l’API renvoie bien des

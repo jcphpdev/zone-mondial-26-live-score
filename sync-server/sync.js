@@ -16,6 +16,9 @@ const DEFAULTS = {
   LIVE_SCORE_API_LANG: "",
   LIVE_SCORE_API_EVENTS_ENABLED: "true",
   LIVE_SCORE_API_LINEUPS_ENABLED: "true",
+  LIVE_SCORE_API_TOP_SCORERS_ENABLED: "true",
+  LIVE_SCORE_API_TOP_SCORERS_COMPETITION_IDS: "",
+  LIVE_SCORE_API_TOP_SCORERS_INTERVAL_SECONDS: "300",
   FOOTBALL_DATA_ENABLED: "false",
   FOOTBALL_DATA_COMPETITIONS: "WC",
   FOOTBALL_DATA_LOOKBACK_DAYS: "2",
@@ -60,11 +63,14 @@ const worldCupEnabled = value(env.WORLD_CUP_ENABLED, "true").toLowerCase() !== "
 const liveScoreApiEnabled = value(env.LIVE_SCORE_API_ENABLED).toLowerCase() === "true";
 const liveScoreApiEventsEnabled = value(env.LIVE_SCORE_API_EVENTS_ENABLED, "true").toLowerCase() !== "false";
 const liveScoreApiLineupsEnabled = value(env.LIVE_SCORE_API_LINEUPS_ENABLED, "true").toLowerCase() !== "false";
+const liveScoreApiTopScorersEnabled = value(env.LIVE_SCORE_API_TOP_SCORERS_ENABLED, "true").toLowerCase() !== "false";
+const liveScoreApiTopScorersIntervalMs = Math.max(60, Math.min(3600, Number.parseInt(env.LIVE_SCORE_API_TOP_SCORERS_INTERVAL_SECONDS, 10) || 300)) * 1000;
 const footballDataEnabled = value(env.FOOTBALL_DATA_ENABLED).toLowerCase() === "true";
 const footballDataRetryAttempts = Math.max(1, Math.min(5, Number.parseInt(env.FOOTBALL_DATA_RETRY_ATTEMPTS, 10) || 3));
 const footballDataRetryDelayMs = Math.max(250, Math.min(5000, Number.parseInt(env.FOOTBALL_DATA_RETRY_DELAY_MS, 10) || 1200));
 let authSession = null;
 let syncRunning = false;
+let liveScoreTopScorersCache = { fetchedAt: 0, data: [] };
 
 function log(message, meta = undefined) {
   const time = new Intl.DateTimeFormat("fr-FR", {
@@ -419,6 +425,34 @@ function liveScoreLineupsPatch(lineupPayload) {
   if (home.team?.location || home.team?.stadium) patch.venue = value(home.team.location || home.team.stadium);
   if (!patch.venue && (away.team?.location || away.team?.stadium)) patch.venue = value(away.team.location || away.team.stadium);
   return patch;
+}
+
+function liveScoreCompetitionIds(settingName = "LIVE_SCORE_API_TOP_SCORERS_COMPETITION_IDS") {
+  return value(env[settingName])
+    .trim()
+    || value(env.LIVE_SCORE_API_COMPETITION_IDS).trim()
+    || value(env.LIVE_SCORE_API_FIXTURE_COMPETITION_IDS).trim();
+}
+
+function compactLiveScoreTopScorers(payload, competitionId) {
+  const competition = payload?.competition || {};
+  const season = payload?.season || {};
+  return (Array.isArray(payload?.topscorers) ? payload.topscorers : [])
+    .slice(0, 20)
+    .map((item, index) => ({
+      rank: index + 1,
+      competition_id: value(competition.id || competitionId),
+      competition: value(competition.name, "Compétition"),
+      season: value(season.name || season.id),
+      player_id: value(item.player?.id),
+      player: value(item.player?.name, "Joueur"),
+      team_id: value(item.team?.id),
+      team: value(item.team?.name, "Équipe"),
+      goals: scoreNumber(item.goals),
+      assists: scoreNumber(item.assists),
+      played: scoreNumber(item.played)
+    }))
+    .filter(item => item.player);
 }
 
 function liveScorePatch(apiMatch) {
@@ -1040,6 +1074,53 @@ async function fetchLiveScoreLineups(matchIds = []) {
   return results;
 }
 
+async function fetchLiveScoreTopScorers() {
+  if (!liveScoreApiEnabled || !liveScoreApiTopScorersEnabled) return [];
+  const key = value(env.LIVE_SCORE_API_KEY).trim();
+  const secret = value(env.LIVE_SCORE_API_SECRET).trim();
+  if (!key || !secret) return [];
+
+  const now = Date.now();
+  if (liveScoreTopScorersCache.data.length && now - liveScoreTopScorersCache.fetchedAt < liveScoreApiTopScorersIntervalMs) {
+    return liveScoreTopScorersCache.data;
+  }
+
+  const competitionIds = liveScoreCompetitionIds()
+    .split(",")
+    .map(item => item.trim())
+    .filter(Boolean);
+  if (!competitionIds.length) return [];
+
+  const base = value(env.LIVE_SCORE_API_BASE_URL, "https://livescore-api.com/api-client").replace(/\/$/, "");
+  const lang = value(env.LIVE_SCORE_API_LANG).trim();
+  const results = [];
+
+  for (const competitionId of competitionIds) {
+    const url = new URL(`${base}/competitions/topscorers.json`);
+    url.searchParams.set("key", key);
+    url.searchParams.set("secret", secret);
+    url.searchParams.set("competition_id", competitionId);
+    if (lang) url.searchParams.set("lang", lang);
+
+    const response = await fetchWithRetry(url, { cache: "no-store" }, `live-score-api.com top scorers ${competitionId}`, {
+      attempts: footballDataRetryAttempts,
+      delayMs: footballDataRetryDelayMs
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`live-score-api.com top scorers ${competitionId} HTTP ${response.status}: ${body.slice(0, 160)}`);
+    }
+    const payload = await response.json();
+    if (payload?.success === false) {
+      throw new Error(`live-score-api.com top scorers ${competitionId}: ${value(payload?.error || payload?.message, "réponse non réussie")}`);
+    }
+    results.push(...compactLiveScoreTopScorers(payload?.data, competitionId));
+  }
+
+  liveScoreTopScorersCache = { fetchedAt: now, data: results };
+  return results;
+}
+
 async function fetchFootballDataMatches() {
   if (!footballDataEnabled) return [];
   if (!value(env.FOOTBALL_DATA_API_TOKEN).trim()) {
@@ -1160,6 +1241,9 @@ async function syncOnce() {
     && value(match.external_api) !== "football-data"
     && match.kickoff
   );
+  const needsLiveScoreTopScorers = liveScoreApiEnabled
+    && liveScoreApiTopScorersEnabled
+    && Boolean(liveScoreCompetitionIds().trim());
   const explicitFootballIds = publishedMatches
     .map(match => value(match.football_data_match_id).trim()
       || (value(match.external_api) === "football-data" ? value(match.external_match_id).trim() : ""))
@@ -1199,6 +1283,10 @@ async function syncOnce() {
     ? await settleSource("live-score-api.com/lineups", () => fetchLiveScoreLineups(liveScoreMatchIds))
     : { label: "live-score-api.com/lineups", ok: true, data: new Map() };
   const liveScoreLineupsById = liveScoreLineupsSource.data instanceof Map ? liveScoreLineupsSource.data : new Map();
+  const liveScoreTopScorersSource = needsLiveScoreTopScorers
+    ? await settleSource("live-score-api.com/topscorers", fetchLiveScoreTopScorers)
+    : { label: "live-score-api.com/topscorers", ok: true, data: [] };
+  const liveScoreTopScorers = Array.isArray(liveScoreTopScorersSource.data) ? liveScoreTopScorersSource.data : [];
 
   const games = worldCupSource.data;
   const footballMatchesById = new Map([
@@ -1206,7 +1294,7 @@ async function syncOnce() {
     ...footballDataDetailsSource.data
   ].map(match => [value(match.id), match]));
   const footballMatches = [...footballMatchesById.values()];
-  const sourceErrors = [liveScoreSource, liveScoreFixturesSource, liveScoreEventsSource, liveScoreLineupsSource, worldCupSource, footballDataSource, footballDataDetailsSource]
+  const sourceErrors = [liveScoreSource, liveScoreFixturesSource, liveScoreEventsSource, liveScoreLineupsSource, liveScoreTopScorersSource, worldCupSource, footballDataSource, footballDataDetailsSource]
     .filter(source => !source.ok)
     .map(source => `${source.label}: ${source.error}`);
 
@@ -1214,8 +1302,8 @@ async function syncOnce() {
     sourceErrors.forEach(error => log(`Source indisponible : ${error}`));
   }
 
-  if (!liveScoreMatches.length && !liveScoreFixtures.length && !liveScoreEventsById.size && !liveScoreLineupsById.size && !games.length && !footballMatches.length) {
-    const noApiNeeded = !needsLiveScoreSource && !needsLiveScoreFixtures && !liveScoreMatchIds.length && !needsWorldCupSource && !needsFootballDataList && !explicitFootballIds.length;
+  if (!liveScoreMatches.length && !liveScoreFixtures.length && !liveScoreEventsById.size && !liveScoreLineupsById.size && !liveScoreTopScorers.length && !games.length && !footballMatches.length) {
+    const noApiNeeded = !needsLiveScoreSource && !needsLiveScoreFixtures && !liveScoreMatchIds.length && !needsLiveScoreTopScorers && !needsWorldCupSource && !needsFootballDataList && !explicitFootballIds.length;
     const now = new Date().toISOString();
     await firebasePatchLiveScores({
       automation: {
@@ -1232,6 +1320,7 @@ async function syncOnce() {
         live_score_api_fixtures: liveScoreFixtures.length,
         live_score_api_events: liveScoreEventsById.size,
         live_score_api_lineups: liveScoreLineupsById.size,
+        live_score_api_top_scorers: liveScoreTopScorers.length,
         world_cup_enabled: worldCupEnabled,
         football_data_enabled: footballDataEnabled,
         interval_seconds: intervalSeconds,
@@ -1304,6 +1393,7 @@ async function syncOnce() {
     live_score_api_fixtures: liveScoreFixtures.length,
     live_score_api_events: liveScoreEventsById.size,
     live_score_api_lineups: liveScoreLineupsById.size,
+    live_score_api_top_scorers: liveScoreTopScorers.length,
     world_cup_enabled: worldCupEnabled,
     api_matches: games.length,
     football_data_enabled: footballDataEnabled,
@@ -1313,10 +1403,19 @@ async function syncOnce() {
     changed_matches: changedMatches.slice(0, 8)
   };
 
-  await firebasePatchLiveScores(changed ? { matches, updated_at: now, automation } : { automation });
-  log(changed
-    ? `Synchronisation appliquée : ${changed} match(s) mis à jour.`
-    : `Aucun changement. Matchs liés : ${linked} (LiveScore ${liveScoreLinked}, fixtures ${liveScoreFixturesLinked}, events ${liveScoreEventsById.size}, lineups ${liveScoreLineupsById.size}, WorldCup ${worldCupLinked}, football-data ${footballDataLinked}). LiveScore : ${liveScoreMatches.length} match(s), fixtures : ${liveScoreFixtures.length}, events : ${liveScoreEventsById.size}, lineups : ${liveScoreLineupsById.size}, API World Cup : ${games.length} match(s), football-data : ${footballMatches.length} match(s).`);
+  const topScorersChanged = liveScoreTopScorers.length
+    && JSON.stringify(data.top_scorers ?? []) !== JSON.stringify(liveScoreTopScorers);
+  const firebasePatch = {
+    automation,
+    ...(changed || topScorersChanged ? { updated_at: now } : {}),
+    ...(changed ? { matches } : {}),
+    ...(topScorersChanged ? { top_scorers: liveScoreTopScorers, top_scorers_updated_at: now } : {})
+  };
+
+  await firebasePatchLiveScores(firebasePatch);
+  log(changed || topScorersChanged
+    ? `Synchronisation appliquée : ${changed} match(s) mis à jour${topScorersChanged ? `, ${liveScoreTopScorers.length} meilleur(s) buteur(s)` : ""}.`
+    : `Aucun changement. Matchs liés : ${linked} (LiveScore ${liveScoreLinked}, fixtures ${liveScoreFixturesLinked}, events ${liveScoreEventsById.size}, lineups ${liveScoreLineupsById.size}, top scorers ${liveScoreTopScorers.length}, WorldCup ${worldCupLinked}, football-data ${footballDataLinked}). LiveScore : ${liveScoreMatches.length} match(s), fixtures : ${liveScoreFixtures.length}, events : ${liveScoreEventsById.size}, lineups : ${liveScoreLineupsById.size}, top scorers : ${liveScoreTopScorers.length}, API World Cup : ${games.length} match(s), football-data : ${footballMatches.length} match(s).`);
   if (liveScoreMatches.length && !liveScoreLinked) {
     log("Info LiveScore : le flux contient des matchs, mais aucun ne correspond aux matchs publiés. Lancez `npm run list:live-score` pour voir les IDs à lier.");
   }

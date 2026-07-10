@@ -20,6 +20,7 @@ window.addEventListener("unhandledrejection", event => {
 const DRAFT_KEY = "zone-mondial-26-live-data-draft";
 const AUTO_PUBLISH_DELAY = 650;
 const WORLD_CUP_API_BASE_URL = "https://worldcup26.ir";
+let preservedApiData = {};
 
 const editor = document.getElementById("matchesEditor");
 const groupsEditor = document.getElementById("groupsEditor");
@@ -469,6 +470,7 @@ function buildData() {
   const groups = [...groupsEditor.querySelectorAll(".group-editor")].map(readGroup);
   const infos = [...infosEditor.querySelectorAll(".info-editor")].map(readInfo);
   return {
+    ...preservedApiData,
     updated_at: updatedAtInput.value.trim() || formatCasablancaDate(),
     settings: readSettings(),
     matches,
@@ -1579,6 +1581,10 @@ function refreshCalculatedStandings() {
 
 function render(data) {
   rendering = true;
+  preservedApiData = {
+    ...(Array.isArray(data.top_scorers) ? { top_scorers: data.top_scorers } : {}),
+    ...(data.top_scorers_updated_at ? { top_scorers_updated_at: data.top_scorers_updated_at } : {})
+  };
   editor.innerHTML = "";
   groupsEditor.innerHTML = "";
   infosEditor.innerHTML = "";

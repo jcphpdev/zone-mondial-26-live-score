@@ -50,6 +50,7 @@ LIVE_SCORE_API_FIXTURE_COMPETITION_IDS=362
 LIVE_SCORE_API_LANG=
 LIVE_SCORE_API_EVENTS_ENABLED=true
 LIVE_SCORE_API_LINEUPS_ENABLED=true
+LIVE_SCORE_API_STATISTICS_ENABLED=true
 LIVE_SCORE_API_TOP_SCORERS_ENABLED=true
 LIVE_SCORE_API_TOP_SCORERS_COMPETITION_IDS=362
 LIVE_SCORE_API_TOP_SCORERS_INTERVAL_SECONDS=300
@@ -110,6 +111,25 @@ Ces champs sont utilisés par les scènes “Avant-match” et “Compositions�
 Comme pour les événements, cet endpoint utilise l’ID match LiveScore.
 Selon la compétition, LiveScore peut renvoyer une composition vide tant que les
 feuilles de match officielles ne sont pas publiées.
+
+Quand `LIVE_SCORE_API_STATISTICS_ENABLED=true`, le serveur interroge aussi
+`/statistics/matches.json` pour chaque match publié lié à un `ID match
+LiveScore`. Les statistiques sont converties vers les champs utilisés par la
+scène “Stats live” :
+
+- `home_statistics` ;
+- `away_statistics`.
+
+Exemples de correspondance :
+
+- `possesion` / `possession` → `ball_possession` ;
+- `attempts_on_goal` → `shots` ;
+- `shots_on_target` → `shots_on_goal` ;
+- `shots_off_target` → `shots_off_goal` ;
+- `corners`, `fauls`, `offsides`, `saves`, `yellow_cards`, `red_cards`.
+
+L’endpoint ne fonctionne que lorsque le match a commencé et que LiveScore
+fournit des statistiques pour ce match.
 
 Quand `LIVE_SCORE_API_TOP_SCORERS_ENABLED=true`, le serveur interroge aussi
 `/competitions/topscorers.json`. La fréquence est volontairement plus lente que

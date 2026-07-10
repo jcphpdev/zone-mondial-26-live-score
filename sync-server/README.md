@@ -49,6 +49,7 @@ LIVE_SCORE_API_COMPETITION_IDS=362
 LIVE_SCORE_API_FIXTURE_COMPETITION_IDS=362
 LIVE_SCORE_API_LANG=
 LIVE_SCORE_API_EVENTS_ENABLED=true
+LIVE_SCORE_API_LINEUPS_ENABLED=true
 ```
 
 Dans `admin.html`, chaque match peut être lié avec :
@@ -94,6 +95,18 @@ Ces événements alimentent automatiquement :
 L’endpoint events utilise l’ID match LiveScore, pas l’ID fixture. Pour les
 matchs à venir, la liste peut être vide au début : elle se remplira pendant le
 match.
+
+Quand `LIVE_SCORE_API_LINEUPS_ENABLED=true`, le serveur interroge aussi
+`/matches/lineups.json` pour chaque match publié lié à un `ID match LiveScore`.
+Les titulaires récupérés remplissent automatiquement :
+
+- `home_lineup` ;
+- `away_lineup`.
+
+Ces champs sont utilisés par les scènes “Avant-match” et “Compositions”.
+Comme pour les événements, cet endpoint utilise l’ID match LiveScore.
+Selon la compétition, LiveScore peut renvoyer une composition vide tant que les
+feuilles de match officielles ne sont pas publiées.
 
 Si le log affiche par exemple `LiveScore : 10 match(s)` mais
 `LiveScore 0` dans les matchs liés, cela signifie que l’API renvoie bien des

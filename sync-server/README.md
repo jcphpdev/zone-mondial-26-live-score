@@ -48,6 +48,7 @@ LIVE_SCORE_API_SECRET=votre-secret
 LIVE_SCORE_API_COMPETITION_IDS=362
 LIVE_SCORE_API_FIXTURE_COMPETITION_IDS=362
 LIVE_SCORE_API_LANG=
+LIVE_SCORE_API_EVENTS_ENABLED=true
 ```
 
 Dans `admin.html`, chaque match peut être lié avec :
@@ -80,6 +81,19 @@ npm run list:live-score-fixtures -- 362
 Le serveur peut aussi utiliser automatiquement ces fixtures pour renseigner
 `live_score_fixture_id` sur les matchs publiés à venir, si
 `LIVE_SCORE_API_FIXTURE_COMPETITION_IDS` est configuré.
+
+Quand `LIVE_SCORE_API_EVENTS_ENABLED=true`, le serveur interroge aussi
+`/matches/events.json` pour chaque match publié lié à un `ID match LiveScore`.
+Ces événements alimentent automatiquement :
+
+- `timeline_events` : buts, cartons, remplacements, penalties ratés ;
+- `home_scorers` / `away_scorers` : buteurs affichés dans les scènes ;
+- les informations de score/statut si la réponse événement contient le bloc
+  `match`.
+
+L’endpoint events utilise l’ID match LiveScore, pas l’ID fixture. Pour les
+matchs à venir, la liste peut être vide au début : elle se remplira pendant le
+match.
 
 Si le log affiche par exemple `LiveScore : 10 match(s)` mais
 `LiveScore 0` dans les matchs liés, cela signifie que l’API renvoie bien des

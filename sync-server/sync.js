@@ -14,6 +14,7 @@ const DEFAULTS = {
   LIVE_SCORE_API_COMPETITION_IDS: "",
   LIVE_SCORE_API_FIXTURE_COMPETITION_IDS: "",
   LIVE_SCORE_API_LANG: "",
+  LIVE_SCORE_API_EVENTS_ENABLED: "true",
   FOOTBALL_DATA_ENABLED: "false",
   FOOTBALL_DATA_COMPETITIONS: "WC",
   FOOTBALL_DATA_LOOKBACK_DAYS: "2",
@@ -56,6 +57,7 @@ const intervalSeconds = Math.max(15, Math.min(120, Number.parseInt(env.SYNC_INTE
 const dryRun = value(env.DRY_RUN).toLowerCase() === "true";
 const worldCupEnabled = value(env.WORLD_CUP_ENABLED, "true").toLowerCase() !== "false";
 const liveScoreApiEnabled = value(env.LIVE_SCORE_API_ENABLED).toLowerCase() === "true";
+const liveScoreApiEventsEnabled = value(env.LIVE_SCORE_API_EVENTS_ENABLED, "true").toLowerCase() !== "false";
 const footballDataEnabled = value(env.FOOTBALL_DATA_ENABLED).toLowerCase() === "true";
 const footballDataRetryAttempts = Math.max(1, Math.min(5, Number.parseInt(env.FOOTBALL_DATA_RETRY_ATTEMPTS, 10) || 3));
 const footballDataRetryDelayMs = Math.max(250, Math.min(5000, Number.parseInt(env.FOOTBALL_DATA_RETRY_DELAY_MS, 10) || 1200));
@@ -287,6 +289,108 @@ function liveScoreTeamName(match, side) {
   return value(match?.[side]?.name);
 }
 
+function liveScoreEventMinuteValue(event, fallback = 0) {
+  const minute = Number.parseInt(event?.time ?? event?.minute, 10);
+  return Number.isFinite(minute) ? minute : fallback;
+}
+
+function liveScoreEventMinuteLabel(event, fallback = "") {
+  const minute = Number.parseInt(event?.time ?? event?.minute, 10);
+  return Number.isFinite(minute) ? String(minute) : fallback;
+}
+
+function liveScoreEventTeam(event, localMatch) {
+  if (event?.is_home) return value(localMatch.home, "Équipe 1");
+  if (event?.is_away) return value(localMatch.away, "Équipe 2");
+  return "";
+}
+
+function liveScoreEventType(event) {
+  const type = value(event?.event || event?.label).toUpperCase();
+  if (["GOAL", "GOAL_PENALTY", "OWN_GOAL"].includes(type)) return "goal";
+  if (type === "YELLOW_CARD") return "yellow-card";
+  if (["RED_CARD", "YELLOW_RED_CARD"].includes(type)) return "red-card";
+  if (type === "SUBSTITUTION") return "substitution";
+  if (type === "MISSED_PENALTY") return "penalty-missed";
+  return "event";
+}
+
+function liveScoreEventText(event, localMatch) {
+  const rawType = value(event?.event || event?.label).toUpperCase();
+  const player = value(event?.player?.name, "Joueur");
+  const info = value(event?.info?.name).trim();
+  const team = liveScoreEventTeam(event, localMatch);
+  const teamSuffix = team ? ` (${team})` : "";
+
+  if (rawType === "GOAL_PENALTY") return `But sur penalty : ${player}${teamSuffix}`;
+  if (rawType === "OWN_GOAL") return `But contre son camp : ${player}${teamSuffix}`;
+  if (rawType === "GOAL") return `But : ${player}${teamSuffix}`;
+  if (rawType === "YELLOW_CARD") return `Carton jaune : ${player}${teamSuffix}`;
+  if (rawType === "RED_CARD") return `Carton rouge : ${player}${teamSuffix}`;
+  if (rawType === "YELLOW_RED_CARD") return `Deuxième jaune / rouge : ${player}${teamSuffix}`;
+  if (rawType === "SUBSTITUTION") {
+    return info
+      ? `Changement : ${player} remplace ${info}${teamSuffix}`
+      : `Changement : ${player}${teamSuffix}`;
+  }
+  if (rawType === "MISSED_PENALTY") return `Penalty raté : ${player}${teamSuffix}`;
+  return `${value(event?.label || event?.event, "Événement")} : ${player}${teamSuffix}`;
+}
+
+function compactLiveScoreEvents(events, localMatch) {
+  return (Array.isArray(events) ? events : [])
+    .map((event, index) => ({
+      minute: liveScoreEventMinuteLabel(event),
+      sort: liveScoreEventMinuteValue(event, index) + ((Number.parseInt(event?.sort, 10) || index) / 1000),
+      type: liveScoreEventType(event),
+      team: liveScoreEventTeam(event, localMatch),
+      player: value(event?.player?.name),
+      text: liveScoreEventText(event, localMatch)
+    }))
+    .filter(event => event.minute && event.text)
+    .sort((left, right) => left.sort - right.sort)
+    .map(({ sort, ...event }) => event);
+}
+
+function liveScoreScorersFromEvents(events, side) {
+  return (Array.isArray(events) ? events : [])
+    .filter(event => {
+      const eventType = value(event?.event).toUpperCase();
+      if (!["GOAL", "GOAL_PENALTY", "OWN_GOAL"].includes(eventType)) return false;
+      if (eventType === "OWN_GOAL") return side === "home" ? event?.is_away : event?.is_home;
+      return side === "home" ? event?.is_home : event?.is_away;
+    })
+    .map(event => {
+      const eventType = value(event?.event).toUpperCase();
+      const player = value(event?.player?.name).trim();
+      if (!player) return "";
+      const minute = liveScoreEventMinuteLabel(event);
+      const tag = eventType === "GOAL_PENALTY"
+        ? " p."
+        : (eventType === "OWN_GOAL" ? " c.s.c." : "");
+      return `${player}${tag}${minute ? ` ${minute}'` : ""}`;
+    })
+    .filter(Boolean)
+    .join(" • ");
+}
+
+function liveScoreEventsPatch(eventPayload, localMatch) {
+  if (!eventPayload || typeof eventPayload !== "object") return {};
+  const apiMatch = eventPayload.match || {};
+  const events = Array.isArray(eventPayload.event) ? eventPayload.event : [];
+  const timelineEvents = compactLiveScoreEvents(events, localMatch);
+  const patch = {
+    ...(apiMatch?.id ? liveScorePatch(apiMatch) : {}),
+    live_score_events_last_changed: value(apiMatch.last_changed || new Date().toISOString())
+  };
+  if (timelineEvents.length) patch.timeline_events = timelineEvents;
+  const homeScorers = liveScoreScorersFromEvents(events, "home");
+  const awayScorers = liveScoreScorersFromEvents(events, "away");
+  if (homeScorers) patch.home_scorers = homeScorers;
+  if (awayScorers) patch.away_scorers = awayScorers;
+  return patch;
+}
+
 function liveScorePatch(apiMatch) {
   const regularScore = parseScoreLine(apiMatch.scores?.score);
   const penaltyScore = parseScoreLine(apiMatch.scores?.ps_score);
@@ -295,11 +399,13 @@ function liveScorePatch(apiMatch) {
     live_score_fixture_id: value(apiMatch.fixture_id),
     live_score_status: value(apiMatch.status),
     live_score_last_changed: value(apiMatch.last_changed),
-    home_score: regularScore.home,
-    away_score: regularScore.away,
     status: liveScoreStatus(apiMatch),
     minute: liveScoreMinute(apiMatch)
   };
+  if (apiMatch.scores?.score) {
+    patch.home_score = regularScore.home;
+    patch.away_score = regularScore.away;
+  }
   if (apiMatch.location) patch.venue = value(apiMatch.location);
   if (apiMatch.scores?.ps_score) {
     patch.home_penalty_score = penaltyScore.home;
@@ -818,6 +924,49 @@ async function fetchLiveScoreFixtures() {
   return results;
 }
 
+async function fetchLiveScoreEvents(matchIds = []) {
+  if (!liveScoreApiEnabled || !liveScoreApiEventsEnabled) return new Map();
+  const key = value(env.LIVE_SCORE_API_KEY).trim();
+  const secret = value(env.LIVE_SCORE_API_SECRET).trim();
+  if (!key || !secret) return new Map();
+
+  const base = value(env.LIVE_SCORE_API_BASE_URL, "https://livescore-api.com/api-client").replace(/\/$/, "");
+  const lang = value(env.LIVE_SCORE_API_LANG).trim();
+  const uniqueIds = [...new Set(matchIds.map(id => value(id).trim()).filter(Boolean))];
+  const results = new Map();
+
+  for (const matchId of uniqueIds) {
+    try {
+      const url = new URL(`${base}/matches/events.json`);
+      url.searchParams.set("key", key);
+      url.searchParams.set("secret", secret);
+      url.searchParams.set("id", matchId);
+      url.searchParams.set("match_id", matchId);
+      if (lang) url.searchParams.set("lang", lang);
+
+      const response = await fetchWithRetry(url, { cache: "no-store" }, `live-score-api.com events ${matchId}`, {
+        attempts: footballDataRetryAttempts,
+        delayMs: footballDataRetryDelayMs
+      });
+      if (!response.ok) {
+        const body = await response.text();
+        log(`LiveScore événements ignorés pour ${matchId} : HTTP ${response.status} ${body.slice(0, 120)}`);
+        continue;
+      }
+      const payload = await response.json();
+      if (payload?.success === false) {
+        log(`LiveScore événements ignorés pour ${matchId} : ${value(payload?.error || payload?.message, "réponse non réussie")}`);
+        continue;
+      }
+      if (payload?.data) results.set(matchId, payload.data);
+    } catch (error) {
+      log(`LiveScore événements ignorés pour ${matchId} après ${footballDataRetryAttempts} tentative(s) : ${error.message}`);
+    }
+  }
+
+  return results;
+}
+
 async function fetchFootballDataMatches() {
   if (!footballDataEnabled) return [];
   if (!value(env.FOOTBALL_DATA_API_TOKEN).trim()) {
@@ -963,13 +1112,24 @@ async function syncOnce() {
 
   const liveScoreMatches = liveScoreSource.data;
   const liveScoreFixtures = liveScoreFixturesSource.data;
+
+  const liveScoreEventIds = liveScoreApiEnabled && liveScoreApiEventsEnabled
+    ? [...new Set(publishedMatches
+      .map(match => liveScoreExplicitIds(match).matchId || value(matchLiveScoreGame(match, liveScoreMatches)?.id).trim())
+      .filter(Boolean))]
+    : [];
+  const liveScoreEventsSource = liveScoreEventIds.length
+    ? await settleSource("live-score-api.com/events", () => fetchLiveScoreEvents(liveScoreEventIds))
+    : { label: "live-score-api.com/events", ok: true, data: new Map() };
+  const liveScoreEventsById = liveScoreEventsSource.data instanceof Map ? liveScoreEventsSource.data : new Map();
+
   const games = worldCupSource.data;
   const footballMatchesById = new Map([
     ...footballDataSource.data,
     ...footballDataDetailsSource.data
   ].map(match => [value(match.id), match]));
   const footballMatches = [...footballMatchesById.values()];
-  const sourceErrors = [liveScoreSource, liveScoreFixturesSource, worldCupSource, footballDataSource, footballDataDetailsSource]
+  const sourceErrors = [liveScoreSource, liveScoreFixturesSource, liveScoreEventsSource, worldCupSource, footballDataSource, footballDataDetailsSource]
     .filter(source => !source.ok)
     .map(source => `${source.label}: ${source.error}`);
 
@@ -977,8 +1137,8 @@ async function syncOnce() {
     sourceErrors.forEach(error => log(`Source indisponible : ${error}`));
   }
 
-  if (!liveScoreMatches.length && !liveScoreFixtures.length && !games.length && !footballMatches.length) {
-    const noApiNeeded = !needsLiveScoreSource && !needsLiveScoreFixtures && !needsWorldCupSource && !needsFootballDataList && !explicitFootballIds.length;
+  if (!liveScoreMatches.length && !liveScoreFixtures.length && !liveScoreEventsById.size && !games.length && !footballMatches.length) {
+    const noApiNeeded = !needsLiveScoreSource && !needsLiveScoreFixtures && !liveScoreEventIds.length && !needsWorldCupSource && !needsFootballDataList && !explicitFootballIds.length;
     const now = new Date().toISOString();
     await firebasePatchLiveScores({
       automation: {
@@ -993,6 +1153,7 @@ async function syncOnce() {
         live_score_api_enabled: liveScoreApiEnabled,
         live_score_api_matches: liveScoreMatches.length,
         live_score_api_fixtures: liveScoreFixtures.length,
+        live_score_api_events: liveScoreEventsById.size,
         world_cup_enabled: worldCupEnabled,
         football_data_enabled: footballDataEnabled,
         interval_seconds: intervalSeconds,
@@ -1019,6 +1180,8 @@ async function syncOnce() {
     const apiId = value(match.external_match_id).trim();
     const liveScoreMatch = matchLiveScoreGame(match, liveScoreMatches);
     const liveScoreFixture = liveScoreMatch ? null : matchLiveScoreFixture(match, liveScoreFixtures);
+    const liveScoreEventId = liveScoreExplicitIds(match).matchId || value(liveScoreMatch?.id).trim();
+    const liveScoreEventPayload = liveScoreEventId ? liveScoreEventsById.get(liveScoreEventId) : null;
     const footballMatch = matchFootballDataGame(match, footballMatches);
     const game = liveScoreMatch || hasFootballDataLink(match)
       ? null
@@ -1028,9 +1191,10 @@ async function syncOnce() {
       ...(game ? apiMatchPatch(game) : {}),
       ...(footballMatch && !liveScoreMatch ? footballDataPatch(footballMatch, match, explicitFootballScoreSource) : {}),
       ...(liveScoreFixture ? liveScoreFixturePatch(liveScoreFixture, match) : {}),
-      ...(liveScoreMatch ? liveScorePatch(liveScoreMatch) : {})
+      ...(liveScoreMatch ? liveScorePatch(liveScoreMatch) : {}),
+      ...(liveScoreEventPayload ? liveScoreEventsPatch(liveScoreEventPayload, match) : {})
     };
-    if (liveScoreMatch || liveScoreFixture || game || footballMatch) linked += 1;
+    if (liveScoreMatch || liveScoreFixture || liveScoreEventPayload || game || footballMatch) linked += 1;
     if (liveScoreMatch) liveScoreLinked += 1;
     if (liveScoreFixture) liveScoreFixturesLinked += 1;
     if (game) worldCupLinked += 1;
@@ -1058,6 +1222,7 @@ async function syncOnce() {
     live_score_api_enabled: liveScoreApiEnabled,
     live_score_api_matches: liveScoreMatches.length,
     live_score_api_fixtures: liveScoreFixtures.length,
+    live_score_api_events: liveScoreEventsById.size,
     world_cup_enabled: worldCupEnabled,
     api_matches: games.length,
     football_data_enabled: footballDataEnabled,
@@ -1070,7 +1235,7 @@ async function syncOnce() {
   await firebasePatchLiveScores(changed ? { matches, updated_at: now, automation } : { automation });
   log(changed
     ? `Synchronisation appliquée : ${changed} match(s) mis à jour.`
-    : `Aucun changement. Matchs liés : ${linked} (LiveScore ${liveScoreLinked}, fixtures ${liveScoreFixturesLinked}, WorldCup ${worldCupLinked}, football-data ${footballDataLinked}). LiveScore : ${liveScoreMatches.length} match(s), fixtures : ${liveScoreFixtures.length}, API World Cup : ${games.length} match(s), football-data : ${footballMatches.length} match(s).`);
+    : `Aucun changement. Matchs liés : ${linked} (LiveScore ${liveScoreLinked}, fixtures ${liveScoreFixturesLinked}, events ${liveScoreEventsById.size}, WorldCup ${worldCupLinked}, football-data ${footballDataLinked}). LiveScore : ${liveScoreMatches.length} match(s), fixtures : ${liveScoreFixtures.length}, events : ${liveScoreEventsById.size}, API World Cup : ${games.length} match(s), football-data : ${footballMatches.length} match(s).`);
   if (liveScoreMatches.length && !liveScoreLinked) {
     log("Info LiveScore : le flux contient des matchs, mais aucun ne correspond aux matchs publiés. Lancez `npm run list:live-score` pour voir les IDs à lier.");
   }

@@ -3005,12 +3005,12 @@ body {
 
 .pre-match-view {
   position: absolute;
-  top: 18.5%;
+  top: 16.2%;
   left: 5.2%;
   z-index: 2;
   width: 89.6%;
-  height: 63.8%;
-  padding: 2.2vh 2vw;
+  height: 68%;
+  padding: 1.35vh 1.65vw;
   color: #fff;
   font-family: "Barlow Condensed", Arial, sans-serif;
   text-transform: uppercase;
@@ -3030,8 +3030,8 @@ body {
   display: grid;
   grid-template-columns: 1fr clamp(128px, 12vw, 210px) 1fr;
   align-items: stretch;
-  gap: 1.2vw;
-  min-height: 21vh;
+  gap: 1vw;
+  min-height: 18.5vh;
 }
 
 .pre-match-team {
@@ -3040,7 +3040,7 @@ body {
   align-items: center;
   gap: 1.35vw;
   min-width: 0;
-  padding: 1.25vh 1.25vw;
+  padding: 0.9vh 1.1vw;
   background: rgba(2, 7, 17, 0.78);
   border: 4px solid rgba(255, 255, 255, 0.72);
   border-radius: 24px;
@@ -3064,7 +3064,7 @@ body {
 
 .pre-match-team span {
   display: inline-block;
-  margin-bottom: 0.25vh;
+  margin-bottom: 0.15vh;
   color: #b8c4e8;
   font-size: clamp(18px, 1.35vw, 28px);
   font-weight: 800;
@@ -3076,7 +3076,7 @@ body {
   margin: 0;
   overflow: hidden;
   color: #fff;
-  font-size: clamp(42px, 4.2vw, 84px);
+  font-size: clamp(38px, 3.8vw, 76px);
   font-weight: 900;
   line-height: 0.92;
   text-overflow: ellipsis;
@@ -3087,7 +3087,7 @@ body {
 .pre-match-team p,
 .pre-match-team small {
   display: block;
-  margin: 0.6vh 0 0;
+  margin: 0.35vh 0 0;
   color: #64ebcc;
   font-size: clamp(19px, 1.55vw, 31px);
   font-weight: 900;
@@ -3105,7 +3105,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1vh 0.6vw;
+  padding: 0.75vh 0.6vw;
   color: #050914;
   background: #64ebcc;
   border-radius: 22px;
@@ -3113,13 +3113,13 @@ body {
 }
 
 .pre-match-center strong {
-  font-size: clamp(54px, 5.6vw, 110px);
+  font-size: clamp(48px, 5vw, 96px);
   font-weight: 900;
   line-height: 0.9;
 }
 
 .pre-match-center span {
-  margin-top: 1vh;
+  margin-top: 0.55vh;
   color: #070c18;
   font-family: "Inter", Arial, sans-serif;
   font-size: clamp(14px, 1.05vw, 22px);
@@ -3133,12 +3133,12 @@ body {
   display: grid;
   grid-template-columns: 0.7fr 1.3fr 1fr;
   gap: 0.75vw;
-  margin: 1.25vh 0;
+  margin: 0.75vh 0;
 }
 
 .pre-match-meta span {
   min-width: 0;
-  padding: 0.65vh 1vw;
+  padding: 0.48vh 0.9vw;
   overflow: hidden;
   color: #fff;
   background: rgba(42, 57, 141, 0.66);
@@ -3154,14 +3154,14 @@ body {
 .pre-match-lineups {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1vw;
-  height: calc(100% - 29vh);
-  min-height: 25vh;
+  gap: 0.85vw;
+  height: calc(100% - 25vh);
+  min-height: 31vh;
 }
 
 .pre-match-lineups section {
   min-width: 0;
-  padding: 1vh 1vw;
+  padding: 0.75vh 0.8vw;
   overflow: hidden;
   background: rgba(3, 8, 18, 0.68);
   border: 3px solid rgba(255, 255, 255, 0.36);
@@ -3169,16 +3169,16 @@ body {
 }
 
 .pre-match-lineups h2 {
-  margin: 0 0 0.85vh;
+  margin: 0 0 0.55vh;
   color: #fff;
-  font-size: clamp(25px, 2vw, 42px);
+  font-size: clamp(22px, 1.65vw, 34px);
   font-weight: 900;
 }
 
 .pre-match-lineup-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.48vh 0.65vw;
+  gap: 0.32vh 0.55vw;
 }
 
 .pre-match-player {
@@ -3186,27 +3186,28 @@ body {
   grid-template-columns: 2.1em 1fr;
   align-items: center;
   min-width: 0;
-  padding: 0.28vh 0.5vw;
+  min-height: 3.55vh;
+  padding: 0.12vh 0.42vw;
   background: rgba(255, 255, 255, 0.055);
   border-radius: 9px;
 }
 
 .pre-match-player span {
   display: grid;
-  width: 1.85em;
-  height: 1.85em;
+  width: 1.72em;
+  height: 1.72em;
   place-items: center;
   color: #061018;
   background: #64ebcc;
   border-radius: 8px;
-  font-size: clamp(13px, 0.95vw, 19px);
+  font-size: clamp(12px, 0.82vw, 17px);
   font-weight: 900;
 }
 
 .pre-match-player strong {
   min-width: 0;
   overflow: hidden;
-  font-size: clamp(14px, 1.08vw, 22px);
+  font-size: clamp(13px, 0.94vw, 19px);
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3217,7 +3218,7 @@ body {
   overflow: hidden;
   color: #aeb8d7;
   font-family: "Inter", Arial, sans-serif;
-  font-size: clamp(10px, 0.68vw, 14px);
+  font-size: clamp(9px, 0.58vw, 12px);
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3258,12 +3259,12 @@ body {
 
 .lineups-view {
   position: absolute;
-  top: 18.2%;
+  top: 16.2%;
   left: 6%;
   z-index: 2;
   width: 88%;
-  height: 64%;
-  padding: 1.55vh 1.6vw;
+  height: 68%;
+  padding: 1.25vh 1.45vw;
   color: #fff;
   font-family: "Barlow Condensed", Arial, sans-serif;
   text-transform: uppercase;
@@ -3284,7 +3285,7 @@ body {
   grid-template-columns: 1fr 0.78fr 1fr;
   align-items: center;
   gap: 1vw;
-  height: 13.2vh;
+  height: 11.4vh;
 }
 
 .lineups-team-title {
@@ -3294,7 +3295,7 @@ body {
   align-items: center;
   gap: 0.25vh 0.9vw;
   min-width: 0;
-  padding: 0.8vh 1vw;
+  padding: 0.62vh 0.9vw;
   background: rgba(2, 8, 18, 0.72);
   border: 3px solid rgba(255, 255, 255, 0.46);
   border-radius: 20px;
@@ -3321,7 +3322,7 @@ body {
 
 .lineups-team-title span {
   overflow: hidden;
-  font-size: clamp(32px, 3.1vw, 62px);
+  font-size: clamp(30px, 2.8vw, 56px);
   font-weight: 950;
   line-height: 0.92;
   text-overflow: ellipsis;
@@ -3348,7 +3349,7 @@ body {
 }
 
 .lineups-versus strong {
-  font-size: clamp(28px, 2.25vw, 46px);
+  font-size: clamp(26px, 2vw, 40px);
   font-weight: 950;
   letter-spacing: 0.04em;
 }
@@ -3368,14 +3369,14 @@ body {
 .lineups-board {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1vw;
-  height: 39vh;
-  margin-top: 1.25vh;
+  gap: 0.85vw;
+  height: 47vh;
+  margin-top: 0.9vh;
 }
 
 .lineups-board section {
   min-width: 0;
-  padding: 1vh 1vw;
+  padding: 0.75vh 0.8vw;
   overflow: hidden;
   background: rgba(3, 8, 18, 0.74);
   border: 3px solid rgba(255, 255, 255, 0.36);
@@ -3383,16 +3384,16 @@ body {
 }
 
 .lineups-board h2 {
-  margin: 0 0 0.75vh;
+  margin: 0 0 0.55vh;
   color: #fff;
-  font-size: clamp(22px, 1.8vw, 38px);
+  font-size: clamp(21px, 1.55vw, 32px);
   font-weight: 950;
 }
 
 .lineups-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.45vh 0.65vw;
+  gap: 0.32vh 0.55vw;
 }
 
 .lineups-player {
@@ -3400,7 +3401,8 @@ body {
   grid-template-columns: 2.25em 1fr;
   align-items: center;
   min-width: 0;
-  padding: 0.34vh 0.48vw;
+  min-height: 3.9vh;
+  padding: 0.14vh 0.42vw;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
@@ -3408,20 +3410,20 @@ body {
 
 .lineups-player span {
   display: grid;
-  width: 1.9em;
-  height: 1.9em;
+  width: 1.72em;
+  height: 1.72em;
   place-items: center;
   color: #050914;
   background: #64ebcc;
   border-radius: 8px;
-  font-size: clamp(13px, 0.95vw, 19px);
+  font-size: clamp(12px, 0.82vw, 17px);
   font-weight: 950;
 }
 
 .lineups-player strong {
   min-width: 0;
   overflow: hidden;
-  font-size: clamp(16px, 1.18vw, 24px);
+  font-size: clamp(14px, 1vw, 20px);
   font-weight: 950;
   line-height: 1;
   text-overflow: ellipsis;
@@ -3432,7 +3434,7 @@ body {
   grid-column: 2;
   color: #b9c3e4;
   font-family: "Inter", Arial, sans-serif;
-  font-size: clamp(10px, 0.7vw, 14px);
+  font-size: clamp(9px, 0.58vw, 12px);
   font-weight: 800;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3455,18 +3457,18 @@ body {
   display: grid;
   grid-template-columns: 1fr 0.9fr 1fr;
   gap: 0.75vw;
-  margin-top: 1.2vh;
+  margin-top: 0.75vh;
 }
 
 .lineups-footer span {
   min-width: 0;
-  padding: 0.62vh 0.9vw;
+  padding: 0.45vh 0.8vw;
   overflow: hidden;
   color: #fff;
   background: rgba(42, 57, 141, 0.68);
   border: 2px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
-  font-size: clamp(17px, 1.22vw, 26px);
+  font-size: clamp(15px, 1.05vw, 22px);
   font-weight: 950;
   text-align: center;
   text-overflow: ellipsis;

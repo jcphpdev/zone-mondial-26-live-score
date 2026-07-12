@@ -572,24 +572,51 @@ function lineupHtml(input) {
   }).join("");
 }
 
+function lineupPositionGroup(player, index) {
+  const position = value(player.position || player.role || player.type).trim().toUpperCase();
+  if (/\b(GK|GOAL|KEEPER|GARDIEN)\b/.test(position)) return "gk";
+  if (/\b(DF|DEF|BACK|DÉF|DEFENDER|DÉFENSEUR)\b/.test(position)) return "df";
+  if (/\b(MF|MID|MIL|MIDFIELDER|MILIEU)\b/.test(position)) return "mf";
+  if (/\b(FW|FWD|ATT|STRIKER|FORWARD|WINGER|ATTAQUANT)\b/.test(position)) return "fw";
+  if (index === 0) return "gk";
+  if (index <= 4) return "df";
+  if (index <= 8) return "mf";
+  return "fw";
+}
+
+function lineupPitchPlayerHtml(player, index) {
+  const shirt = value(player.shirtNumber || player.shirt_number || player.number).trim();
+  const name = value(player.name || player.player || player.player_name, `Joueur ${index + 1}`);
+  const position = value(player.position).trim();
+  return `
+    <div class="lineups-pitch-player">
+      <span>${escapeHtml(shirt || String(index + 1))}</span>
+      <strong>${escapeHtml(name)}</strong>
+      ${position ? `<small>${escapeHtml(position)}</small>` : ""}
+    </div>
+  `;
+}
+
 function detailedLineupHtml(input) {
   const players = normalizeLineup(input).slice(0, 11);
   if (!players.length) {
     return `<div class="lineups-empty">Composition à confirmer</div>`;
   }
 
-  return players.map((player, index) => {
-    const shirt = value(player.shirtNumber || player.shirt_number || player.number).trim();
-    const name = value(player.name || player.player || player.player_name, `Joueur ${index + 1}`);
-    const position = value(player.position).trim();
-    return `
-      <div class="lineups-player">
-        <span>${escapeHtml(shirt || String(index + 1))}</span>
-        <strong>${escapeHtml(name)}</strong>
-        <small>${escapeHtml(position || "Titulaire")}</small>
-      </div>
-    `;
-  }).join("");
+  const groups = { fw: [], mf: [], df: [], gk: [] };
+  players.forEach((player, index) => {
+    groups[lineupPositionGroup(player, index)].push({ player, index });
+  });
+
+  return `
+    <div class="lineups-pitch">
+      ${["fw", "mf", "df", "gk"].map(group => `
+        <div class="lineups-pitch-row lineups-pitch-row-${group}" style="--players:${Math.max(groups[group].length, 1)}">
+          ${groups[group].map(({ player, index }) => lineupPitchPlayerHtml(player, index)).join("")}
+        </div>
+      `).join("")}
+    </div>
+  `;
 }
 
 function normalizeStats(input) {

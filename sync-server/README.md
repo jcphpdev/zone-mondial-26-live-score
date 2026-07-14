@@ -51,6 +51,8 @@ LIVE_SCORE_API_LANG=
 LIVE_SCORE_API_EVENTS_ENABLED=true
 LIVE_SCORE_API_LINEUPS_ENABLED=true
 LIVE_SCORE_API_STATISTICS_ENABLED=true
+LIVE_SCORE_API_HEAD2HEAD_ENABLED=true
+LIVE_SCORE_API_HEAD2HEAD_INTERVAL_SECONDS=3600
 LIVE_SCORE_API_TOP_SCORERS_ENABLED=true
 LIVE_SCORE_API_TOP_SCORERS_COMPETITION_IDS=362
 LIVE_SCORE_API_TOP_SCORERS_INTERVAL_SECONDS=300
@@ -130,6 +132,28 @@ Exemples de correspondance :
 
 L’endpoint ne fonctionne que lorsque le match a commencé et que LiveScore
 fournit des statistiques pour ce match.
+
+Quand `LIVE_SCORE_API_HEAD2HEAD_ENABLED=true`, le serveur interroge aussi
+`/teams/head2head.json` pour les matchs publiés dont les deux IDs équipes
+LiveScore sont connus. Ces IDs sont récupérés automatiquement depuis le flux
+live ou les fixtures LiveScore, puis conservés dans les champs :
+
+- `live_score_home_team_id` ;
+- `live_score_away_team_id`.
+
+Les données de face-à-face sont écrites dans chaque match sous `head_to_head`.
+Le bloc contient :
+
+- la forme récente des deux équipes ;
+- les 6 derniers matchs de chaque équipe ;
+- les derniers confrontations directes ;
+- un résumé `team1_wins / draws / team2_wins` ;
+- la prochaine fixture retournée par LiveScore, si disponible.
+
+Comme ces données historiques changent peu, elles sont mises en cache côté
+serveur. Par défaut :
+
+- `LIVE_SCORE_API_HEAD2HEAD_INTERVAL_SECONDS=3600`.
 
 Quand `LIVE_SCORE_API_TOP_SCORERS_ENABLED=true`, le serveur interroge aussi
 `/competitions/topscorers.json`. La fréquence est volontairement plus lente que

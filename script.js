@@ -1696,6 +1696,8 @@ function applyData(data, options = {}) {
   const displayedGroupIds = new Set();
 
   const scoreSceneMatches = publishedMatches.filter(match => isVisibleInScoreScenes(match));
+  const liveScoreSceneMatches = scoreSceneMatches.filter(match => isLive(match));
+  const liveScoreSceneMatchIds = new Set(liveScoreSceneMatches.map(match => match.id));
   const preMatchScenes = scoreSceneMatches
     .filter(match => isUpcoming(match))
     .map(match => ({ type: "pre-match", id: match.id, data: match }));
@@ -1766,6 +1768,8 @@ function applyData(data, options = {}) {
       data: { ...info, id: infoId }
     };
   });
+  const requestedScene = new URLSearchParams(window.location.search).get("scene");
+  const hasForcedUrlScene = Boolean(requestedScene);
 
   if (currentSettings.scene_mode === "pre-match") {
     scenes = [
@@ -1807,23 +1811,41 @@ function applyData(data, options = {}) {
   } else if (currentSettings.scene_mode === "video") {
     scenes = [videoScene];
   } else {
-    scenes = [
-      ...(currentSettings.include_prematch_scenes ? preMatchScenes : []),
-      ...(currentSettings.include_lineup_scenes ? lineupScenes : []),
-      ...(currentSettings.include_stats_scenes ? statsScenes : []),
-      ...(currentSettings.include_info_scenes ? infoScenes : []),
-      ...(currentSettings.include_goal_detail_scenes ? goalDetailScenes : []),
-      ...(currentSettings.include_event_detail_scenes ? eventDetailScenes : []),
-      ...(currentSettings.include_match_scenes ? matchScenes : []),
-      ...(currentSettings.include_match_video_scenes ? matchVideoScenes : []),
-      ...(currentSettings.include_group_scenes ? groupScenes : []),
-      ...(currentSettings.include_ticker_scene ? [tickerScene] : []),
-      ...(currentSettings.include_video_scene ? [videoScene] : [])
-    ];
-    if (!scenes.length) scenes = matchScenes.length ? matchScenes : [tickerScene];
+    const hasLiveMatchContext = !hasForcedUrlScene && liveScoreSceneMatches.length > 0;
+    const liveLineupScenes = lineupScenes.filter(scene => liveScoreSceneMatchIds.has(scene.id));
+    const liveStatsScenes = statsScenes.filter(scene => liveScoreSceneMatchIds.has(scene.id));
+    const liveGoalDetailScenes = goalDetailScenes.filter(scene => liveScoreSceneMatchIds.has(scene.id));
+    const liveEventDetailScenes = eventDetailScenes.filter(scene => liveScoreSceneMatchIds.has(scene.data?.match?.id));
+    const liveMatchScenes = matchScenes.filter(scene => liveScoreSceneMatchIds.has(scene.id));
+    const liveMatchVideoScenes = matchVideoScenes.filter(scene => liveScoreSceneMatchIds.has(scene.id));
+
+    scenes = hasLiveMatchContext
+      ? [
+        ...(currentSettings.include_goal_detail_scenes ? liveGoalDetailScenes : []),
+        ...(currentSettings.include_event_detail_scenes ? liveEventDetailScenes : []),
+        ...(currentSettings.include_match_scenes ? liveMatchScenes : []),
+        ...(currentSettings.include_stats_scenes ? liveStatsScenes : []),
+        ...(currentSettings.include_lineup_scenes ? liveLineupScenes : []),
+        ...(currentSettings.include_match_video_scenes ? liveMatchVideoScenes : [])
+      ]
+      : [
+        ...(currentSettings.include_prematch_scenes ? preMatchScenes : []),
+        ...(currentSettings.include_lineup_scenes ? lineupScenes : []),
+        ...(currentSettings.include_stats_scenes ? statsScenes : []),
+        ...(currentSettings.include_info_scenes ? infoScenes : []),
+        ...(currentSettings.include_goal_detail_scenes ? goalDetailScenes : []),
+        ...(currentSettings.include_event_detail_scenes ? eventDetailScenes : []),
+        ...(currentSettings.include_match_scenes ? matchScenes : []),
+        ...(currentSettings.include_match_video_scenes ? matchVideoScenes : []),
+        ...(currentSettings.include_group_scenes ? groupScenes : []),
+        ...(currentSettings.include_ticker_scene ? [tickerScene] : []),
+        ...(currentSettings.include_video_scene ? [videoScene] : [])
+      ];
+    if (!scenes.length) scenes = hasLiveMatchContext
+      ? (liveMatchScenes.length ? liveMatchScenes : matchScenes)
+      : (matchScenes.length ? matchScenes : [tickerScene]);
   }
 
-  const requestedScene = new URLSearchParams(window.location.search).get("scene");
   if (requestedScene === "pre-match") {
     activeScene = scenes.findIndex(scene => scene.type === "pre-match");
     if (activeScene < 0) activeScene = 0;

@@ -51,6 +51,11 @@ const preMatchSceneDurationInput = document.getElementById("preMatchSceneDuratio
 const lineupsSceneDurationInput = document.getElementById("lineupsSceneDuration");
 const statsSceneDurationInput = document.getElementById("statsSceneDuration");
 const infoSceneDurationInput = document.getElementById("infoSceneDuration");
+const infoTitleFontSizeInput = document.getElementById("infoTitleFontSize");
+const infoDetailsFontSizeInput = document.getElementById("infoDetailsFontSize");
+const infoDateFontSizeInput = document.getElementById("infoDateFontSize");
+const liveUpdatesFontSizeInput = document.getElementById("liveUpdatesFontSize");
+const liveUpdatesScoreFontSizeInput = document.getElementById("liveUpdatesScoreFontSize");
 const goalDetailSceneDurationInput = document.getElementById("goalDetailSceneDuration");
 const eventDetailSceneDurationInput = document.getElementById("eventDetailSceneDuration");
 const standingsSceneDurationInput = document.getElementById("standingsSceneDuration");
@@ -140,6 +145,11 @@ const DEFAULT_SETTINGS = {
   lineups_scene_duration: 12,
   stats_scene_duration: 10,
   info_scene_duration: 12,
+  info_title_font_size: 64,
+  info_details_font_size: 28,
+  info_date_font_size: 20,
+  live_updates_font_size: 26,
+  live_updates_score_font_size: 24,
   goal_detail_scene_duration: 6,
   event_detail_scene_duration: 6,
   standings_scene_duration: 8,
@@ -224,6 +234,11 @@ function readSettings() {
     lineups_scene_duration: boundedNumber(lineupsSceneDurationInput.value, DEFAULT_SETTINGS.lineups_scene_duration, 3, 60),
     stats_scene_duration: boundedNumber(statsSceneDurationInput.value, DEFAULT_SETTINGS.stats_scene_duration, 3, 60),
     info_scene_duration: boundedNumber(infoSceneDurationInput.value, DEFAULT_SETTINGS.info_scene_duration, 3, 60),
+    info_title_font_size: boundedNumber(infoTitleFontSizeInput.value, DEFAULT_SETTINGS.info_title_font_size, 34, 92),
+    info_details_font_size: boundedNumber(infoDetailsFontSizeInput.value, DEFAULT_SETTINGS.info_details_font_size, 16, 42),
+    info_date_font_size: boundedNumber(infoDateFontSizeInput.value, DEFAULT_SETTINGS.info_date_font_size, 12, 30),
+    live_updates_font_size: boundedNumber(liveUpdatesFontSizeInput.value, DEFAULT_SETTINGS.live_updates_font_size, 14, 42),
+    live_updates_score_font_size: boundedNumber(liveUpdatesScoreFontSizeInput.value, DEFAULT_SETTINGS.live_updates_score_font_size, 14, 38),
     goal_detail_scene_duration: boundedNumber(goalDetailSceneDurationInput.value, DEFAULT_SETTINGS.goal_detail_scene_duration, 3, 30),
     event_detail_scene_duration: boundedNumber(eventDetailSceneDurationInput.value, DEFAULT_SETTINGS.event_detail_scene_duration, 3, 30),
     standings_scene_duration: boundedNumber(standingsSceneDurationInput.value, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
@@ -272,6 +287,11 @@ function fillSettings(settings = {}) {
   lineupsSceneDurationInput.value = boundedNumber(merged.lineups_scene_duration, DEFAULT_SETTINGS.lineups_scene_duration, 3, 60);
   statsSceneDurationInput.value = boundedNumber(merged.stats_scene_duration, DEFAULT_SETTINGS.stats_scene_duration, 3, 60);
   infoSceneDurationInput.value = boundedNumber(merged.info_scene_duration, DEFAULT_SETTINGS.info_scene_duration, 3, 60);
+  infoTitleFontSizeInput.value = boundedNumber(merged.info_title_font_size, DEFAULT_SETTINGS.info_title_font_size, 34, 92);
+  infoDetailsFontSizeInput.value = boundedNumber(merged.info_details_font_size, DEFAULT_SETTINGS.info_details_font_size, 16, 42);
+  infoDateFontSizeInput.value = boundedNumber(merged.info_date_font_size, DEFAULT_SETTINGS.info_date_font_size, 12, 30);
+  liveUpdatesFontSizeInput.value = boundedNumber(merged.live_updates_font_size, DEFAULT_SETTINGS.live_updates_font_size, 14, 42);
+  liveUpdatesScoreFontSizeInput.value = boundedNumber(merged.live_updates_score_font_size, DEFAULT_SETTINGS.live_updates_score_font_size, 14, 38);
   goalDetailSceneDurationInput.value = boundedNumber(merged.goal_detail_scene_duration, DEFAULT_SETTINGS.goal_detail_scene_duration, 3, 30);
   eventDetailSceneDurationInput.value = boundedNumber(merged.event_detail_scene_duration, DEFAULT_SETTINGS.event_detail_scene_duration, 3, 30);
   standingsSceneDurationInput.value = boundedNumber(merged.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60);
@@ -1748,7 +1768,7 @@ updatedAtInput.addEventListener("input", () => {
   syncControlRoom();
   scheduleSave();
 });
-[scoreSceneDurationInput, preMatchSceneDurationInput, lineupsSceneDurationInput, statsSceneDurationInput, infoSceneDurationInput, goalDetailSceneDurationInput, eventDetailSceneDurationInput, standingsSceneDurationInput, videoSceneDurationInput, scoreSceneBeforeMinutesInput, scoreSceneAfterMinutesInput].forEach(input => {
+[scoreSceneDurationInput, preMatchSceneDurationInput, lineupsSceneDurationInput, statsSceneDurationInput, infoSceneDurationInput, infoTitleFontSizeInput, infoDetailsFontSizeInput, infoDateFontSizeInput, liveUpdatesFontSizeInput, liveUpdatesScoreFontSizeInput, goalDetailSceneDurationInput, eventDetailSceneDurationInput, standingsSceneDurationInput, videoSceneDurationInput, scoreSceneBeforeMinutesInput, scoreSceneAfterMinutesInput].forEach(input => {
   input.addEventListener("input", scheduleSave);
   input.addEventListener("change", scheduleSave);
 });

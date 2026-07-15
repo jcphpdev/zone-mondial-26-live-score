@@ -17,6 +17,11 @@ const DEFAULT_SETTINGS = {
   lineups_scene_duration: 12,
   stats_scene_duration: 10,
   info_scene_duration: 12,
+  info_title_font_size: 64,
+  info_details_font_size: 28,
+  info_date_font_size: 20,
+  live_updates_font_size: 26,
+  live_updates_score_font_size: 24,
   goal_detail_scene_duration: 6,
   event_detail_scene_duration: 6,
   standings_scene_duration: 8,
@@ -221,6 +226,11 @@ function normalizeSettings(settings = {}) {
     lineups_scene_duration: boundedNumber(settings.lineups_scene_duration, DEFAULT_SETTINGS.lineups_scene_duration, 3, 60),
     stats_scene_duration: boundedNumber(settings.stats_scene_duration, DEFAULT_SETTINGS.stats_scene_duration, 3, 60),
     info_scene_duration: boundedNumber(settings.info_scene_duration, DEFAULT_SETTINGS.info_scene_duration, 3, 60),
+    info_title_font_size: boundedNumber(settings.info_title_font_size, DEFAULT_SETTINGS.info_title_font_size, 34, 92),
+    info_details_font_size: boundedNumber(settings.info_details_font_size, DEFAULT_SETTINGS.info_details_font_size, 16, 42),
+    info_date_font_size: boundedNumber(settings.info_date_font_size, DEFAULT_SETTINGS.info_date_font_size, 12, 30),
+    live_updates_font_size: boundedNumber(settings.live_updates_font_size, DEFAULT_SETTINGS.live_updates_font_size, 14, 42),
+    live_updates_score_font_size: boundedNumber(settings.live_updates_score_font_size, DEFAULT_SETTINGS.live_updates_score_font_size, 14, 38),
     goal_detail_scene_duration: boundedNumber(settings.goal_detail_scene_duration, DEFAULT_SETTINGS.goal_detail_scene_duration, 3, 30),
     event_detail_scene_duration: boundedNumber(settings.event_detail_scene_duration, DEFAULT_SETTINGS.event_detail_scene_duration, 3, 30),
     standings_scene_duration: boundedNumber(settings.standings_scene_duration, DEFAULT_SETTINGS.standings_scene_duration, 3, 60),
@@ -719,6 +729,15 @@ function applySceneBackground(type) {
   document.body.style.setProperty("background", `#020817 ${background} center / cover no-repeat`, "important");
 }
 
+function applyDisplaySettings() {
+  const root = document.documentElement.style;
+  root.setProperty("--info-title-font-size", `${currentSettings.info_title_font_size}px`);
+  root.setProperty("--info-details-font-size", `${currentSettings.info_details_font_size}px`);
+  root.setProperty("--info-date-font-size", `${currentSettings.info_date_font_size}px`);
+  root.setProperty("--live-updates-font-size", `${currentSettings.live_updates_font_size}px`);
+  root.setProperty("--live-updates-score-font-size", `${currentSettings.live_updates_score_font_size}px`);
+}
+
 function escapeHtml(input) {
   return value(input)
     .replaceAll("&", "&amp;")
@@ -1209,6 +1228,7 @@ function liveUpdateRows(matches, groups) {
 
   return orderedMatches.slice(0, 5).map(match => {
     const status = isFinished(match) ? "Terminé" : isUpcoming(match) ? "À venir" : "En direct";
+    const upcoming = isUpcoming(match);
     const score = isUpcoming(match)
       ? kickoffLabel(match) || value(match.status, "À venir")
       : scoreWithPenalties(match);
@@ -1219,6 +1239,7 @@ function liveUpdateRows(matches, groups) {
       home: value(match.home, "Équipe 1"),
       away: value(match.away, "Équipe 2"),
       score,
+      scoreType: upcoming ? "date" : "score",
       minute: qualified ? "" : isLive(match) ? (matchDisplayMinute(match) || value(match.status, "LIVE")) : "",
       qualified
     };
@@ -1334,7 +1355,7 @@ function renderLiveUpdates(data) {
           <span class="live-update-status">${escapeHtml(row.status)}</span>
           <span class="live-update-group">${escapeHtml(row.group)}</span>
           <strong>${escapeHtml(row.home)}</strong>
-          <span class="live-update-score">${escapeHtml(row.score)}</span>
+          <span class="live-update-score live-update-score--${escapeHtml(row.scoreType || "score")}">${escapeHtml(row.score)}</span>
           <strong>${escapeHtml(row.away)}</strong>
           ${liveUpdateMetaHtml(row)}
         </div>
@@ -1355,7 +1376,7 @@ function renderVideoUpdates(data) {
           <span class="live-update-status">${escapeHtml(row.status)}</span>
           <span class="live-update-group">${escapeHtml(row.group)}</span>
           <strong>${escapeHtml(row.home)}</strong>
-          <span class="live-update-score">${escapeHtml(row.score)}</span>
+          <span class="live-update-score live-update-score--${escapeHtml(row.scoreType || "score")}">${escapeHtml(row.score)}</span>
           <strong>${escapeHtml(row.away)}</strong>
           ${liveUpdateMetaHtml(row)}
         </div>
@@ -1683,6 +1704,7 @@ function applyData(data, options = {}) {
   const previousScene = scenes[activeScene] || null;
   latestData = data;
   currentSettings = normalizeSettings(data?.settings);
+  applyDisplaySettings();
   elements.soundUnlock.hidden = !shouldShowSoundUnlock() || soundUnlocked;
   const allMatches = Array.isArray(data?.matches) ? data.matches : [];
   const allGroups = Array.isArray(data?.groups) ? data.groups : [];

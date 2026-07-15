@@ -345,8 +345,13 @@ function normalizeTimeline(match) {
         if (typeof event === "string") return parseTimelineText(event)[0];
         const minute = value(event?.minute_label || event?.minute || event?.time || event?.elapsed).replace(/['’′]?$/, "");
         return {
+          id: value(event?.id),
           minute: minute ? `${minute.padStart(2, "0")}’` : "",
           type: value(event?.type || event?.kind).trim(),
+          raw_type: value(event?.raw_type || event?.event).trim(),
+          team: value(event?.team).trim(),
+          player: value(event?.player || event?.scorer || event?.name).trim(),
+          info: value(event?.info || event?.assist || event?.player_in || event?.playerOut).trim(),
           text: timelineEventLabel(event)
         };
       })
@@ -391,8 +396,11 @@ function scorerFromGoalEvent(event) {
 function timelineEventKey(match, event) {
   return [
     matchKey(match),
+    value(event.id),
     value(event.type).toLowerCase(),
     value(event.minute),
+    value(event.team),
+    value(event.player),
     value(event.text)
   ].join("|");
 }
@@ -436,7 +444,7 @@ function eventTeamSide(match, event) {
 function eventMainText(event) {
   return value(event.player).trim()
     || value(event.text)
-      .replace(/^(carton jaune|carton rouge|changement|mi-temps|fin du match)\s*:\s*/i, "")
+      .replace(/^(carton jaune|carton rouge|deuxième jaune\s*\/\s*rouge|changement|mi-temps|fin du match)\s*:\s*/i, "")
       .trim()
     || "Temps fort";
 }

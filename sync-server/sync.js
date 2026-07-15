@@ -355,11 +355,14 @@ function liveScoreEventText(event, localMatch) {
 function compactLiveScoreEvents(events, localMatch) {
   return (Array.isArray(events) ? events : [])
     .map((event, index) => ({
+      id: value(event?.id),
+      raw_type: value(event?.event || event?.label).toUpperCase(),
       minute: liveScoreEventMinuteLabel(event),
       sort: liveScoreEventMinuteValue(event, index) + ((Number.parseInt(event?.sort, 10) || index) / 1000),
       type: liveScoreEventType(event),
       team: liveScoreEventTeam(event, localMatch),
       player: value(event?.player?.name),
+      info: value(event?.info?.name),
       text: liveScoreEventText(event, localMatch)
     }))
     .filter(event => event.minute && event.text)
@@ -392,17 +395,21 @@ function liveScoreScorersFromEvents(events, side) {
 function liveScoreEventsPatch(eventPayload, localMatch) {
   if (!eventPayload || typeof eventPayload !== "object") return {};
   const apiMatch = eventPayload.match || {};
-  const events = Array.isArray(eventPayload.event) ? eventPayload.event : [];
+  const hasEventsArray = Array.isArray(eventPayload.event);
+  const events = hasEventsArray ? eventPayload.event : [];
   const timelineEvents = compactLiveScoreEvents(events, localMatch);
   const patch = {
     ...(apiMatch?.id ? liveScorePatch(apiMatch) : {}),
-    live_score_events_last_changed: value(apiMatch.last_changed || new Date().toISOString())
+    live_score_events_last_changed: value(apiMatch.last_changed || new Date().toISOString()),
+    live_score_events_count: events.length
   };
-  if (timelineEvents.length) patch.timeline_events = timelineEvents;
+  if (hasEventsArray) patch.timeline_events = timelineEvents;
   const homeScorers = liveScoreScorersFromEvents(events, "home");
   const awayScorers = liveScoreScorersFromEvents(events, "away");
-  if (homeScorers) patch.home_scorers = homeScorers;
-  if (awayScorers) patch.away_scorers = awayScorers;
+  if (hasEventsArray) {
+    patch.home_scorers = homeScorers;
+    patch.away_scorers = awayScorers;
+  }
   return patch;
 }
 
